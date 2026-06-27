@@ -2,10 +2,9 @@ import CrackedM from "./CrackedM";
 
 interface HeroProps {
   onJoinClick: () => void;
-  onDemoClick: () => void;
 }
 
-export default function Hero({ onJoinClick, onDemoClick }: HeroProps) {
+export default function Hero({ onJoinClick }: HeroProps) {
   return (
     <section
       aria-labelledby="hero-heading"
@@ -132,31 +131,6 @@ export default function Hero({ onJoinClick, onDemoClick }: HeroProps) {
             }}
           >
             Join the Pilot
-          </button>
-
-          <button
-            onClick={onDemoClick}
-            style={{
-              backgroundColor: "transparent",
-              color: "var(--teal)",
-              fontFamily: "var(--font-heading, sans-serif)",
-              fontWeight: 600,
-              fontSize: "1rem",
-              padding: "0.875rem 2rem",
-              borderRadius: "8px",
-              minHeight: "52px",
-              border: "1.5px solid var(--teal)",
-              cursor: "pointer",
-              transition: "background-color 200ms ease-out",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--teal-tint)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
-            }}
-          >
-            See it in action
           </button>
         </div>
       </div>
