@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "MedLingua",
+    "slug": "medlingua",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F7F5F0",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.medlingua.app",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "UIBackgroundModes": []
+      }
+    },
+    "android": {
+      "package": "com.medlingua.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#2A9D8F",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "MedLingua uses the microphone to hear what each person says so it can translate it aloud. Nothing is saved."
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
