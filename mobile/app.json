@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#F7F5F0",
+    "backgroundColor": "#F7F5F1",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.medlingua.app",
@@ -18,7 +18,7 @@
     "android": {
       "package": "com.medlingua.app",
       "adaptiveIcon": {
-        "backgroundColor": "#2A9D8F",
+        "backgroundColor": "#14574E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -36,7 +36,15 @@
         }
       ],
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "backgroundColor": "#F7F5F1"
+        }
+      ]
     ]
   }
 }

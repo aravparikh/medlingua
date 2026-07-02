@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ENGLISH, type Language } from '../config/languages';
 import { CLINICIAN_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
-import { clearSpokenAudio, synthesize, transcribe, translate, TranslationError } from '../services/openai';
+import { clearSpokenAudio, MissingKeyError, synthesize, transcribe, translate, TranslationError } from '../services/openai';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
@@ -58,8 +58,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [speaker, setSpeaker] = useState<Language | null>(null);
-  const [error, setError] = useState<'didntCatch' | 'connectionError' | 'micPermission' | null>(null);
+  const [error, setError] = useState<'didntCatch' | 'connectionError' | 'micPermission' | 'notReady' | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [retryCtx, setRetryCtx] = useState<{ uri: string; who: Language | null } | null>(null);
   const [awaitingTap, setAwaitingTap] = useState(false);
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
   const [flipped, setFlipped] = useState(false);
@@ -67,8 +68,15 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const pressStartedAt = useRef(0);
   const startingRef = useRef(false);
+  const finishingRef = useRef(false);
+  /** Set when the button is released before recording has started (see handlePressOut). */
+  const releasedEarlyRef = useRef(false);
+  const listeningStartedAtRef = useRef(0);
   const playerRef = useRef<AudioPlayer | null>(null);
+  /** Which turn the loaded player belongs to — replay must never play another turn's audio. */
+  const playerTurnIdRef = useRef<number | null>(null);
   const ttsUriRef = useRef<string | null>(null);
+  const lastPhraseAtRef = useRef(0);
   const scrollRef = useRef<ScrollView>(null);
 
   const en = t('en');
@@ -86,6 +94,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const releasePlayer = () => {
     playerRef.current?.remove();
     playerRef.current = null;
+    playerTurnIdRef.current = null;
   };
 
   const stopAllAudio = () => {
@@ -104,6 +113,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     if (startingRef.current) return;
     startingRef.current = true;
     setError(null);
+    setSetupError(null);
+    setRetryCtx(null);
+    releasedEarlyRef.current = false;
     stopAllAudio();
 
     try {
@@ -119,9 +131,16 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
+      listeningStartedAtRef.current = Date.now();
       setSpeaker(who);
       setPhase('listening');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (releasedEarlyRef.current) {
+        // The finger already lifted while we were starting up: behave like a
+        // quick tap, so the "tap when finished" hint shows.
+        releasedEarlyRef.current = false;
+        setAwaitingTap(true);
+      }
     } catch {
       setError('connectionError');
       setPhase('idle');
@@ -131,38 +150,80 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   };
 
   const finishListening = async () => {
+    if (finishingRef.current) return;
+    finishingRef.current = true;
     setAwaitingTap(false);
     setPhase('translating');
     try {
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
 
+      const heldFor = Date.now() - listeningStartedAtRef.current;
       const uri = recorder.uri;
-      if (!uri) throw new TranslationError('No recording produced', true);
-
-      const { text, detectedCode } = await transcribe(uri, speaker);
-      // In auto mode the speaker is whoever Whisper heard: English, or if not
-      // English (or unrecognized), the other language of the pair.
-      const who = speaker ?? (detectedCode === 'en' ? ENGLISH : otherLanguage);
-      const listener = who.code === 'en' ? otherLanguage : ENGLISH;
-      const translation = await translate(text, who, listener);
-
-      addTurn({ id: Date.now(), original: text, translation, speaker: who, listener });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await speak(translation, listener);
-    } catch (err) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      if (err instanceof TranslationError) {
-        setError(err.nothingHeard ? 'didntCatch' : 'connectionError');
-      } else {
-        setSetupError(err instanceof Error ? err.message : String(err));
+      if (!uri || heldFor < 500) {
+        // Too short to contain speech — friendly nudge instead of an API call.
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError('didntCatch');
+        setPhase('idle');
+        return;
       }
+      await processRecording(uri, speaker);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('connectionError');
       setPhase('idle');
+    } finally {
+      finishingRef.current = false;
     }
   };
 
+  /** Transcribe → translate → speak. Shared by the normal flow and "Try again". */
+  const processRecording = async (uri: string, who: Language | null) => {
+    setPhase('translating');
+    setError(null);
+    try {
+      const { text, detectedCode } = await transcribe(uri, who);
+      // In auto mode the speaker is whoever Whisper heard: English, or if not
+      // English (or unrecognized), the other language of the pair.
+      const speakerLang = who ?? (detectedCode === 'en' ? ENGLISH : otherLanguage);
+      const listener = speakerLang.code === 'en' ? otherLanguage : ENGLISH;
+      const translation = await translate(text, speakerLang, listener);
+
+      const turn: Turn = { id: Date.now(), original: text, translation, speaker: speakerLang, listener };
+      addTurn(turn);
+      setRetryCtx(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await speak(translation, listener, turn.id);
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setPhase('idle');
+      if (err instanceof TranslationError) {
+        if (err.nothingHeard) {
+          setError('didntCatch');
+        } else {
+          // The recording is still on disk — offer a one-tap retry.
+          setRetryCtx({ uri, who });
+          setError('connectionError');
+        }
+      } else if (err instanceof MissingKeyError) {
+        setError('notReady');
+        setSetupError(err.message);
+      } else {
+        setError('notReady');
+        setSetupError(err instanceof Error ? err.message : String(err));
+      }
+    }
+  };
+
+  /** Re-runs the last failed recording without asking the person to speak again. */
+  const retryLast = async () => {
+    if (!retryCtx || phase !== 'idle') return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await processRecording(retryCtx.uri, retryCtx.who);
+  };
+
   /** Speaks a translation aloud: OpenAI TTS first, on-device voice as fallback. */
-  const speak = async (text: string, language: Language) => {
+  const speak = async (text: string, language: Language, turnId: number) => {
     setPhase('speaking');
     const uri = ttsUriRef.current ?? (await synthesize(text, language));
     if (uri) {
@@ -170,6 +231,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       releasePlayer();
       const player = createAudioPlayer(uri);
       playerRef.current = player;
+      playerTurnIdRef.current = turnId;
       player.addListener('playbackStatusUpdate', (status) => {
         if (status.didJustFinish) setPhase('idle');
       });
@@ -183,25 +245,29 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     }
   };
 
-  /** Replays any turn. The latest turn's audio is cached; older turns re-synthesize. */
+  /** Replays any turn. The turn whose audio is loaded replays instantly; others re-synthesize. */
   const playTurn = async (turn: Turn) => {
     if (phase !== 'idle') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (turn.id === latestTurn?.id && playerRef.current) {
+    if (turn.id === playerTurnIdRef.current && playerRef.current) {
       setPhase('speaking');
       await playerRef.current.seekTo(0);
       playerRef.current.play();
     } else {
       stopAllAudio();
-      await speak(turn.translation, turn.listener);
+      await speak(turn.translation, turn.listener, turn.id);
     }
   };
 
   /** Speaks a pre-translated quick phrase — instant, no network required. */
   const usePhrase = async (phrase: Phrase, who: Language) => {
     if (phase === 'listening' || phase === 'translating') return;
+    // Rapid double-taps while the sheet closes must not add duplicate turns.
+    if (Date.now() - lastPhraseAtRef.current < 600) return;
+    lastPhraseAtRef.current = Date.now();
     setPhrasesOpen(false);
     setError(null);
+    setRetryCtx(null);
     stopAllAudio();
     const listener = who.code === 'en' ? otherLanguage : ENGLISH;
     const turn: Turn = {
@@ -213,7 +279,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     };
     addTurn(turn);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await speak(turn.translation, listener);
+    await speak(turn.translation, listener, turn.id);
   };
 
   const toggleAutoMode = () => {
@@ -238,7 +304,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   };
 
   const handlePressOut = (who: Language | null) => {
-    if (phase !== 'listening' || !sameSide(speaker, who)) return;
+    if (phase !== 'listening' || !sameSide(speaker, who)) {
+      // Released while the recorder was still starting up — note it so the
+      // "tap when finished" hint appears once listening actually begins.
+      if (startingRef.current) releasedEarlyRef.current = true;
+      return;
+    }
     const heldFor = Date.now() - pressStartedAt.current;
     if (heldFor >= HOLD_THRESHOLD_MS) {
       void finishListening();
@@ -262,9 +333,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       <View style={styles.header}>
         <Pressable
           onPress={onChangeLanguage}
+          disabled={busy}
           accessibilityRole="button"
           accessibilityLabel={`${other.changeLanguage} — ${en.changeLanguage}`}
-          style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim]}
+          style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
         >
           <Ionicons name="language" size={20} color={colors.textMuted} />
           <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
@@ -273,9 +345,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         </Pressable>
         <Pressable
           onPress={onShowAbout}
+          disabled={busy}
           accessibilityRole="button"
           accessibilityLabel={`${other.about} — ${en.about}`}
-          style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim]}
+          style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
         >
           <Ionicons name="information-circle-outline" size={20} color={colors.textMuted} />
           <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
@@ -367,20 +440,29 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           );
         })}
 
-        {setupError ? (
-          <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={26} color={colors.dangerText} />
-            <View style={styles.errorBody}>
-              <Text style={styles.errorTitle}>Setup needed</Text>
-              <Text style={styles.errorText}>{setupError}</Text>
-            </View>
-          </View>
-        ) : error ? (
+        {error ? (
           <View style={styles.errorCard} accessibilityLiveRegion="assertive">
             <Ionicons name="alert-circle" size={26} color={colors.dangerText} />
             <View style={styles.errorBody}>
-              <Text style={styles.errorText}>{other[error]}</Text>
+              <Text style={styles.errorText} accessibilityLanguage={otherLanguage.speechTag}>
+                {other[error]}
+              </Text>
               <Text style={styles.errorTextSmall}>{en[error]}</Text>
+              {setupError ? <Text style={styles.errorDetail}>{setupError}</Text> : null}
+              {error === 'connectionError' && retryCtx ? (
+                <PressableScale
+                  onPress={retryLast}
+                  disabled={phase !== 'idle'}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${other.tryAgain} — ${en.tryAgain}`}
+                  style={[styles.retryButton, phase !== 'idle' && styles.dimmed]}
+                >
+                  <Ionicons name="refresh" size={20} color={colors.dangerText} />
+                  <Text style={styles.retryText}>
+                    {other.tryAgain} · {en.tryAgain}
+                  </Text>
+                </PressableScale>
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -802,11 +884,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xxs,
   },
-  errorTitle: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.body,
-    color: colors.dangerText,
-  },
   errorText: {
     fontFamily: fonts.bodyMedium,
     fontSize: type.body,
@@ -818,6 +895,31 @@ const styles = StyleSheet.create({
     fontSize: type.small,
     color: colors.dangerText,
     lineHeight: type.small * 1.4,
+  },
+  errorDetail: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.dangerText,
+    opacity: 0.8,
+    lineHeight: type.caption * 1.4,
+  },
+  retryButton: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: colors.dangerText,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  retryText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.dangerText,
   },
   toolRow: {
     flexDirection: 'row',

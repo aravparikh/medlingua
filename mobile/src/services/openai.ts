@@ -19,6 +19,9 @@ const BASE_URL = 'https://api.openai.com/v1';
 
 const API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
+/** A hung request must never brick the conversation — abort and show a retry. */
+const REQUEST_TIMEOUT_MS = 20_000;
+
 /** Thrown for anything the user can fix by retrying (network, API hiccup). */
 export class TranslationError extends Error {
   constructor(
@@ -30,13 +33,32 @@ export class TranslationError extends Error {
   }
 }
 
-function requireKey(): string {
-  if (!API_KEY) {
-    throw new Error(
-      'Missing OpenAI API key. Copy .env.example to .env, set EXPO_PUBLIC_OPENAI_API_KEY, and restart the dev server.',
-    );
+/** Thrown when the app has no API key configured — a setup problem, not a user one. */
+export class MissingKeyError extends Error {
+  constructor() {
+    super('Missing OpenAI API key. Copy .env.example to .env, set EXPO_PUBLIC_OPENAI_API_KEY, and restart the dev server.');
   }
+}
+
+function requireKey(): string {
+  if (!API_KEY) throw new MissingKeyError();
   return API_KEY;
+}
+
+/** fetch with a hard timeout; timeouts surface as retryable TranslationErrors. */
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new TranslationError('Request timed out');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Maps Whisper's detected-language names (verbose_json) to our language codes. */
@@ -56,6 +78,47 @@ export interface TranscriptionResult {
 }
 
 /**
+ * Phrases Whisper is known to hallucinate on silence or breath noise, plus
+ * subtitle-credit spam it learned from video captions. Only treated as
+ * hallucinations when the audio also looks speech-free (see below), so a
+ * patient genuinely saying "thank you" still goes through.
+ */
+const PHANTOM_PHRASES = new Set([
+  'thank you',
+  'thanks for watching',
+  'thank you for watching',
+  'thank you so much for watching',
+  'please subscribe',
+  'gracias',
+  'gracias por ver',
+  'gracias por ver el video',
+  'ご視聴ありがとうございました',
+  '谢谢观看',
+  'спасибо за просмотр',
+  'hẹn gặp lại các bạn trong những video tiếp theo',
+]);
+
+function normalizePhantom(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?。，！？…\s]+/gu, ' ')
+    .trim();
+}
+
+interface WhisperSegment {
+  no_speech_prob?: number;
+}
+
+/** True when the transcript is almost certainly a silence hallucination. */
+function isHallucination(text: string, segments: WhisperSegment[] | undefined): boolean {
+  if (/amara\.org/i.test(text)) return true;
+  const probs = (segments ?? []).map((s) => s.no_speech_prob ?? 0);
+  const avgNoSpeech = probs.length > 0 ? probs.reduce((a, b) => a + b, 0) / probs.length : 0;
+  if (probs.length > 0 && probs.every((p) => p > 0.8)) return true;
+  return avgNoSpeech > 0.5 && PHANTOM_PHRASES.has(normalizePhantom(text));
+}
+
+/**
  * Transcribes a recorded audio file with Whisper.
  * Pass the speaker's language when it is known (two-button mode) for a more
  * accurate transcript; pass null to let Whisper detect it (auto mode).
@@ -69,30 +132,31 @@ export async function transcribe(audioUri: string, language: Language | null): P
   form.append('file', audioFile as unknown as Blob, `speech${audioFile.extension || '.m4a'}`);
   form.append('model', 'whisper-1');
   form.append('temperature', '0');
+  // verbose_json gives the detected language plus per-segment no-speech
+  // probabilities, used to reject silence hallucinations.
+  form.append('response_format', 'verbose_json');
   if (language) {
     form.append('language', language.whisper);
-  } else {
-    // verbose_json includes the detected language name.
-    form.append('response_format', 'verbose_json');
   }
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}/audio/transcriptions`, {
+    res = await fetchWithTimeout(`${BASE_URL}/audio/transcriptions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}` },
       body: form,
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
     throw new TranslationError('Network error during transcription');
   }
   if (!res.ok) {
     throw new TranslationError(`Transcription failed (${res.status}): ${await res.text()}`);
   }
 
-  const data = (await res.json()) as { text?: string; language?: string };
+  const data = (await res.json()) as { text?: string; language?: string; segments?: WhisperSegment[] };
   const trimmed = (data.text ?? '').trim();
-  if (!trimmed) {
+  if (!trimmed || isHallucination(trimmed, data.segments)) {
     throw new TranslationError('Nothing was heard', true);
   }
   const detectedCode = language
@@ -118,7 +182,7 @@ export async function translate(text: string, from: Language, to: Language): Pro
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}/chat/completions`, {
+    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${key}`,
@@ -133,7 +197,8 @@ export async function translate(text: string, from: Language, to: Language): Pro
         ],
       }),
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
     throw new TranslationError('Network error during translation');
   }
   if (!res.ok) {
@@ -161,7 +226,7 @@ export async function synthesize(text: string, language: Language): Promise<stri
   if (!API_KEY) return null;
 
   try {
-    const res = await fetch(`${BASE_URL}/audio/speech`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/audio/speech`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${API_KEY}`,

@@ -16,6 +16,7 @@ export interface UIStrings {
   tapWhenDone: string;
   didntCatch: string;
   connectionError: string;
+  notReady: string;
   tryAgain: string;
   micPermission: string;
   quickPhrases: string;
@@ -51,6 +52,7 @@ export const STRINGS: Record<string, UIStrings> = {
     tapWhenDone: 'Tap when finished',
     didntCatch: "I didn't catch that — tap and try again.",
     connectionError: "Couldn't connect — please try again.",
+    notReady: 'Translation is not available right now.',
     tryAgain: 'Try again',
     micPermission: 'MedLingua needs the microphone to hear you. Please allow microphone access in Settings.',
     quickPhrases: 'Quick phrases',
@@ -85,6 +87,7 @@ export const STRINGS: Record<string, UIStrings> = {
     tapWhenDone: 'Toque al terminar',
     didntCatch: 'No escuché bien. Toque y vuelva a intentarlo.',
     connectionError: 'No se pudo conectar. Vuelva a intentarlo.',
+    notReady: 'La traducción no está disponible en este momento.',
     tryAgain: 'Reintentar',
     micPermission: 'MedLingua necesita el micrófono para escucharle. Permita el acceso al micrófono en Ajustes.',
     quickPhrases: 'Frases rápidas',
@@ -119,6 +122,7 @@ export const STRINGS: Record<string, UIStrings> = {
     tapWhenDone: '说完后再点一下',
     didntCatch: '没有听清，请点击后再试一次。',
     connectionError: '无法连接，请再试一次。',
+    notReady: '目前无法使用翻译。',
     tryAgain: '重试',
     micPermission: 'MedLingua 需要使用麦克风才能听到您说话。请在“设置”中允许使用麦克风。',
     quickPhrases: '常用短语',
@@ -153,6 +157,7 @@ export const STRINGS: Record<string, UIStrings> = {
     tapWhenDone: 'Chạm khi nói xong',
     didntCatch: 'Tôi chưa nghe rõ — hãy chạm và thử lại.',
     connectionError: 'Không thể kết nối — vui lòng thử lại.',
+    notReady: 'Hiện không thể dịch được.',
     tryAgain: 'Thử lại',
     micPermission: 'MedLingua cần micrô để nghe bạn nói. Vui lòng cho phép truy cập micrô trong Cài đặt.',
     quickPhrases: 'Câu thường dùng',
@@ -187,6 +192,7 @@ export const STRINGS: Record<string, UIStrings> = {
     tapWhenDone: 'Нажмите, когда закончите',
     didntCatch: 'Я не расслышал — нажмите и попробуйте ещё раз.',
     connectionError: 'Не удалось подключиться — попробуйте ещё раз.',
+    notReady: 'Перевод сейчас недоступен.',
     tryAgain: 'Попробовать снова',
     micPermission: 'MedLingua нужен микрофон, чтобы вас слышать. Разрешите доступ к микрофону в Настройках.',
     quickPhrases: 'Частые фразы',

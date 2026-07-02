@@ -55,7 +55,6 @@ export const colors = {
   secondary: palette.indigo700,
   secondaryPressed: palette.indigo900,
   onSecondary: palette.white,
-  secondaryTint: palette.indigo100,
 
   // Brand accent — decorative highlights only (fails AAA for small text on white).
   accent: palette.teal500,
@@ -148,7 +147,6 @@ export const shadows = {
 export const motion = {
   fast: 150,
   base: 220,
-  slow: 320,
 } as const;
 
 /**
