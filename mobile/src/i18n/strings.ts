@@ -19,6 +19,13 @@ export interface UIStrings {
   notReady: string;
   tryAgain: string;
   micPermission: string;
+  mayHaveMisheard: string;
+  aiDisclaimer: string;
+  ok: string;
+  emergency: string;
+  painScaleLabel: string;
+  /** Template — {n} is replaced with the chosen 0-10 pain number. */
+  painIs: string;
   quickPhrases: string;
   close: string;
   auto: string;
@@ -49,6 +56,12 @@ export const STRINGS: Record<string, UIStrings> = {
     notReady: 'Translation is not available right now.',
     tryAgain: 'Try again',
     micPermission: 'MedLingua needs the microphone to hear you. Please allow microphone access in Settings.',
+    mayHaveMisheard: 'I may have misheard — please try again.',
+    aiDisclaimer: 'AI translation can make mistakes. For important medical decisions, ask for a certified interpreter.',
+    ok: 'OK',
+    emergency: 'Emergency',
+    painScaleLabel: 'Pain scale',
+    painIs: 'My pain is {n} out of 10.',
     quickPhrases: 'Quick phrases',
     close: 'Close',
     auto: 'Auto',
@@ -78,6 +91,12 @@ export const STRINGS: Record<string, UIStrings> = {
     notReady: 'La traducción no está disponible en este momento.',
     tryAgain: 'Reintentar',
     micPermission: 'MedLingua necesita el micrófono para escucharle. Permita el acceso al micrófono en Ajustes.',
+    mayHaveMisheard: 'Puede que no haya oído bien. Inténtelo de nuevo.',
+    aiDisclaimer: 'La traducción con IA puede cometer errores. Para decisiones médicas importantes, pida un intérprete certificado.',
+    ok: 'Entendido',
+    emergency: 'Emergencia',
+    painScaleLabel: 'Escala de dolor',
+    painIs: 'Mi dolor es {n} de 10.',
     quickPhrases: 'Frases rápidas',
     close: 'Cerrar',
     auto: 'Automático',
@@ -107,6 +126,12 @@ export const STRINGS: Record<string, UIStrings> = {
     notReady: '目前无法使用翻译。',
     tryAgain: '重试',
     micPermission: 'MedLingua 需要使用麦克风才能听到您说话。请在“设置”中允许使用麦克风。',
+    mayHaveMisheard: '我可能没有听清，请再试一次。',
+    aiDisclaimer: 'AI 翻译可能出错。涉及重要医疗决定时，请要求专业医疗口译员。',
+    ok: '好的',
+    emergency: '紧急情况',
+    painScaleLabel: '疼痛等级',
+    painIs: '我的疼痛程度是{n}分（满分10分）。',
     quickPhrases: '常用短语',
     close: '关闭',
     auto: '自动',
@@ -136,6 +161,12 @@ export const STRINGS: Record<string, UIStrings> = {
     notReady: 'Hiện không thể dịch được.',
     tryAgain: 'Thử lại',
     micPermission: 'MedLingua cần micrô để nghe bạn nói. Vui lòng cho phép truy cập micrô trong Cài đặt.',
+    mayHaveMisheard: 'Có thể tôi đã nghe nhầm — hãy thử lại.',
+    aiDisclaimer: 'Bản dịch AI có thể sai. Với các quyết định y tế quan trọng, hãy yêu cầu thông dịch viên có chứng nhận.',
+    ok: 'Đã hiểu',
+    emergency: 'Khẩn cấp',
+    painScaleLabel: 'Mức độ đau',
+    painIs: 'Cơn đau của tôi là {n} trên 10.',
     quickPhrases: 'Câu thường dùng',
     close: 'Đóng',
     auto: 'Tự động',
@@ -165,6 +196,12 @@ export const STRINGS: Record<string, UIStrings> = {
     notReady: 'Перевод сейчас недоступен.',
     tryAgain: 'Попробовать снова',
     micPermission: 'MedLingua нужен микрофон, чтобы вас слышать. Разрешите доступ к микрофону в Настройках.',
+    mayHaveMisheard: 'Возможно, я расслышал неверно — попробуйте ещё раз.',
+    aiDisclaimer: 'ИИ-перевод может ошибаться. Для важных медицинских решений попросите сертифицированного переводчика.',
+    ok: 'Понятно',
+    emergency: 'Срочно',
+    painScaleLabel: 'Шкала боли',
+    painIs: 'Моя боль — {n} из 10.',
     quickPhrases: 'Частые фразы',
     close: 'Закрыть',
     auto: 'Авто',

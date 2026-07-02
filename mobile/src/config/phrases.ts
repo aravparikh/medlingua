@@ -85,6 +85,57 @@ export const CLINICIAN_PHRASES: Phrase[] = [
   },
 ];
 
+/**
+ * Emergency phrases, spoken by the patient → translated into English.
+ * Shown first in the sheet with urgent styling; work fully offline.
+ */
+export const EMERGENCY_PHRASES: Phrase[] = [
+  {
+    id: 'cant-breathe',
+    icon: 'pulse-outline',
+    text: {
+      en: "I can't breathe.",
+      es: 'No puedo respirar.',
+      zh: '我无法呼吸。',
+      vi: 'Tôi không thở được.',
+      ru: 'Я не могу дышать.',
+    },
+  },
+  {
+    id: 'chest-pain',
+    icon: 'heart-outline',
+    text: {
+      en: 'I have chest pain.',
+      es: 'Me duele el pecho.',
+      zh: '我胸口疼。',
+      vi: 'Tôi bị đau ngực.',
+      ru: 'У меня болит в груди.',
+    },
+  },
+  {
+    id: 'need-help',
+    icon: 'hand-right-outline',
+    text: {
+      en: 'I need help now.',
+      es: 'Necesito ayuda ahora.',
+      zh: '我现在需要帮助。',
+      vi: 'Tôi cần giúp đỡ ngay bây giờ.',
+      ru: 'Мне срочно нужна помощь.',
+    },
+  },
+  {
+    id: 'call-family',
+    icon: 'call-outline',
+    text: {
+      en: 'Please call my family.',
+      es: 'Llame a mi familia, por favor.',
+      zh: '请打电话给我的家人。',
+      vi: 'Xin hãy gọi cho gia đình tôi.',
+      ru: 'Пожалуйста, позвоните моей семье.',
+    },
+  },
+];
+
 /** Spoken by the patient → translated into English. */
 export const PATIENT_PHRASES: Phrase[] = [
   {

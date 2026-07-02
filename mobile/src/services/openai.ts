@@ -75,6 +75,9 @@ export interface TranscriptionResult {
   text: string;
   /** Our language code for what Whisper heard; null when it couldn't be mapped. */
   detectedCode: string | null;
+  /** True when Whisper itself wasn't confident — better to ask the person to
+   * repeat than to confidently speak a possibly-wrong translation. */
+  lowConfidence: boolean;
 }
 
 /**
@@ -107,6 +110,7 @@ function normalizePhantom(text: string): string {
 
 interface WhisperSegment {
   no_speech_prob?: number;
+  avg_logprob?: number;
 }
 
 /** True when the transcript is almost certainly a silence hallucination. */
@@ -162,7 +166,17 @@ export async function transcribe(audioUri: string, language: Language | null): P
   const detectedCode = language
     ? language.code
     : (data.language && WHISPER_NAME_TO_CODE[data.language.toLowerCase()]) || null;
-  return { text: trimmed, detectedCode };
+
+  // Confidence gate: avg_logprob near 0 is clear speech; below ~-1.2 Whisper
+  // was largely guessing. Threshold is deliberately lenient — accented speech
+  // in a quiet room typically sits around -0.3 to -0.7.
+  const logprobs = (data.segments ?? [])
+    .map((seg) => seg.avg_logprob)
+    .filter((v): v is number => typeof v === 'number');
+  const meanLogprob = logprobs.length > 0 ? logprobs.reduce((a, b) => a + b, 0) / logprobs.length : 0;
+  const lowConfidence = meanLogprob < -1.2;
+
+  return { text: trimmed, detectedCode, lowConfidence };
 }
 
 /** Translates a transcript between the two active languages with GPT-4o. */

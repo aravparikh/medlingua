@@ -48,6 +48,16 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         <Text style={styles.body}>{en.aboutBody}</Text>
       </View>
 
+      <View style={styles.disclaimerCard}>
+        <Ionicons name="information-circle" size={22} color={colors.secondary} />
+        <View style={styles.privacyBody}>
+          <Text style={styles.privacyText} accessibilityLanguage={otherLanguage.speechTag}>
+            {other.aiDisclaimer}
+          </Text>
+          <Text style={styles.privacyTextSmall}>{en.aiDisclaimer}</Text>
+        </View>
+      </View>
+
       <View style={styles.privacyCard}>
         <Ionicons name="lock-closed" size={22} color={colors.primary} />
         <View style={styles.privacyBody}>
@@ -110,6 +120,14 @@ const styles = StyleSheet.create({
     fontSize: type.body,
     color: colors.text,
     lineHeight: type.body * 1.5,
+  },
+  disclaimerCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceTintSecondary,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
   },
   privacyCard: {
     flexDirection: 'row',

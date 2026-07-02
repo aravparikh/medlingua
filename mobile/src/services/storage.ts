@@ -7,6 +7,7 @@ import { File, Paths } from 'expo-file-system';
 interface Prefs {
   languageCode?: string;
   autoMode?: boolean;
+  disclaimerSeen?: boolean;
 }
 
 const prefsFile = () => new File(Paths.document, 'medlingua-prefs.json');

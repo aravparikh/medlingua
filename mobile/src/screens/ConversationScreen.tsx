@@ -13,7 +13,7 @@ import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ENGLISH, type Language } from '../config/languages';
-import { CLINICIAN_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
+import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
 import { clearSpokenAudio, MissingKeyError, synthesize, transcribe, translate, TranslationError } from '../services/openai';
 import { loadPrefs, savePrefs } from '../services/storage';
@@ -58,13 +58,16 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [speaker, setSpeaker] = useState<Language | null>(null);
-  const [error, setError] = useState<'didntCatch' | 'connectionError' | 'micPermission' | 'notReady' | null>(null);
+  const [error, setError] = useState<
+    'didntCatch' | 'connectionError' | 'micPermission' | 'notReady' | 'mayHaveMisheard' | null
+  >(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [retryCtx, setRetryCtx] = useState<{ uri: string; who: Language | null } | null>(null);
   const [awaitingTap, setAwaitingTap] = useState(false);
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
   const [flipped, setFlipped] = useState(false);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
   const startingRef = useRef(false);
@@ -192,7 +195,15 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setPhase('translating');
     setError(null);
     try {
-      const { text, detectedCode } = await transcribe(uri, who);
+      const { text, detectedCode, lowConfidence } = await transcribe(uri, who);
+      if (lowConfidence) {
+        // Whisper wasn't sure what it heard. Asking to repeat beats
+        // confidently speaking a possibly-wrong translation.
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError('mayHaveMisheard');
+        setPhase('idle');
+        return;
+      }
       // In auto mode the speaker is whoever Whisper heard: English, or if not
       // English (or unrecognized), the other language of the pair.
       const speakerLang = who ?? (detectedCode === 'en' ? ENGLISH : otherLanguage);
@@ -300,6 +311,24 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await speak(turn.translation, listener, turn.id);
   };
 
+  /** Speaks "My pain is n out of 10" for the tapped number — patient side. */
+  const usePainNumber = async (n: number) => {
+    const phrase: Phrase = {
+      id: `pain-${n}`,
+      icon: 'speedometer-outline',
+      text: Object.fromEntries(
+        ['en', otherLanguage.code].map((code) => [code, t(code).painIs.replace('{n}', String(n))]),
+      ),
+    };
+    await usePhrase(phrase, otherLanguage);
+  };
+
+  const dismissDisclaimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowDisclaimer(false);
+    savePrefs({ disclaimerSeen: true });
+  };
+
   const toggleAutoMode = () => {
     if (phase === 'listening' || phase === 'translating') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -384,6 +413,29 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </View>
         </Pressable>
       </View>
+
+      {/* First-session honesty banner: AI translation has limits. */}
+      {showDisclaimer ? (
+        <View style={styles.disclaimer}>
+          <Ionicons name="information-circle" size={22} color={colors.secondary} />
+          <View style={styles.disclaimerBody}>
+            <Text style={styles.disclaimerText} accessibilityLanguage={otherLanguage.speechTag}>
+              {other.aiDisclaimer}
+            </Text>
+            <Text style={styles.disclaimerTextEn}>{en.aiDisclaimer}</Text>
+          </View>
+          <Pressable
+            onPress={dismissDisclaimer}
+            accessibilityRole="button"
+            accessibilityLabel={`${other.ok} — ${en.ok}`}
+            style={({ pressed }) => [styles.disclaimerOk, pressed && styles.pressedDim]}
+          >
+            <Text style={styles.disclaimerOkText}>
+              {other.ok === en.ok ? en.ok : `${other.ok} · ${en.ok}`}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* The conversation thread. */}
       <ScrollView
@@ -682,6 +734,53 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.sheetContent}>
+              <Text style={[styles.sheetSection, styles.sheetSectionUrgent]} importantForAccessibility="no">
+                {other.emergency} · {en.emergency}
+              </Text>
+              {EMERGENCY_PHRASES.map((phrase) => (
+                <PressableScale
+                  key={phrase.id}
+                  onPress={() => usePhrase(phrase, otherLanguage)}
+                  accessibilityRole="button"
+                  accessibilityLabel={phrase.text[otherLanguage.code]}
+                  accessibilityLanguage={otherLanguage.speechTag}
+                  style={styles.phraseRow}
+                >
+                  <View style={[styles.phraseIconCircle, styles.phraseIconCircleUrgent]} importantForAccessibility="no">
+                    <Ionicons name={phrase.icon} size={24} color={colors.dangerText} />
+                  </View>
+                  <View style={styles.phraseTextWrap}>
+                    <Text style={styles.phrasePrimary} accessibilityLanguage={otherLanguage.speechTag}>
+                      {phrase.text[otherLanguage.code]}
+                    </Text>
+                    <Text style={styles.phraseSecondary}>{phrase.text.en}</Text>
+                  </View>
+                  <Ionicons name="volume-high" size={22} color={colors.textFaint} />
+                </PressableScale>
+              ))}
+
+              <Text style={styles.sheetSection} importantForAccessibility="no">
+                {other.painScaleLabel} · {en.painScaleLabel}
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.painRow}
+              >
+                {Array.from({ length: 11 }, (_, n) => (
+                  <PressableScale
+                    key={n}
+                    onPress={() => usePainNumber(n)}
+                    accessibilityRole="button"
+                    accessibilityLabel={other.painIs.replace('{n}', String(n))}
+                    accessibilityLanguage={otherLanguage.speechTag}
+                    style={[styles.painChip, n >= 7 && styles.painChipHigh]}
+                  >
+                    <Text style={[styles.painChipText, n >= 7 && styles.painChipTextHigh]}>{n}</Text>
+                  </PressableScale>
+                ))}
+              </ScrollView>
+
               <Text style={styles.sheetSection} importantForAccessibility="no">
                 English → {otherLanguage.nativeName}
               </Text>
@@ -1155,6 +1254,44 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingBottom: spacing.md,
   },
+  disclaimer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceTintSecondary,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  disclaimerBody: {
+    flex: 1,
+    gap: 2,
+  },
+  disclaimerText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.text,
+    lineHeight: type.caption * 1.4,
+  },
+  disclaimerTextEn: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 12 * 1.4,
+  },
+  disclaimerOk: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  disclaimerOkText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.secondary,
+  },
   sheetSection: {
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
@@ -1183,6 +1320,40 @@ const styles = StyleSheet.create({
   },
   phraseIconCircleSecondary: {
     backgroundColor: colors.surfaceTintSecondary,
+  },
+  phraseIconCircleUrgent: {
+    backgroundColor: colors.dangerBg,
+  },
+  sheetSectionUrgent: {
+    color: colors.dangerText,
+  },
+  painRow: {
+    gap: spacing.xs,
+    paddingVertical: spacing.xxs,
+    paddingRight: spacing.md,
+  },
+  painChip: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.card,
+  },
+  painChipHigh: {
+    borderColor: colors.listening,
+    borderWidth: 2,
+  },
+  painChipText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.button,
+    color: colors.text,
+  },
+  painChipTextHigh: {
+    color: colors.dangerText,
   },
   phraseTextWrap: {
     flex: 1,
