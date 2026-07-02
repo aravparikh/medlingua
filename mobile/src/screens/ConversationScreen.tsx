@@ -76,6 +76,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   /** Which turn the loaded player belongs to — replay must never play another turn's audio. */
   const playerTurnIdRef = useRef<number | null>(null);
   const ttsUriRef = useRef<string | null>(null);
+  /** Bumped whenever current speech is superseded (new action or unmount), so
+   * a synthesize request still in flight can't start playing stale audio. */
+  const speakSessionRef = useRef(0);
   const lastPhraseAtRef = useRef(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -85,6 +88,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   useEffect(() => {
     return () => {
+      speakSessionRef.current += 1;
       playerRef.current?.remove();
       Speech.stop();
       clearSpokenAudio();
@@ -98,6 +102,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   };
 
   const stopAllAudio = () => {
+    speakSessionRef.current += 1;
     releasePlayer();
     Speech.stop();
     clearSpokenAudio();
@@ -229,8 +234,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   /** Speaks a translation aloud: OpenAI TTS first, on-device voice as fallback. */
   const speak = async (text: string, language: Language, turnId: number) => {
+    const session = speakSessionRef.current;
     setPhase('speaking');
     const uri = ttsUriRef.current ?? (await synthesize(text, language));
+    // Superseded while synthesizing (new recording, phrase, or screen change):
+    // whoever superseded us owns the audio and the phase now — do nothing.
+    if (speakSessionRef.current !== session) return;
     if (uri) {
       ttsUriRef.current = uri;
       releasePlayer();
@@ -244,8 +253,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     } else {
       Speech.speak(text, {
         language: language.speechTag,
-        onDone: () => setPhase('idle'),
-        onError: () => setPhase('idle'),
+        onDone: () => {
+          if (speakSessionRef.current === session) setPhase('idle');
+        },
+        onError: () => {
+          if (speakSessionRef.current === session) setPhase('idle');
+        },
       });
     }
   };
