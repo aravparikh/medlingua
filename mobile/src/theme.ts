@@ -26,7 +26,7 @@ export const palette = {
   white: '#FFFFFF',
   ink: '#1F2D2A',
   inkMuted: '#54645F',
-  inkFaint: '#7A8783',
+  inkFaint: '#5C6B66',
   sand: '#E7E4DB',
   sandStrong: '#D4D0C4',
   clay900: '#7A2E14',
@@ -83,8 +83,8 @@ export const fonts = {
 
 /**
  * Type scale. Base body ~20pt for arm's-length reading; translation output 34pt.
- * Dynamic Type scales further (maxFontSizeMultiplier caps at 1.4–1.6 where
- * layout would otherwise break).
+ * Dynamic Type scales everything up to 200% (WCAG 1.4.4); layouts use
+ * minHeights and wrapping so they grow instead of clipping.
  */
 export const type = {
   caption: 14,

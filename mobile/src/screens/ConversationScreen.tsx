@@ -387,10 +387,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="language" size={20} color={colors.textMuted} />
           <View>
-            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
               {other.languageShort}
             </Text>
-            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
               {en.languageShort}
             </Text>
           </View>
@@ -404,10 +404,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="information-circle-outline" size={20} color={colors.textMuted} />
           <View>
-            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
               {other.aboutShort}
             </Text>
-            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
               {en.aboutShort}
             </Text>
           </View>
@@ -497,13 +497,13 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 >
                   <Ionicons name="volume-high" size={20} color={colors.primary} />
                   <View style={styles.turnButtonLabels}>
-                    <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={1.5}>
+                    <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                       {isLatest && phase === 'speaking'
                         ? t(turn.listener.code).playing
                         : t(turn.listener.code).playAgain}
                     </Text>
                     {turn.listener.code !== 'en' ? (
-                      <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.5}>
+                      <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
                         {isLatest && phase === 'speaking' ? en.playing : en.playAgain}
                       </Text>
                     ) : null}
@@ -523,11 +523,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   >
                     <Ionicons name="swap-vertical" size={20} color={colors.primary} />
                     <View style={styles.turnButtonLabels}>
-                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={1.5}>
+                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                         {t(turn.listener.code).flip}
                       </Text>
                       {turn.listener.code !== 'en' ? (
-                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.5}>
+                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
                           {en.flip}
                         </Text>
                       ) : null}
@@ -614,10 +614,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="chatbubbles-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={2}>
               {other.quickPhrases}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
               {en.quickPhrases}
             </Text>
           </View>
@@ -636,7 +636,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <Text
               style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
               allowFontScaling
-              maxFontSizeMultiplier={1.3}
+              maxFontSizeMultiplier={2}
             >
               {other.auto}
             </Text>
@@ -644,7 +644,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               <Text
                 style={[styles.toolButtonTextEn, autoMode && styles.toolButtonTextOn]}
                 allowFontScaling
-                maxFontSizeMultiplier={1.3}
+                maxFontSizeMultiplier={2}
               >
                 {en.auto}
               </Text>

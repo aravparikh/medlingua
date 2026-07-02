@@ -30,7 +30,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
       </View>
 
       <View style={styles.prompts} accessibilityRole="header">
-        <Text style={styles.promptMain} allowFontScaling maxFontSizeMultiplier={1.5}>
+        <Text style={styles.promptMain} allowFontScaling maxFontSizeMultiplier={2}>
           {STRINGS.en.chooseLanguage}
         </Text>
         {LANGUAGES.map((l) => (
@@ -38,7 +38,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
             key={l.code}
             style={styles.prompt}
             allowFontScaling
-            maxFontSizeMultiplier={1.5}
+            maxFontSizeMultiplier={2}
             accessibilityLanguage={l.speechTag}
           >
             {STRINGS[l.code].chooseLanguage}
@@ -67,11 +67,11 @@ export function LanguageSelectScreen({ onSelect }: Props) {
             <Text
               style={[styles.nativeName, { fontFamily: displayFontFor(language.code) }]}
               allowFontScaling
-              maxFontSizeMultiplier={1.4}
+              maxFontSizeMultiplier={2}
             >
               {language.nativeName}
             </Text>
-            <Text style={styles.pairing} allowFontScaling maxFontSizeMultiplier={1.4}>
+            <Text style={styles.pairing} allowFontScaling maxFontSizeMultiplier={2}>
               {language.nativeName}  ·  English
             </Text>
           </View>
