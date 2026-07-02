@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { colors, radius, spacing } from '../theme';
+import { colors, motion, radius, spacing } from '../theme';
 
 /**
  * A shimmering placeholder bar. Composed into skeleton cards so "working"
@@ -18,13 +18,13 @@ export function SkeletonBar({ width, height = 18 }: { width: number | `${number}
       Animated.sequence([
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 700,
+          duration: motion.shimmer,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0.45,
-          duration: 700,
+          duration: motion.shimmer,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),

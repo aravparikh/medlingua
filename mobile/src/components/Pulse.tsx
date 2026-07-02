@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { motion } from '../theme';
 
 /**
  * A soft, continuous pulse shown while listening, so the speaker always knows
@@ -21,7 +22,7 @@ export function Pulse({ color, size = 44 }: { color: string; size?: number }) {
         Animated.sequence([
           Animated.timing(scale, {
             toValue: 1.9,
-            duration: 1100,
+            duration: motion.pulse,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
@@ -30,7 +31,7 @@ export function Pulse({ color, size = 44 }: { color: string; size?: number }) {
         Animated.sequence([
           Animated.timing(opacity, {
             toValue: 0,
-            duration: 1100,
+            duration: motion.pulse,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),

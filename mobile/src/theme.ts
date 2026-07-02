@@ -147,6 +147,10 @@ export const shadows = {
 export const motion = {
   fast: 150,
   base: 220,
+  /** One half-cycle of the Skeleton shimmer loop. */
+  shimmer: 700,
+  /** One half-cycle of the listening Pulse loop. */
+  pulse: 1100,
 } as const;
 
 /**

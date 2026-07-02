@@ -136,10 +136,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       setPhase('listening');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (releasedEarlyRef.current) {
-        // The finger already lifted while we were starting up: behave like a
-        // quick tap, so the "tap when finished" hint shows.
+        // The finger already lifted while we were still starting up: don't
+        // leave the mic recording indefinitely — stop it cleanly now, the
+        // same as a normal release. `who` is passed explicitly since the
+        // `speaker` state from setSpeaker above hasn't committed yet.
         releasedEarlyRef.current = false;
-        setAwaitingTap(true);
+        void finishListening(who);
       }
     } catch {
       setError('connectionError');
@@ -149,7 +151,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     }
   };
 
-  const finishListening = async () => {
+  /** `who` defaults to the current speaker state; callers that stop a recording
+   * before that state has committed (see startListening's early-release path)
+   * must pass it explicitly to avoid attributing the turn to a stale speaker. */
+  const finishListening = async (who: Language | null = speaker) => {
     if (finishingRef.current) return;
     finishingRef.current = true;
     setAwaitingTap(false);
@@ -167,7 +172,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         setPhase('idle');
         return;
       }
-      await processRecording(uri, speaker);
+      await processRecording(uri, who);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError('connectionError');
@@ -448,7 +453,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 {other[error]}
               </Text>
               <Text style={styles.errorTextSmall}>{en[error]}</Text>
-              {setupError ? <Text style={styles.errorDetail}>{setupError}</Text> : null}
+              {__DEV__ && setupError ? <Text style={styles.errorDetail}>{setupError}</Text> : null}
               {error === 'connectionError' && retryCtx ? (
                 <PressableScale
                   onPress={retryLast}
