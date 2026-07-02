@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
   AudioModule,
   createAudioPlayer,
@@ -67,6 +67,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
   const [flipped, setFlipped] = useState(false);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
+  const [typedDraft, setTypedDraft] = useState('');
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
@@ -311,6 +313,38 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await speak(turn.translation, listener, turn.id);
   };
 
+  /** Translate + speak typed text — the fallback for loud rooms or a failing mic. */
+  const useTypedText = async (who: Language) => {
+    const text = typedDraft.trim();
+    if (!text || phase === 'listening' || phase === 'translating') return;
+    setTypeOpen(false);
+    setTypedDraft('');
+    setError(null);
+    setRetryCtx(null);
+    stopAllAudio();
+    setPhase('translating');
+    try {
+      const listener = who.code === 'en' ? otherLanguage : ENGLISH;
+      const translation = await translate(text, who, listener);
+      const turn: Turn = { id: Date.now(), original: text, translation, speaker: who, listener };
+      addTurn(turn);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await speak(translation, listener, turn.id);
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setPhase('idle');
+      if (err instanceof MissingKeyError) {
+        setError('notReady');
+        setSetupError(err.message);
+      } else if (err instanceof TranslationError) {
+        setError('connectionError');
+      } else {
+        setError('notReady');
+        setSetupError(err instanceof Error ? err.message : String(err));
+      }
+    }
+  };
+
   /** Speaks "My pain is n out of 10" for the tapped number — patient side. */
   const usePainNumber = async (n: number) => {
     const phrase: Phrase = {
@@ -509,6 +543,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     ) : null}
                   </View>
                 </PressableScale>
+                {!isLatest && <View style={styles.turnActionSpacer} />}
                 {isLatest && (
                   <PressableScale
                     onPress={() => {
@@ -521,7 +556,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     flexFill
                     style={[styles.turnButton, flipped && styles.turnButtonActive]}
                   >
-                    <Ionicons name="swap-vertical" size={20} color={colors.primary} />
+                    <Ionicons name="eye-outline" size={20} color={colors.primary} />
                     <View style={styles.turnButtonLabels}>
                       <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                         {t(turn.listener.code).flip}
@@ -619,6 +654,27 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             </Text>
             <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
               {en.quickPhrases}
+            </Text>
+          </View>
+        </PressableScale>
+        <PressableScale
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setTypeOpen(true);
+          }}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.typeLabel} — ${en.typeLabel}`}
+          flexFill
+          style={[styles.toolButton, busy && styles.dimmed]}
+        >
+          <Ionicons name="create-outline" size={20} color={colors.text} />
+          <View style={styles.toolButtonLabels}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+              {other.typeLabel}
+            </Text>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+              {en.typeLabel}
             </Text>
           </View>
         </PressableScale>
@@ -833,6 +889,82 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </View>
         </View>
       </Modal>
+
+      {/* Typed-text fallback: for loud rooms or when the mic fails. */}
+      <Modal visible={typeOpen} animationType="slide" transparent onRequestClose={() => setTypeOpen(false)}>
+        <KeyboardAvoidingView
+          style={styles.sheetBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable
+            style={styles.sheetDismiss}
+            onPress={() => setTypeOpen(false)}
+            accessibilityLabel={`${other.close} — ${en.close}`}
+          />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} importantForAccessibility="no" />
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetTitleRow}>
+                <Ionicons name="create" size={24} color={colors.primary} />
+                <View style={styles.sheetTitleWrap}>
+                  <Text style={styles.sheetTitle} accessibilityRole="header">
+                    {other.typeLabel}
+                  </Text>
+                  <Text style={styles.sheetTitleEn}>{en.typeLabel}</Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={() => setTypeOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel={`${other.close} — ${en.close}`}
+                style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
+              >
+                <Ionicons name="close" size={22} color={colors.primary} />
+                <Text style={styles.sheetCloseText}>
+                  {other.close} · {en.close}
+                </Text>
+              </Pressable>
+            </View>
+            <View style={styles.typeContent}>
+              <TextInput
+                value={typedDraft}
+                onChangeText={setTypedDraft}
+                placeholder={`${other.typePlaceholder} · ${en.typePlaceholder}`}
+                placeholderTextColor={colors.textFaint}
+                multiline
+                autoFocus
+                accessibilityLabel={`${other.typeLabel} — ${en.typeLabel}`}
+                style={styles.typeInput}
+              />
+              <View style={styles.typeSendRow}>
+                <PressableScale
+                  onPress={() => useTypedText(ENGLISH)}
+                  disabled={!typedDraft.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel="English"
+                  flexFill
+                  style={[styles.typeSend, { backgroundColor: colors.primary }, !typedDraft.trim() && styles.dimmed]}
+                >
+                  <Text style={styles.typeSendText}>English</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.onPrimary} />
+                </PressableScale>
+                <PressableScale
+                  onPress={() => useTypedText(otherLanguage)}
+                  disabled={!typedDraft.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel={otherLanguage.nativeName}
+                  accessibilityLanguage={otherLanguage.speechTag}
+                  flexFill
+                  style={[styles.typeSend, { backgroundColor: colors.secondary }, !typedDraft.trim() && styles.dimmed]}
+                >
+                  <Text style={styles.typeSendText}>{otherLanguage.nativeName}</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.onPrimary} />
+                </PressableScale>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -885,7 +1017,8 @@ const styles = StyleSheet.create({
   },
   threadEmpty: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.sm,
   },
   hint: {
     alignItems: 'center',
@@ -1013,7 +1146,9 @@ const styles = StyleSheet.create({
   },
   flippedBlock: {
     transform: [{ rotate: '180deg' }],
-    paddingVertical: spacing.sm,
+    backgroundColor: colors.surfaceTint,
+    borderRadius: radius.md,
+    padding: spacing.sm,
   },
   translationLabel: {
     fontFamily: fonts.bodyMedium,
@@ -1051,6 +1186,9 @@ const styles = StyleSheet.create({
   },
   turnButtonActive: {
     backgroundColor: colors.primaryTint,
+  },
+  turnActionSpacer: {
+    flex: 1,
   },
   turnButtonLabels: {
     flexShrink: 1,
@@ -1128,16 +1266,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   toolButton: {
-    minHeight: 56,
-    flexDirection: 'row',
+    minHeight: MIN_TARGET,
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.xxs,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: spacing.xs,
   },
   toolButtonOn: {
     borderColor: colors.primary,
@@ -1150,7 +1289,7 @@ const styles = StyleSheet.create({
   },
   toolButtonText: {
     fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
+    fontSize: type.caption,
     color: colors.text,
     textAlign: 'center',
     flexShrink: 1,
@@ -1291,6 +1430,41 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
     color: colors.secondary,
+  },
+  typeContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  typeInput: {
+    minHeight: 104,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    fontFamily: fonts.body,
+    fontSize: type.body,
+    color: colors.text,
+    textAlignVertical: 'top',
+  },
+  typeSendRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  typeSend: {
+    minHeight: MIN_TARGET,
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  typeSendText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.onPrimary,
   },
   sheetSection: {
     fontFamily: fonts.bodyMedium,

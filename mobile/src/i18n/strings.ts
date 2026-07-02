@@ -31,6 +31,8 @@ export interface UIStrings {
   auto: string;
   speakAuto: string;
   flip: string;
+  typeLabel: string;
+  typePlaceholder: string;
   privacyLine: string;
   changeLanguage: string;
   languageShort: string;
@@ -66,7 +68,9 @@ export const STRINGS: Record<string, UIStrings> = {
     close: 'Close',
     auto: 'Auto',
     speakAuto: 'Speak',
-    flip: 'Flip',
+    flip: 'Show',
+    typeLabel: 'Type',
+    typePlaceholder: 'Type here…',
     privacyLine: 'Your conversation is private — nothing is saved.',
     changeLanguage: 'Change language',
     languageShort: 'Language',
@@ -101,7 +105,9 @@ export const STRINGS: Record<string, UIStrings> = {
     close: 'Cerrar',
     auto: 'Automático',
     speakAuto: 'Hablar',
-    flip: 'Girar',
+    flip: 'Mostrar',
+    typeLabel: 'Escribir',
+    typePlaceholder: 'Escriba aquí…',
     privacyLine: 'Su conversación es privada — no se guarda nada.',
     changeLanguage: 'Cambiar idioma',
     languageShort: 'Idioma',
@@ -136,7 +142,9 @@ export const STRINGS: Record<string, UIStrings> = {
     close: '关闭',
     auto: '自动',
     speakAuto: '说话',
-    flip: '翻转',
+    flip: '展示',
+    typeLabel: '输入',
+    typePlaceholder: '在这里输入…',
     privacyLine: '您的对话是私密的——不会保存任何内容。',
     changeLanguage: '更换语言',
     languageShort: '语言',
@@ -171,7 +179,9 @@ export const STRINGS: Record<string, UIStrings> = {
     close: 'Đóng',
     auto: 'Tự động',
     speakAuto: 'Nói',
-    flip: 'Lật',
+    flip: 'Cho xem',
+    typeLabel: 'Nhập',
+    typePlaceholder: 'Nhập tại đây…',
     privacyLine: 'Cuộc trò chuyện của bạn là riêng tư — không có gì được lưu lại.',
     changeLanguage: 'Đổi ngôn ngữ',
     languageShort: 'Ngôn ngữ',
@@ -206,7 +216,9 @@ export const STRINGS: Record<string, UIStrings> = {
     close: 'Закрыть',
     auto: 'Авто',
     speakAuto: 'Говорите',
-    flip: 'Перевернуть',
+    flip: 'Показать',
+    typeLabel: 'Печатать',
+    typePlaceholder: 'Введите здесь…',
     privacyLine: 'Ваш разговор конфиденциален — ничего не сохраняется.',
     changeLanguage: 'Сменить язык',
     languageShort: 'Язык',
