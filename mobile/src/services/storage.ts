@@ -1,12 +1,11 @@
 import { File, Paths } from 'expo-file-system';
 
 /**
- * Tiny on-device preferences store (selected language, onboarding-seen).
+ * Tiny on-device preferences store (selected language, auto mode).
  * Deliberately not a database: conversations are never written anywhere.
  */
 interface Prefs {
   languageCode?: string;
-  onboardingDone?: boolean;
   autoMode?: boolean;
 }
 

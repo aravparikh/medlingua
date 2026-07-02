@@ -357,9 +357,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
         >
           <Ionicons name="language" size={20} color={colors.textMuted} />
-          <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
-            {otherLanguage.flag} {other.languageShort}
-          </Text>
+          <View>
+            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+              {other.languageShort}
+            </Text>
+            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+              {en.languageShort}
+            </Text>
+          </View>
         </Pressable>
         <Pressable
           onPress={onShowAbout}
@@ -369,9 +374,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
         >
           <Ionicons name="information-circle-outline" size={20} color={colors.textMuted} />
-          <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
-            {other.aboutShort}
-          </Text>
+          <View>
+            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+              {other.aboutShort}
+            </Text>
+            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
+              {en.aboutShort}
+            </Text>
+          </View>
         </Pressable>
       </View>
 
@@ -395,9 +405,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               ]}
             >
               <View style={styles.speakerRow}>
-                <Text style={styles.speakerFlag} importantForAccessibility="no">
-                  {turn.speaker.flag}
-                </Text>
+                <View
+                  style={[styles.monogramChip, !fromEnglish && styles.monogramChipSecondary]}
+                  importantForAccessibility="no"
+                >
+                  <Text style={[styles.monogramText, !fromEnglish && styles.monogramTextSecondary]}>
+                    {turn.speaker.monogram}
+                  </Text>
+                </View>
                 <Text style={styles.originalLabel} accessibilityLanguage={turn.speaker.speechTag}>
                   {t(turn.speaker.code).youSaid}
                 </Text>
@@ -408,7 +423,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
               <View style={[styles.translationBlock, flipped && isLatest && styles.flippedBlock]}>
                 <Text style={styles.translationLabel} accessibilityLanguage={turn.listener.speechTag}>
-                  {t(turn.listener.code).translationLabel} {turn.listener.flag}
+                  {t(turn.listener.code).translationLabel}
                 </Text>
                 <Text
                   style={isLatest ? styles.translationText : styles.translationTextOld}
@@ -429,11 +444,18 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   style={[styles.turnButton, phase !== 'idle' && !(isLatest && phase === 'speaking') && styles.dimmed]}
                 >
                   <Ionicons name="volume-high" size={20} color={colors.primary} />
-                  <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={1.5}>
-                    {isLatest && phase === 'speaking'
-                      ? t(turn.listener.code).playing
-                      : t(turn.listener.code).playAgain}
-                  </Text>
+                  <View style={styles.turnButtonLabels}>
+                    <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={1.5}>
+                      {isLatest && phase === 'speaking'
+                        ? t(turn.listener.code).playing
+                        : t(turn.listener.code).playAgain}
+                    </Text>
+                    {turn.listener.code !== 'en' ? (
+                      <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.5}>
+                        {isLatest && phase === 'speaking' ? en.playing : en.playAgain}
+                      </Text>
+                    ) : null}
+                  </View>
                 </PressableScale>
                 {isLatest && (
                   <PressableScale
@@ -448,9 +470,16 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     style={[styles.turnButton, flipped && styles.turnButtonActive]}
                   >
                     <Ionicons name="swap-vertical" size={20} color={colors.primary} />
-                    <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={1.5}>
-                      {t(turn.listener.code).flip}
-                    </Text>
+                    <View style={styles.turnButtonLabels}>
+                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={1.5}>
+                        {t(turn.listener.code).flip}
+                      </Text>
+                      {turn.listener.code !== 'en' ? (
+                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.5}>
+                          {en.flip}
+                        </Text>
+                      ) : null}
+                    </View>
                   </PressableScale>
                 )}
               </View>
@@ -532,9 +561,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           style={[styles.toolButton, busy && styles.dimmed]}
         >
           <Ionicons name="chatbubbles-outline" size={20} color={colors.text} />
-          <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
-            {other.quickPhrases}
-          </Text>
+          <View style={styles.toolButtonLabels}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {other.quickPhrases}
+            </Text>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {en.quickPhrases}
+            </Text>
+          </View>
         </PressableScale>
         <PressableScale
           onPress={toggleAutoMode}
@@ -546,13 +580,24 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           style={[styles.toolButton, autoMode && styles.toolButtonOn, busy && styles.dimmed]}
         >
           <Ionicons name="sparkles" size={18} color={autoMode ? colors.primary : colors.text} />
-          <Text
-            style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
-            allowFontScaling
-            maxFontSizeMultiplier={1.3}
-          >
-            {other.auto === en.auto ? en.auto : `${other.auto} · ${en.auto}`}
-          </Text>
+          <View style={styles.toolButtonLabels}>
+            <Text
+              style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
+              allowFontScaling
+              maxFontSizeMultiplier={1.3}
+            >
+              {other.auto}
+            </Text>
+            {other.auto !== en.auto ? (
+              <Text
+                style={[styles.toolButtonTextEn, autoMode && styles.toolButtonTextOn]}
+                allowFontScaling
+                maxFontSizeMultiplier={1.3}
+              >
+                {en.auto}
+              </Text>
+            ) : null}
+          </View>
         </PressableScale>
       </View>
 
@@ -617,9 +662,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <View style={styles.sheetHeader}>
               <View style={styles.sheetTitleRow}>
                 <Ionicons name="chatbubbles" size={24} color={colors.primary} />
-                <Text style={styles.sheetTitle} accessibilityRole="header">
-                  {other.quickPhrases}
-                </Text>
+                <View style={styles.sheetTitleWrap}>
+                  <Text style={styles.sheetTitle} accessibilityRole="header">
+                    {other.quickPhrases}
+                  </Text>
+                  <Text style={styles.sheetTitleEn}>{en.quickPhrases}</Text>
+                </View>
               </View>
               <Pressable
                 onPress={() => setPhrasesOpen(false)}
@@ -628,12 +676,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
               >
                 <Ionicons name="close" size={22} color={colors.primary} />
-                <Text style={styles.sheetCloseText}>{other.close}</Text>
+                <Text style={styles.sheetCloseText}>
+                  {other.close} · {en.close}
+                </Text>
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.sheetContent}>
               <Text style={styles.sheetSection} importantForAccessibility="no">
-                🇺🇸 English → {otherLanguage.flag} {otherLanguage.nativeName}
+                English → {otherLanguage.nativeName}
               </Text>
               {CLINICIAN_PHRASES.map((phrase) => (
                 <PressableScale
@@ -657,7 +707,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               ))}
 
               <Text style={styles.sheetSection} importantForAccessibility="no">
-                {otherLanguage.flag} {otherLanguage.nativeName} → 🇺🇸 English
+                {otherLanguage.nativeName} → English
               </Text>
               {PATIENT_PHRASES.map((phrase) => (
                 <PressableScale
@@ -701,7 +751,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   headerChip: {
-    minHeight: 48,
+    minHeight: 60,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -712,6 +762,12 @@ const styles = StyleSheet.create({
   headerChipText: {
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
+    color: colors.textMuted,
+    flexShrink: 1,
+  },
+  headerChipTextEn: {
+    fontFamily: fonts.body,
+    fontSize: 12,
     color: colors.textMuted,
     flexShrink: 1,
   },
@@ -820,8 +876,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  speakerFlag: {
-    fontSize: 16,
+  monogramChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.surfaceTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monogramChipSecondary: {
+    backgroundColor: colors.surfaceTintSecondary,
+  },
+  monogramText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  monogramTextSecondary: {
+    color: colors.secondary,
   },
   originalLabel: {
     fontFamily: fonts.bodyMedium,
@@ -881,10 +953,22 @@ const styles = StyleSheet.create({
   turnButtonActive: {
     backgroundColor: colors.primaryTint,
   },
+  turnButtonLabels: {
+    flexShrink: 1,
+    alignItems: 'center',
+  },
   turnButtonText: {
     fontFamily: fonts.bodyMedium,
     fontSize: type.small,
     color: colors.primary,
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  turnButtonTextEn: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.primary,
+    opacity: 0.85,
     flexShrink: 1,
     textAlign: 'center',
   },
@@ -961,10 +1045,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: colors.surfaceTint,
   },
+  toolButtonLabels: {
+    flexShrink: 1,
+    alignItems: 'center',
+  },
   toolButtonText: {
     fontFamily: fonts.bodyMedium,
     fontSize: type.small,
     color: colors.text,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  toolButtonTextEn: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMuted,
     textAlign: 'center',
     flexShrink: 1,
   },
@@ -1028,11 +1123,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     flexShrink: 1,
   },
+  sheetTitleWrap: {
+    flexShrink: 1,
+  },
   sheetTitle: {
     fontFamily: fonts.display,
     fontSize: type.button,
     color: colors.text,
     flexShrink: 1,
+  },
+  sheetTitleEn: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.textMuted,
   },
   sheetClose: {
     minHeight: 48,

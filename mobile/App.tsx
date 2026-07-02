@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { AudioModule } from 'expo-audio';
 import { useFonts } from 'expo-font';
 import { Lexend_600SemiBold, Lexend_700Bold } from '@expo-google-fonts/lexend';
 import {
@@ -17,9 +18,8 @@ import { Appear } from './src/components/Appear';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { ConversationScreen, type Turn } from './src/screens/ConversationScreen';
 import { LanguageSelectScreen } from './src/screens/LanguageSelectScreen';
-import { OnboardingScreen } from './src/screens/OnboardingScreen';
 
-type Screen = 'onboarding' | 'languages' | 'conversation' | 'about';
+type Screen = 'languages' | 'conversation' | 'about';
 
 /**
  * Deliberately no navigation library: four full-screen views and one state
@@ -35,8 +35,10 @@ export default function App() {
     NotoSans_700Bold,
   });
 
+  // No onboarding by design: the native-script language cards are the
+  // onboarding, and they need zero English to use.
   const [prefs] = useState(loadPrefs);
-  const [screen, setScreen] = useState<Screen>(prefs.onboardingDone ? 'languages' : 'onboarding');
+  const [screen, setScreen] = useState<Screen>('languages');
   const [otherLanguage, setOtherLanguage] = useState<Language | null>(() => {
     try {
       return prefs.languageCode ? getLanguage(prefs.languageCode) : null;
@@ -48,16 +50,14 @@ export default function App() {
   // to the About screen doesn't wipe it. Memory only — never written to disk.
   const [turns, setTurns] = useState<Turn[]>([]);
 
-  const finishOnboarding = () => {
-    savePrefs({ onboardingDone: true });
-    setScreen('languages');
-  };
-
   const selectLanguage = (language: Language) => {
     setOtherLanguage(language);
     setTurns([]);
     savePrefs({ languageCode: language.code });
     setScreen('conversation');
+    // Ask for the microphone now, at a calm moment — not mid-gesture during
+    // someone's first hold-to-talk, which would cancel their press.
+    AudioModule.requestRecordingPermissionsAsync().catch(() => {});
   };
 
   // Brief branded loading state while fonts arrive (system fonts on failure).
@@ -75,7 +75,6 @@ export default function App() {
       <SafeAreaView style={styles.root}>
         <StatusBar style="dark" />
         <Appear key={screen} style={styles.root}>
-          {screen === 'onboarding' && <OnboardingScreen onDone={finishOnboarding} />}
           {screen === 'languages' && <LanguageSelectScreen onSelect={selectLanguage} />}
           {screen === 'conversation' && otherLanguage && (
             <ConversationScreen

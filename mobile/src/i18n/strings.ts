@@ -32,12 +32,6 @@ export interface UIStrings {
   aboutShort: string;
   aboutBody: string;
   back: string;
-  start: string;
-  skip: string;
-  next: string;
-  onboarding1: string;
-  onboarding2: string;
-  onboarding3: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -69,12 +63,6 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua helps two people who speak different languages talk to each other during a medical visit.\n\nYour conversation is private. Nothing you say is saved, stored, or shared — everything is translated in the moment and then forgotten.',
     back: 'Back',
-    start: 'Start',
-    skip: 'Skip',
-    next: 'Next',
-    onboarding1: 'Choose your language',
-    onboarding2: 'Hold your button and speak',
-    onboarding3: 'The translation is spoken aloud',
   },
   es: {
     listening: 'Escuchando…',
@@ -104,12 +92,6 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua ayuda a dos personas que hablan idiomas distintos a conversar durante una visita médica.\n\nSu conversación es privada. Nada de lo que diga se guarda, almacena ni comparte: todo se traduce en el momento y luego se olvida.',
     back: 'Atrás',
-    start: 'Comenzar',
-    skip: 'Omitir',
-    next: 'Siguiente',
-    onboarding1: 'Elija su idioma',
-    onboarding2: 'Mantenga pulsado su botón y hable',
-    onboarding3: 'La traducción se dice en voz alta',
   },
   zh: {
     listening: '正在聆听…',
@@ -139,12 +121,6 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua 帮助说不同语言的两个人在就诊时相互交流。\n\n您的对话是私密的。您所说的内容不会被保存、存储或分享——一切都是即时翻译，随后即被遗忘。',
     back: '返回',
-    start: '开始',
-    skip: '跳过',
-    next: '下一步',
-    onboarding1: '选择您的语言',
-    onboarding2: '按住您的按钮说话',
-    onboarding3: '翻译会大声播放出来',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -174,12 +150,6 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua giúp hai người nói hai ngôn ngữ khác nhau trò chuyện với nhau trong buổi khám bệnh.\n\nCuộc trò chuyện của bạn là riêng tư. Những gì bạn nói không được lưu, không được cất giữ hay chia sẻ — mọi thứ được dịch ngay lúc đó rồi bị quên đi.',
     back: 'Quay lại',
-    start: 'Bắt đầu',
-    skip: 'Bỏ qua',
-    next: 'Tiếp theo',
-    onboarding1: 'Chọn ngôn ngữ của bạn',
-    onboarding2: 'Giữ nút của bạn và nói',
-    onboarding3: 'Bản dịch được đọc to',
   },
   ru: {
     listening: 'Слушаю…',
@@ -209,12 +179,6 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua помогает двум людям, говорящим на разных языках, общаться друг с другом на приёме у врача.\n\nВаш разговор конфиденциален. Ничего из сказанного не сохраняется и не передаётся — всё переводится в момент разговора и затем забывается.',
     back: 'Назад',
-    start: 'Начать',
-    skip: 'Пропустить',
-    next: 'Далее',
-    onboarding1: 'Выберите свой язык',
-    onboarding2: 'Удерживайте свою кнопку и говорите',
-    onboarding3: 'Перевод произносится вслух',
   },
 };
 

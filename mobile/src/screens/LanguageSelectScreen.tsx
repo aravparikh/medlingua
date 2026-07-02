@@ -59,7 +59,9 @@ export function LanguageSelectScreen({ onSelect }: Props) {
           style={styles.card}
         >
           <View style={styles.flagCircle} importantForAccessibility="no">
-            <Text style={styles.flag}>{language.flag}</Text>
+            <Text style={[styles.monogram, { fontFamily: displayFontFor(language.code) }]}>
+              {language.monogram}
+            </Text>
           </View>
           <View style={styles.cardText}>
             <Text
@@ -70,7 +72,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
               {language.nativeName}
             </Text>
             <Text style={styles.pairing} allowFontScaling maxFontSizeMultiplier={1.4}>
-              {language.flag} {language.nativeName}  ·  🇺🇸 English
+              {language.nativeName}  ·  English
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={26} color={colors.textFaint} />
@@ -154,8 +156,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flag: {
-    fontSize: 32,
+  monogram: {
+    fontSize: 26,
+    color: colors.primary,
   },
   cardText: {
     flex: 1,

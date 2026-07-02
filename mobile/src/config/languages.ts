@@ -11,7 +11,10 @@ export interface Language {
   nativeName: string;
   /** English name, only ever shown as small secondary text. */
   englishName: string;
-  flag: string;
+  /** One- or two-character native-script mark shown in tinted circles.
+   * Deliberately not a flag: flags mark countries, not languages (a Mexican
+   * Spanish speaker shouldn't have to rally behind 🇪🇸). */
+  monogram: string;
   /** Language hint passed to Whisper for better transcription. */
   whisper: string;
   /** BCP-47 tag used for expo-speech fallback TTS and iOS accessibilityLanguage. */
@@ -26,7 +29,7 @@ export const ENGLISH: Language = {
   code: 'en',
   nativeName: 'English',
   englishName: 'English',
-  flag: '🇺🇸',
+  monogram: 'En',
   whisper: 'en',
   speechTag: 'en-US',
   ttsVoice: 'alloy',
@@ -38,7 +41,7 @@ export const LANGUAGES: Language[] = [
     code: 'es',
     nativeName: 'Español',
     englishName: 'Spanish',
-    flag: '🇪🇸',
+    monogram: 'Es',
     whisper: 'es',
     speechTag: 'es-MX',
     ttsVoice: 'nova',
@@ -48,7 +51,7 @@ export const LANGUAGES: Language[] = [
     code: 'zh',
     nativeName: '中文',
     englishName: 'Chinese (Mandarin)',
-    flag: '🇨🇳',
+    monogram: '中',
     whisper: 'zh',
     speechTag: 'zh-CN',
     ttsVoice: 'nova',
@@ -58,7 +61,7 @@ export const LANGUAGES: Language[] = [
     code: 'vi',
     nativeName: 'Tiếng Việt',
     englishName: 'Vietnamese',
-    flag: '🇻🇳',
+    monogram: 'Vi',
     whisper: 'vi',
     speechTag: 'vi-VN',
     ttsVoice: 'nova',
@@ -68,7 +71,7 @@ export const LANGUAGES: Language[] = [
     code: 'ru',
     nativeName: 'Русский',
     englishName: 'Russian',
-    flag: '🇷🇺',
+    monogram: 'Ру',
     whisper: 'ru',
     speechTag: 'ru-RU',
     ttsVoice: 'nova',

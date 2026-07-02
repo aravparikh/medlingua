@@ -85,7 +85,7 @@ export function SpeakButton({ language, state, awaitingTapToStop, fill, fillPres
                 allowFontScaling
                 maxFontSizeMultiplier={1.5}
               >
-                {language.flag} {language.speakLabel}
+                {language.speakLabel}
               </Text>
             </>
           )}
@@ -118,7 +118,7 @@ export function AutoSpeakButton({ otherLanguage, state, awaitingTapToStop, onPre
       onPressOut={onPressOut}
       disabled={state === 'disabled'}
       accessibilityRole="button"
-      accessibilityLabel={`${en.speakAuto} — ${other.speakAuto}`}
+      accessibilityLabel={`${other.speakAuto} — ${en.speakAuto}`}
       accessibilityHint={listening ? `${other.tapWhenDone} — ${en.tapWhenDone}` : `${other.holdAndSpeak} — ${en.holdAndSpeak}`}
       accessibilityState={{ disabled: state === 'disabled', busy: listening }}
       flexFill
@@ -157,12 +157,12 @@ export function AutoSpeakButton({ otherLanguage, state, awaitingTapToStop, onPre
                 <Ionicons name="mic" size={26} color={colors.onPrimary} />
               </View>
               <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={1.5}>
-                {en.speakAuto} · {other.speakAuto}
+                {other.speakAuto} · {en.speakAuto}
               </Text>
               <View style={styles.autoBadge} importantForAccessibility="no">
                 <Ionicons name="sparkles" size={13} color={colors.onPrimary} />
                 <Text style={styles.autoBadgeText}>
-                  🇺🇸 English · {otherLanguage.flag} {otherLanguage.nativeName}
+                  {otherLanguage.nativeName} · English
                 </Text>
               </View>
             </>
