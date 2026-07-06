@@ -41,6 +41,44 @@ export interface UIStrings {
   aboutShort: string;
   aboutBody: string;
   back: string;
+  // F1 — fullscreen translation
+  fullscreen: string;
+  tapToClose: string;
+  // F2 — teach-back comprehension check
+  checkLabel: string;
+  didYouUnderstand: string;
+  yes: string;
+  no: string;
+  simplifying: string;
+  explainAgain: string;
+  askInterpreter: string;
+  // F3 — ephemeral visit summary
+  summary: string;
+  summaryEphemeral: string;
+  generatingSummary: string;
+  copy: string;
+  copied: string;
+  share: string;
+  // F4 — body-map pain pointer. {part}/{n} are template slots.
+  whereHurts: string;
+  bodyMapHint: string;
+  frontLabel: string;
+  backLabel: string;
+  howMuchHurt: string;
+  sayIt: string;
+  myHurtsPain: string;
+  // F5 — medication label scanner
+  scanLabel: string;
+  scanTitle: string;
+  scanReading: string;
+  scanUnreadable: string;
+  scanMedName: string;
+  scanDose: string;
+  scanWhen: string;
+  scanWarnings: string;
+  pharmacistLine: string;
+  speakAloud: string;
+  cameraPermission: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -80,6 +118,39 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua helps two people who speak different languages talk to each other during a medical visit.\n\nYour conversation is private. Nothing you say is saved, stored, or shared — everything is translated in the moment and then forgotten.',
     back: 'Back',
+    fullscreen: 'Fullscreen',
+    tapToClose: 'Tap to close',
+    checkLabel: 'Check',
+    didYouUnderstand: 'Did you understand?',
+    yes: 'Yes',
+    no: 'No',
+    simplifying: 'Making it simpler…',
+    explainAgain: 'Please explain it again, more simply.',
+    askInterpreter: 'Still unclear — you have the right to a free medical interpreter. Please ask the staff.',
+    summary: 'Summary',
+    summaryEphemeral: 'This summary disappears when the timer ends — copy it somewhere safe now.',
+    generatingSummary: 'Creating summary…',
+    copy: 'Copy',
+    copied: 'Copied!',
+    share: 'Share',
+    whereHurts: 'Where does it hurt?',
+    bodyMapHint: 'Tap the body where it hurts',
+    frontLabel: 'Front',
+    backLabel: 'Back',
+    howMuchHurt: 'How much does it hurt?',
+    sayIt: 'Say it',
+    myHurtsPain: 'It hurts here: {part}. The pain is {n} out of 10.',
+    scanLabel: 'Scan',
+    scanTitle: 'Medication label',
+    scanReading: 'Reading the label…',
+    scanUnreadable: "Couldn't read the label — try again with more light, closer up.",
+    scanMedName: 'Medication',
+    scanDose: 'How much',
+    scanWhen: 'When',
+    scanWarnings: 'Warnings',
+    pharmacistLine: 'Please confirm with your pharmacist.',
+    speakAloud: 'Read aloud',
+    cameraPermission: 'MedLingua needs the camera to read the label. Please allow camera access in Settings.',
   },
   es: {
     listening: 'Escuchando…',
@@ -117,6 +188,39 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua ayuda a dos personas que hablan idiomas distintos a conversar durante una visita médica.\n\nSu conversación es privada. Nada de lo que diga se guarda, almacena ni comparte: todo se traduce en el momento y luego se olvida.',
     back: 'Atrás',
+    fullscreen: 'Pantalla completa',
+    tapToClose: 'Toque para cerrar',
+    checkLabel: '¿Entendió?',
+    didYouUnderstand: '¿Lo entendió?',
+    yes: 'Sí',
+    no: 'No',
+    simplifying: 'Explicándolo más simple…',
+    explainAgain: 'Por favor, explíquelo otra vez, más simple.',
+    askInterpreter: 'Aún no está claro — usted tiene derecho a un intérprete médico gratuito. Pídalo al personal.',
+    summary: 'Resumen',
+    summaryEphemeral: 'Este resumen desaparecerá cuando termine el tiempo — cópielo ahora en un lugar seguro.',
+    generatingSummary: 'Creando el resumen…',
+    copy: 'Copiar',
+    copied: '¡Copiado!',
+    share: 'Compartir',
+    whereHurts: '¿Dónde le duele?',
+    bodyMapHint: 'Toque el cuerpo donde le duele',
+    frontLabel: 'Frente',
+    backLabel: 'Espalda',
+    howMuchHurt: '¿Cuánto le duele?',
+    sayIt: 'Decirlo',
+    myHurtsPain: 'Me duele aquí: {part}. El dolor es {n} de 10.',
+    scanLabel: 'Escanear',
+    scanTitle: 'Etiqueta del medicamento',
+    scanReading: 'Leyendo la etiqueta…',
+    scanUnreadable: 'No se pudo leer la etiqueta. Inténtelo de nuevo con más luz y más cerca.',
+    scanMedName: 'Medicamento',
+    scanDose: 'Cuánto',
+    scanWhen: 'Cuándo',
+    scanWarnings: 'Advertencias',
+    pharmacistLine: 'Confirme con su farmacéutico, por favor.',
+    speakAloud: 'Leer en voz alta',
+    cameraPermission: 'MedLingua necesita la cámara para leer la etiqueta. Permita el acceso a la cámara en Ajustes.',
   },
   zh: {
     listening: '正在聆听…',
@@ -154,6 +258,39 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua 帮助说不同语言的两个人在就诊时相互交流。\n\n您的对话是私密的。您所说的内容不会被保存、存储或分享——一切都是即时翻译，随后即被遗忘。',
     back: '返回',
+    fullscreen: '全屏',
+    tapToClose: '点按关闭',
+    checkLabel: '听懂了吗？',
+    didYouUnderstand: '您听懂了吗？',
+    yes: '是',
+    no: '否',
+    simplifying: '正在简化说明…',
+    explainAgain: '请再解释一次，说得更简单些。',
+    askInterpreter: '仍然不清楚——您有权获得免费的医疗口译员，请向工作人员提出。',
+    summary: '摘要',
+    summaryEphemeral: '计时结束后此摘要将消失——请立即复制保存到安全的地方。',
+    generatingSummary: '正在生成摘要…',
+    copy: '复制',
+    copied: '已复制！',
+    share: '分享',
+    whereHurts: '哪里疼？',
+    bodyMapHint: '请点身体上疼的部位',
+    frontLabel: '正面',
+    backLabel: '背面',
+    howMuchHurt: '有多疼？',
+    sayIt: '说出来',
+    myHurtsPain: '我这里疼：{part}。疼痛程度是10分中的{n}分。',
+    scanLabel: '扫描',
+    scanTitle: '药品标签',
+    scanReading: '正在读取标签…',
+    scanUnreadable: '无法读取标签——请在光线更好的地方靠近再拍一次。',
+    scanMedName: '药品',
+    scanDose: '用量',
+    scanWhen: '何时服用',
+    scanWarnings: '注意事项',
+    pharmacistLine: '请与药剂师确认。',
+    speakAloud: '朗读',
+    cameraPermission: 'MedLingua 需要使用相机来读取标签。请在“设置”中允许使用相机。',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -191,6 +328,39 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua giúp hai người nói hai ngôn ngữ khác nhau trò chuyện với nhau trong buổi khám bệnh.\n\nCuộc trò chuyện của bạn là riêng tư. Những gì bạn nói không được lưu, không được cất giữ hay chia sẻ — mọi thứ được dịch ngay lúc đó rồi bị quên đi.',
     back: 'Quay lại',
+    fullscreen: 'Toàn màn hình',
+    tapToClose: 'Chạm để đóng',
+    checkLabel: 'Hiểu chưa?',
+    didYouUnderstand: 'Bạn có hiểu không?',
+    yes: 'Có',
+    no: 'Không',
+    simplifying: 'Đang giải thích đơn giản hơn…',
+    explainAgain: 'Xin giải thích lại, đơn giản hơn.',
+    askInterpreter: 'Vẫn chưa rõ — bạn có quyền được thông dịch viên y tế miễn phí. Hãy hỏi nhân viên.',
+    summary: 'Tóm tắt',
+    summaryEphemeral: 'Bản tóm tắt này sẽ biến mất khi hết giờ — hãy sao chép ngay vào nơi an toàn.',
+    generatingSummary: 'Đang tạo tóm tắt…',
+    copy: 'Sao chép',
+    copied: 'Đã sao chép!',
+    share: 'Chia sẻ',
+    whereHurts: 'Bạn đau ở đâu?',
+    bodyMapHint: 'Chạm vào chỗ đau trên cơ thể',
+    frontLabel: 'Mặt trước',
+    backLabel: 'Mặt sau',
+    howMuchHurt: 'Đau đến mức nào?',
+    sayIt: 'Nói ra',
+    myHurtsPain: 'Tôi đau ở đây: {part}. Mức đau là {n} trên 10.',
+    scanLabel: 'Quét',
+    scanTitle: 'Nhãn thuốc',
+    scanReading: 'Đang đọc nhãn…',
+    scanUnreadable: 'Không đọc được nhãn — hãy thử lại với ánh sáng tốt hơn và chụp gần hơn.',
+    scanMedName: 'Thuốc',
+    scanDose: 'Liều lượng',
+    scanWhen: 'Khi nào',
+    scanWarnings: 'Cảnh báo',
+    pharmacistLine: 'Vui lòng xác nhận với dược sĩ.',
+    speakAloud: 'Đọc to',
+    cameraPermission: 'MedLingua cần máy ảnh để đọc nhãn. Vui lòng cho phép truy cập máy ảnh trong Cài đặt.',
   },
   ru: {
     listening: 'Слушаю…',
@@ -228,6 +398,39 @@ export const STRINGS: Record<string, UIStrings> = {
     aboutBody:
       'MedLingua помогает двум людям, говорящим на разных языках, общаться друг с другом на приёме у врача.\n\nВаш разговор конфиденциален. Ничего из сказанного не сохраняется и не передаётся — всё переводится в момент разговора и затем забывается.',
     back: 'Назад',
+    fullscreen: 'Во весь экран',
+    tapToClose: 'Нажмите, чтобы закрыть',
+    checkLabel: 'Понятно?',
+    didYouUnderstand: 'Вы поняли?',
+    yes: 'Да',
+    no: 'Нет',
+    simplifying: 'Объясняю проще…',
+    explainAgain: 'Пожалуйста, объясните ещё раз, проще.',
+    askInterpreter: 'Всё ещё непонятно — вы имеете право на бесплатного медицинского переводчика. Обратитесь к персоналу.',
+    summary: 'Сводка',
+    summaryEphemeral: 'Сводка исчезнет, когда закончится время — скопируйте её сейчас в надёжное место.',
+    generatingSummary: 'Создаю сводку…',
+    copy: 'Копировать',
+    copied: 'Скопировано!',
+    share: 'Поделиться',
+    whereHurts: 'Где болит?',
+    bodyMapHint: 'Коснитесь места на теле, где болит',
+    frontLabel: 'Спереди',
+    backLabel: 'Сзади',
+    howMuchHurt: 'Насколько сильно болит?',
+    sayIt: 'Озвучить',
+    myHurtsPain: 'У меня болит здесь: {part}. Боль — {n} из 10.',
+    scanLabel: 'Скан',
+    scanTitle: 'Этикетка лекарства',
+    scanReading: 'Читаю этикетку…',
+    scanUnreadable: 'Не удалось прочитать этикетку — попробуйте ещё раз при лучшем освещении и ближе.',
+    scanMedName: 'Лекарство',
+    scanDose: 'Дозировка',
+    scanWhen: 'Когда',
+    scanWarnings: 'Предупреждения',
+    pharmacistLine: 'Пожалуйста, уточните у фармацевта.',
+    speakAloud: 'Прочитать вслух',
+    cameraPermission: 'MedLingua нужна камера, чтобы прочитать этикетку. Разрешите доступ к камере в Настройках.',
   },
 };
 
