@@ -282,6 +282,65 @@ export async function simplify(text: string, into: Language, evenSimpler: boolea
   return explanation;
 }
 
+/** One line of transcript for the visit summary — original text plus who said it. */
+export interface SummaryLine {
+  speaker: Language;
+  text: string;
+}
+
+/**
+ * Builds a short bilingual visit summary (patient language first, English
+ * second) from the in-memory transcript. The result is only ever held in
+ * component state and shown behind a countdown — never written to disk.
+ */
+export async function summarizeVisit(lines: SummaryLine[], patient: Language): Promise<string> {
+  const key = requireKey();
+
+  const system = [
+    `You are a medical interpreter writing a short summary of a clinic conversation for the patient to keep. Write the ENTIRE summary twice: first in ${patient.englishName}, then in English.`,
+    'Rules:',
+    '- Use these four section headings, translated appropriately: Symptoms, Medications, Instructions, Follow-up.',
+    '- Under each heading, short plain lines starting with "• ". If nothing was discussed for a section, write "• —".',
+    '- Simple words a 6th grader would understand. Preserve medication names, doses, and times exactly.',
+    '- Only include what was actually said — never invent or infer details.',
+    '- Plain text only: no markdown besides the "• " bullets, no extra commentary.',
+  ].join('\n');
+
+  const transcript = lines.map((l) => `${l.speaker.englishName}: ${l.text}`).join('\n');
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: transcript },
+        ],
+      }),
+    });
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during summary');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Summary failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const summary = data.choices?.[0]?.message?.content?.trim();
+  if (!summary) {
+    throw new TranslationError('Empty summary');
+  }
+  return summary;
+}
+
 /** The single, reused TTS output file — overwritten each turn, never accumulated. */
 function ttsFile(): File {
   return new File(Paths.cache, 'medlingua-tts.mp3');

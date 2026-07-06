@@ -15,12 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { ENGLISH, type Language } from '../config/languages';
 import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
-import { clearSpokenAudio, MissingKeyError, simplify, synthesize, transcribe, translate, TranslationError } from '../services/openai';
+import { clearSpokenAudio, MissingKeyError, simplify, summarizeVisit, synthesize, transcribe, translate, TranslationError } from '../services/openai';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { PressableScale } from '../components/PressableScale';
+import { SummaryModal, type SummaryState } from '../components/SummaryModal';
 import { TurnSkeleton } from '../components/Skeleton';
 import { AutoSpeakButton, SpeakButton } from '../components/SpeakButton';
 
@@ -77,6 +78,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     stage: 'loading' | 'ask' | 'loading2' | 'ask2' | 'failed' | 'error';
     text?: string;
   } | null>(null);
+  /** Ephemeral visit summary — state-only, wiped when the modal closes. */
+  const [summary, setSummary] = useState<SummaryState | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
@@ -425,6 +428,23 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setTeach(null);
   };
 
+  /** F3: builds the ephemeral bilingual visit summary from the in-memory thread. */
+  const openSummary = async (currentTurns: Turn[]) => {
+    if (busy || currentTurns.length < 2) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSummary({ status: 'loading' });
+    try {
+      const text = await summarizeVisit(
+        currentTurns.map((turn) => ({ speaker: turn.speaker, text: turn.original })),
+        otherLanguage,
+      );
+      // The disclaimer travels with the summary wherever it is copied/shared.
+      setSummary({ status: 'ready', text: `${text}\n\n${other.aiDisclaimer}\n${en.aiDisclaimer}` });
+    } catch {
+      setSummary({ status: 'error' });
+    }
+  };
+
   const dismissDisclaimer = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowDisclaimer(false);
@@ -536,6 +556,24 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               {other.ok === en.ok ? en.ok : `${other.ok} · ${en.ok}`}
             </Text>
           </Pressable>
+        </View>
+      ) : null}
+
+      {/* F3: the visit summary pill — appears once there is enough to summarize. */}
+      {turns.length >= 2 ? (
+        <View style={styles.summaryRow}>
+          <PressableScale
+            onPress={() => openSummary(turns)}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={`${other.summary} — ${en.summary}`}
+            style={[styles.summaryPill, busy && styles.dimmed]}
+          >
+            <Ionicons name="document-text-outline" size={18} color={colors.primary} />
+            <Text style={styles.summaryPillText} allowFontScaling maxFontSizeMultiplier={2}>
+              {other.summary === en.summary ? en.summary : `${other.summary} · ${en.summary}`}
+            </Text>
+          </PressableScale>
         </View>
       ) : null}
 
@@ -1182,6 +1220,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         </Modal>
       ) : null}
 
+      {/* F3: ephemeral visit summary — closing it wipes the text from memory. */}
+      <SummaryModal state={summary} otherLanguage={otherLanguage} onClose={() => setSummary(null)} />
+
       {/* F1: a translation blown up to fill the screen. */}
       <FullscreenTranslation
         text={fullscreenTurn?.translation ?? null}
@@ -1660,6 +1701,27 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
     color: colors.secondary,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: spacing.xs,
+  },
+  summaryPill: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceTint,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  summaryPillText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.primary,
   },
   centerBackdrop: {
     flex: 1,
