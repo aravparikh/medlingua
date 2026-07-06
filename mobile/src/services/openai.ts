@@ -227,6 +227,61 @@ export async function translate(text: string, from: Language, to: Language): Pro
   return translation;
 }
 
+/**
+ * Teach-back: re-explains a clinician's message in the patient's language at
+ * the simplest possible level. `evenSimpler` is the second attempt, used when
+ * the patient answered "no" to "did you understand?".
+ */
+export async function simplify(text: string, into: Language, evenSimpler: boolean): Promise<string> {
+  const key = requireKey();
+
+  const system = [
+    `You are a medical interpreter using the teach-back method. Re-explain the clinician's message below in ${into.englishName} at the simplest possible level.`,
+    'Rules:',
+    '- Short sentences. Everyday words. Zero medical jargon.',
+    '- Keep every critical fact exactly: medication names, doses, times, warnings.',
+    '- Do not add information that is not in the message.',
+    evenSimpler
+      ? '- The patient did NOT understand the previous explanation. Go even simpler: one idea per sentence, as you would explain to a child, and keep it short.'
+      : '',
+    '- Return only the explanation, no commentary.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: text },
+        ],
+      }),
+    });
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during teach-back');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Teach-back failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const explanation = data.choices?.[0]?.message?.content?.trim();
+  if (!explanation) {
+    throw new TranslationError('Empty teach-back explanation');
+  }
+  return explanation;
+}
+
 /** The single, reused TTS output file — overwritten each turn, never accumulated. */
 function ttsFile(): File {
   return new File(Paths.cache, 'medlingua-tts.mp3');

@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ENGLISH, type Language } from '../config/languages';
 import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
-import { clearSpokenAudio, MissingKeyError, synthesize, transcribe, translate, TranslationError } from '../services/openai';
+import { clearSpokenAudio, MissingKeyError, simplify, synthesize, transcribe, translate, TranslationError } from '../services/openai';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
@@ -72,6 +72,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [typedDraft, setTypedDraft] = useState('');
   /** Turn whose translation is blown up fullscreen; null when closed. */
   const [fullscreenTurn, setFullscreenTurn] = useState<Turn | null>(null);
+  /** Teach-back flow. ask → (no) → loading2 → ask2 → (no) → failed. */
+  const [teach, setTeach] = useState<{
+    stage: 'loading' | 'ask' | 'loading2' | 'ask2' | 'failed' | 'error';
+    text?: string;
+  } | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
@@ -360,6 +365,66 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await usePhrase(phrase, otherLanguage);
   };
 
+  /** F2: teach-back — re-explain the clinician's message as simply as possible. */
+  const startTeachBack = async (turn: Turn) => {
+    if (phase !== 'idle') return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setTeach({ stage: 'loading' });
+    try {
+      const explained = await simplify(turn.original, otherLanguage, false);
+      stopAllAudio();
+      setTeach({ stage: 'ask', text: explained });
+      // Negative id: teach-back audio must never be mistaken for a turn's
+      // cached audio by the replay path.
+      await speak(explained, otherLanguage, -turn.id);
+    } catch {
+      stopAllAudio();
+      setPhase('idle');
+      setTeach({ stage: 'error' });
+    }
+  };
+
+  const answerTeach = async (understood: boolean) => {
+    if (!teach || (teach.stage !== 'ask' && teach.stage !== 'ask2')) return;
+    stopAllAudio();
+    setPhase('idle');
+    if (understood) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTeach(null);
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    if (teach.stage === 'ask2') {
+      // Two failed explanations: a human interpreter is the right next step.
+      setTeach({ stage: 'failed' });
+      return;
+    }
+    setTeach({ stage: 'loading2' });
+    try {
+      const latest = turns[turns.length - 1];
+      const simpler = await simplify(latest?.original ?? teach.text ?? '', otherLanguage, true);
+      setTeach({ stage: 'ask2', text: simpler });
+      await speak(simpler, otherLanguage, -Date.now());
+    } catch {
+      stopAllAudio();
+      setPhase('idle');
+      setTeach({ stage: 'error' });
+    }
+  };
+
+  const replayTeach = async () => {
+    if (!teach?.text || phase !== 'idle') return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    stopAllAudio();
+    await speak(teach.text, otherLanguage, -Date.now());
+  };
+
+  const closeTeach = () => {
+    stopAllAudio();
+    setPhase('idle');
+    setTeach(null);
+  };
+
   const dismissDisclaimer = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowDisclaimer(false);
@@ -584,6 +649,26 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                           {en.flip}
                         </Text>
                       ) : null}
+                    </View>
+                  </PressableScale>
+                )}
+                {isLatest && turn.speaker.code === 'en' && (
+                  <PressableScale
+                    onPress={() => startTeachBack(turn)}
+                    disabled={phase !== 'idle'}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${other.checkLabel} — ${en.checkLabel}`}
+                    flexFill
+                    style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
+                  >
+                    <Ionicons name="school-outline" size={20} color={colors.primary} />
+                    <View style={styles.turnButtonLabels}>
+                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+                        {other.checkLabel}
+                      </Text>
+                      <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                        {en.checkLabel}
+                      </Text>
                     </View>
                   </PressableScale>
                 )}
@@ -983,6 +1068,119 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* F2: teach-back — did the patient really understand? */}
+      {teach ? (
+        <Modal visible transparent animationType="fade" onRequestClose={closeTeach}>
+          <View style={styles.centerBackdrop}>
+            <View style={styles.teachCard}>
+              <Pressable
+                onPress={closeTeach}
+                accessibilityRole="button"
+                accessibilityLabel={`${other.close} — ${en.close}`}
+                style={({ pressed }) => [styles.teachClose, pressed && styles.pressedDim]}
+              >
+                <Ionicons name="close" size={24} color={colors.textMuted} />
+              </Pressable>
+
+              {teach.stage === 'loading' || teach.stage === 'loading2' ? (
+                <View style={styles.teachCenter} accessibilityLiveRegion="polite">
+                  <Ionicons name="school-outline" size={34} color={colors.primary} />
+                  <Text style={styles.teachQuestion} accessibilityLanguage={otherLanguage.speechTag}>
+                    {other.simplifying}
+                  </Text>
+                  <Text style={styles.teachSub}>{en.simplifying}</Text>
+                </View>
+              ) : null}
+
+              {teach.stage === 'ask' || teach.stage === 'ask2' ? (
+                <>
+                  {teach.stage === 'ask2' ? (
+                    <View style={styles.teachBanner}>
+                      <Ionicons name="megaphone-outline" size={20} color={colors.secondary} />
+                      <Text style={styles.teachBannerText}>{en.explainAgain}</Text>
+                    </View>
+                  ) : null}
+                  <Text
+                    style={styles.teachExplanation}
+                    accessibilityLanguage={otherLanguage.speechTag}
+                    accessibilityLiveRegion="polite"
+                  >
+                    {teach.text}
+                  </Text>
+                  <PressableScale
+                    onPress={replayTeach}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${other.playAgain} — ${en.playAgain}`}
+                    style={styles.teachReplay}
+                  >
+                    <Ionicons name="volume-high" size={18} color={colors.primary} />
+                    <Text style={styles.teachReplayText}>
+                      {other.playAgain} · {en.playAgain}
+                    </Text>
+                  </PressableScale>
+                  <Text style={styles.teachQuestion} accessibilityLanguage={otherLanguage.speechTag}>
+                    {other.didYouUnderstand}
+                  </Text>
+                  <Text style={styles.teachSub}>{en.didYouUnderstand}</Text>
+                  <View style={styles.teachChoices}>
+                    <PressableScale
+                      onPress={() => answerTeach(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${other.yes} — ${en.yes}`}
+                      flexFill
+                      style={[styles.teachChoice, styles.teachYes]}
+                    >
+                      <Ionicons name="checkmark" size={36} color={colors.onPrimary} />
+                      <Text style={styles.teachChoiceText} accessibilityLanguage={otherLanguage.speechTag}>
+                        {other.yes}
+                      </Text>
+                      {other.yes !== en.yes ? <Text style={styles.teachChoiceTextEn}>{en.yes}</Text> : null}
+                    </PressableScale>
+                    <PressableScale
+                      onPress={() => answerTeach(false)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${other.no} — ${en.no}`}
+                      flexFill
+                      style={[styles.teachChoice, styles.teachNo]}
+                    >
+                      <Ionicons name="close" size={36} color={colors.onPrimary} />
+                      <Text style={styles.teachChoiceText} accessibilityLanguage={otherLanguage.speechTag}>
+                        {other.no}
+                      </Text>
+                      {other.no !== en.no ? <Text style={styles.teachChoiceTextEn}>{en.no}</Text> : null}
+                    </PressableScale>
+                  </View>
+                </>
+              ) : null}
+
+              {teach.stage === 'failed' ? (
+                <View style={styles.teachCenter}>
+                  <Ionicons name="people-outline" size={34} color={colors.secondary} />
+                  <Text
+                    style={styles.teachExplanation}
+                    accessibilityLanguage={otherLanguage.speechTag}
+                    accessibilityLiveRegion="assertive"
+                  >
+                    {other.askInterpreter}
+                  </Text>
+                  <Text style={styles.teachSub}>{en.askInterpreter}</Text>
+                </View>
+              ) : null}
+
+              {teach.stage === 'error' ? (
+                <View style={styles.teachCenter} accessibilityLiveRegion="assertive">
+                  <Ionicons name="alert-circle" size={34} color={colors.dangerText} />
+                  <Text style={styles.teachExplanation} accessibilityLanguage={otherLanguage.speechTag}>
+                    {other.connectionError}
+                  </Text>
+                  <Text style={styles.teachSub}>{en.connectionError}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </Modal>
+      ) : null}
 
       {/* F1: a translation blown up to fill the screen. */}
       <FullscreenTranslation
@@ -1462,6 +1660,116 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
     color: colors.secondary,
+  },
+  centerBackdrop: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  teachCard: {
+    backgroundColor: colors.background,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    gap: spacing.sm,
+    ...shadows.floating,
+  },
+  teachClose: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  teachCenter: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  teachExplanation: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.body,
+    color: colors.text,
+    lineHeight: type.body * 1.45,
+  },
+  teachQuestion: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.button,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  teachSub: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: type.small * 1.4,
+  },
+  teachReplay: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xxs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceTint,
+    paddingHorizontal: spacing.sm,
+    alignSelf: 'center',
+  },
+  teachReplayText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.primary,
+  },
+  teachBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surfaceTintSecondary,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+  },
+  teachBannerText: {
+    flex: 1,
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.secondary,
+    lineHeight: type.small * 1.35,
+  },
+  teachChoices: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  teachChoice: {
+    minHeight: 92,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingVertical: spacing.sm,
+  },
+  teachYes: {
+    backgroundColor: colors.primary,
+  },
+  teachNo: {
+    backgroundColor: colors.listening,
+  },
+  teachChoiceText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.button,
+    color: colors.onPrimary,
+  },
+  teachChoiceTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.onPrimary,
+    opacity: 0.9,
   },
   typeContent: {
     paddingHorizontal: spacing.md,
