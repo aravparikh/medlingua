@@ -38,6 +38,13 @@
       "expo-asset",
       "expo-font",
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "MedLingua uses the camera to read medication labels so it can explain them in your language. Photos are not saved.",
+          "photosPermission": "MedLingua can read a medication label from an existing photo to explain it in your language. Photos are not saved."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",

@@ -341,6 +341,91 @@ export async function summarizeVisit(lines: SummaryLine[], patient: Language): P
   return summary;
 }
 
+/** What the medication-label scan extracted, explained in both languages. */
+export interface MedLabelResult {
+  readable: boolean;
+  /** Medication name and strength as printed on the label. */
+  name: string;
+  howMuch: { en: string; other: string };
+  when: { en: string; other: string };
+  warnings: { en: string; other: string };
+}
+
+/**
+ * Reads a photo of a medication label with GPT-4o vision and explains it at a
+ * 6th-grade level in English and the patient's language. The photo is sent
+ * once and never persisted. An unreadable/irrelevant photo comes back as
+ * `readable: false` so the UI can show a friendly retry, never a raw error.
+ */
+export async function readMedicationLabel(base64Jpeg: string, patient: Language): Promise<MedLabelResult> {
+  const key = requireKey();
+
+  const system = [
+    'You read photos of medication labels for patients with low health literacy.',
+    'Respond ONLY with a JSON object of this exact shape:',
+    '{"readable": boolean, "name": string, "howMuch": {"en": string, "other": string}, "when": {"en": string, "other": string}, "warnings": {"en": string, "other": string}}',
+    `"other" values are written in ${patient.englishName}; "en" values in English. Both at a 6th-grade reading level, short plain sentences.`,
+    '"name" is the medication name and strength exactly as printed (e.g. "Lisinopril 10 mg").',
+    '"howMuch" = the dose in plain words. "when" = timing/frequency in plain words. "warnings" = key printed warnings, or "" if none are visible.',
+    'If the photo is not a medication label, or is too blurry/dark to read confidently, return {"readable": false} with all other fields as empty strings.',
+    'NEVER guess a medication name — misreading a label can hurt someone. When unsure, return readable: false.',
+  ].join('\n');
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Read this medication label.' },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Jpeg}` } },
+            ],
+          },
+        ],
+      }),
+    });
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during label scan');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Label scan failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) {
+    throw new TranslationError('Empty label scan response');
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<MedLabelResult>;
+    const pair = (v: unknown): { en: string; other: string } => {
+      const o = (v ?? {}) as { en?: unknown; other?: unknown };
+      return { en: typeof o.en === 'string' ? o.en : '', other: typeof o.other === 'string' ? o.other : '' };
+    };
+    return {
+      readable: parsed.readable === true && typeof parsed.name === 'string' && parsed.name.trim().length > 0,
+      name: typeof parsed.name === 'string' ? parsed.name : '',
+      howMuch: pair(parsed.howMuch),
+      when: pair(parsed.when),
+      warnings: pair(parsed.warnings),
+    };
+  } catch {
+    throw new TranslationError('Malformed label scan response');
+  }
+}
+
 /** The single, reused TTS output file — overwritten each turn, never accumulated. */
 function ttsFile(): File {
   return new File(Paths.cache, 'medlingua-tts.mp3');

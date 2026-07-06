@@ -9,6 +9,7 @@ import {
   type AudioPlayer,
 } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,7 +17,18 @@ import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
 import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
-import { clearSpokenAudio, MissingKeyError, simplify, summarizeVisit, synthesize, transcribe, translate, TranslationError } from '../services/openai';
+import {
+  clearSpokenAudio,
+  MissingKeyError,
+  readMedicationLabel,
+  simplify,
+  summarizeVisit,
+  synthesize,
+  transcribe,
+  translate,
+  TranslationError,
+  type MedLabelResult,
+} from '../services/openai';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
@@ -83,6 +95,15 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   /** Ephemeral visit summary — state-only, wiped when the modal closes. */
   const [summary, setSummary] = useState<SummaryState | null>(null);
   const [bodyMapOpen, setBodyMapOpen] = useState(false);
+  /** F5: medication label scan — photo is sent once, never persisted. */
+  const [scan, setScan] = useState<
+    | { status: 'loading' }
+    | { status: 'ready'; result: MedLabelResult }
+    | { status: 'unreadable' }
+    | { status: 'permission' }
+    | { status: 'error' }
+    | null
+  >(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
@@ -449,6 +470,56 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     };
     addTurn(turn);
     await speak(turn.translation, ENGLISH, turn.id);
+  };
+
+  /** F5: photograph a medication label → plain-language bilingual explanation. */
+  const openScanner = async () => {
+    if (busy) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      let picked: ImagePicker.ImagePickerResult;
+      if (Platform.OS === 'web') {
+        // Browsers can't reliably open a camera capture flow — the library
+        // picker covers web preview/testing.
+        picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], base64: true, quality: 0.5 });
+      } else {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          setScan({ status: 'permission' });
+          return;
+        }
+        picked = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.5, allowsEditing: true });
+      }
+      if (picked.canceled || !picked.assets?.[0]?.base64) return;
+      setScan({ status: 'loading' });
+      const result = await readMedicationLabel(picked.assets[0].base64, otherLanguage);
+      if (!result.readable) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setScan({ status: 'unreadable' });
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setScan({ status: 'ready', result });
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setScan({ status: 'error' });
+    }
+  };
+
+  /** Reads the scanned explanation aloud in the patient's language. */
+  const speakScan = async () => {
+    if (scan?.status !== 'ready' || phase !== 'idle') return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const r = scan.result;
+    const parts = [r.name, r.howMuch.other, r.when.other, r.warnings.other].filter(Boolean);
+    stopAllAudio();
+    await speak(parts.join('. '), otherLanguage, -Date.now());
+  };
+
+  const closeScan = () => {
+    stopAllAudio();
+    setPhase('idle');
+    setScan(null);
   };
 
   /** F3: builds the ephemeral bilingual visit summary from the in-memory thread. */
@@ -839,6 +910,24 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             </Text>
             <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
               {en.typeLabel}
+            </Text>
+          </View>
+        </PressableScale>
+        <PressableScale
+          onPress={openScanner}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.scanTitle} — ${en.scanTitle}`}
+          flexFill
+          style={[styles.toolButton, busy && styles.dimmed]}
+        >
+          <Ionicons name="camera-outline" size={20} color={colors.text} />
+          <View style={styles.toolButtonLabels}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+              {other.scanLabel}
+            </Text>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+              {en.scanLabel}
             </Text>
           </View>
         </PressableScale>
@@ -1260,6 +1349,150 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   </Text>
                   <Text style={styles.teachSub}>{en.connectionError}</Text>
                 </View>
+              ) : null}
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+
+      {/* F5: medication label scan result. */}
+      {scan ? (
+        <Modal visible transparent animationType="slide" onRequestClose={closeScan}>
+          <View style={styles.sheetBackdrop}>
+            <Pressable
+              style={styles.sheetDismiss}
+              onPress={closeScan}
+              accessibilityLabel={`${other.close} — ${en.close}`}
+            />
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} importantForAccessibility="no" />
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetTitleRow}>
+                  <Ionicons name="medkit" size={24} color={colors.primary} />
+                  <View style={styles.sheetTitleWrap}>
+                    <Text style={styles.sheetTitle} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
+                      {other.scanTitle}
+                    </Text>
+                    <Text style={styles.sheetTitleEn}>{en.scanTitle}</Text>
+                  </View>
+                </View>
+                <Pressable
+                  onPress={closeScan}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${other.close} — ${en.close}`}
+                  style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
+                >
+                  <Ionicons name="close" size={22} color={colors.primary} />
+                  <Text style={styles.sheetCloseText}>
+                    {other.close} · {en.close}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {scan.status === 'loading' ? (
+                <View style={styles.scanCenter} accessibilityLiveRegion="polite">
+                  <TurnSkeleton />
+                  <Text style={styles.scanStatus} accessibilityLanguage={otherLanguage.speechTag}>
+                    {other.scanReading}
+                  </Text>
+                  <Text style={styles.scanStatusEn}>{en.scanReading}</Text>
+                </View>
+              ) : null}
+
+              {scan.status === 'unreadable' || scan.status === 'permission' || scan.status === 'error' ? (
+                <View style={styles.scanCenter} accessibilityLiveRegion="assertive">
+                  <Ionicons
+                    name={scan.status === 'permission' ? 'camera-outline' : 'alert-circle'}
+                    size={34}
+                    color={colors.dangerText}
+                  />
+                  <Text style={styles.scanError} accessibilityLanguage={otherLanguage.speechTag}>
+                    {scan.status === 'unreadable'
+                      ? other.scanUnreadable
+                      : scan.status === 'permission'
+                        ? other.cameraPermission
+                        : other.connectionError}
+                  </Text>
+                  <Text style={styles.scanStatusEn}>
+                    {scan.status === 'unreadable'
+                      ? en.scanUnreadable
+                      : scan.status === 'permission'
+                        ? en.cameraPermission
+                        : en.connectionError}
+                  </Text>
+                  {scan.status !== 'permission' ? (
+                    <PressableScale
+                      onPress={() => {
+                        setScan(null);
+                        void openScanner();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${other.tryAgain} — ${en.tryAgain}`}
+                      style={styles.scanRetry}
+                    >
+                      <Ionicons name="refresh" size={20} color={colors.dangerText} />
+                      <Text style={styles.scanRetryText}>
+                        {other.tryAgain} · {en.tryAgain}
+                      </Text>
+                    </PressableScale>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {scan.status === 'ready' ? (
+                <ScrollView contentContainerStyle={styles.scanContent}>
+                  <Text style={styles.scanName}>{scan.result.name}</Text>
+                  {(
+                    [
+                      { label: other.scanDose, labelEn: en.scanDose, pair: scan.result.howMuch, icon: 'water-outline' },
+                      { label: other.scanWhen, labelEn: en.scanWhen, pair: scan.result.when, icon: 'time-outline' },
+                      { label: other.scanWarnings, labelEn: en.scanWarnings, pair: scan.result.warnings, icon: 'warning-outline' },
+                    ] as const
+                  )
+                    .filter((section) => section.pair.other || section.pair.en)
+                    .map((section) => (
+                      <View key={section.labelEn} style={styles.scanSection}>
+                        <View style={styles.scanSectionHead}>
+                          <Ionicons name={section.icon} size={18} color={colors.primary} importantForAccessibility="no" />
+                          <Text style={styles.scanSectionLabel}>
+                            {section.label === section.labelEn ? section.labelEn : `${section.label} · ${section.labelEn}`}
+                          </Text>
+                        </View>
+                        <Text style={styles.scanPrimary} accessibilityLanguage={otherLanguage.speechTag}>
+                          {section.pair.other}
+                        </Text>
+                        <Text style={styles.scanSecondary}>{section.pair.en}</Text>
+                      </View>
+                    ))}
+
+                  <PressableScale
+                    onPress={speakScan}
+                    disabled={phase !== 'idle'}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${other.speakAloud} — ${en.speakAloud}`}
+                    style={[styles.scanSpeak, phase !== 'idle' && styles.dimmed]}
+                  >
+                    <Ionicons name="volume-high" size={24} color={colors.onPrimary} />
+                    <View style={styles.sayLabelsInline}>
+                      <Text style={styles.scanSpeakText} accessibilityLanguage={otherLanguage.speechTag}>
+                        {other.speakAloud}
+                      </Text>
+                      {other.speakAloud !== en.speakAloud ? (
+                        <Text style={styles.scanSpeakTextEn}>{en.speakAloud}</Text>
+                      ) : null}
+                    </View>
+                  </PressableScale>
+
+                  <View style={styles.scanPharmacist}>
+                    <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
+                    <View style={styles.scanPharmacistText}>
+                      <Text style={styles.scanSecondary} accessibilityLanguage={otherLanguage.speechTag}>
+                        {other.pharmacistLine}
+                      </Text>
+                      <Text style={styles.scanSecondary}>{en.pharmacistLine}</Text>
+                    </View>
+                  </View>
+                </ScrollView>
               ) : null}
             </View>
           </View>
@@ -1755,6 +1988,120 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
     color: colors.secondary,
+  },
+  scanCenter: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+  },
+  scanStatus: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.primary,
+  },
+  scanStatusEn: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: type.caption * 1.4,
+  },
+  scanError: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.body,
+    color: colors.dangerText,
+    textAlign: 'center',
+    lineHeight: type.body * 1.4,
+  },
+  scanRetry: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: colors.dangerText,
+    paddingHorizontal: spacing.md,
+  },
+  scanRetryText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.dangerText,
+  },
+  scanContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  scanName: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.title,
+    color: colors.text,
+    lineHeight: type.title * 1.25,
+  },
+  scanSection: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.xxs,
+    ...shadows.card,
+  },
+  scanSectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+  },
+  scanSectionLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  scanPrimary: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.body,
+    color: colors.text,
+    lineHeight: type.body * 1.4,
+  },
+  scanSecondary: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.textMuted,
+    lineHeight: type.small * 1.4,
+  },
+  scanSpeak: {
+    minHeight: MIN_TARGET,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+  },
+  sayLabelsInline: {
+    alignItems: 'center',
+  },
+  scanSpeakText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.onPrimary,
+  },
+  scanSpeakTextEn: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.onPrimary,
+    opacity: 0.9,
+  },
+  scanPharmacist: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+  },
+  scanPharmacistText: {
+    flex: 1,
+    gap: 2,
   },
   bodyMapCard: {
     flexDirection: 'row',
