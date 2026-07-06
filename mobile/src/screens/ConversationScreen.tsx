@@ -12,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
 
+import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
 import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
@@ -19,6 +20,7 @@ import { clearSpokenAudio, MissingKeyError, simplify, summarizeVisit, synthesize
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
+import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { PressableScale } from '../components/PressableScale';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
@@ -80,6 +82,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   } | null>(null);
   /** Ephemeral visit summary — state-only, wiped when the modal closes. */
   const [summary, setSummary] = useState<SummaryState | null>(null);
+  const [bodyMapOpen, setBodyMapOpen] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
@@ -426,6 +429,26 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     stopAllAudio();
     setPhase('idle');
     setTeach(null);
+  };
+
+  /** F4: body map picked a region + intensity — say it in English, log the turn. */
+  const confirmBodyPain = async (regionId: BodyRegionId, n: number) => {
+    const region = BODY_REGIONS[regionId];
+    const sentence = (code: string) =>
+      t(code).myHurtsPain.replace('{part}', region.name[code]).replace('{n}', String(n));
+    setBodyMapOpen(false);
+    setError(null);
+    setRetryCtx(null);
+    stopAllAudio();
+    const turn: Turn = {
+      id: Date.now(),
+      original: sentence(otherLanguage.code),
+      translation: sentence('en'),
+      speaker: otherLanguage,
+      listener: ENGLISH,
+    };
+    addTurn(turn);
+    await speak(turn.translation, ENGLISH, turn.id);
   };
 
   /** F3: builds the ephemeral bilingual visit summary from the in-memory thread. */
@@ -931,6 +954,29 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.sheetContent}>
+              {/* F4 entry: the body-map hero card. */}
+              <PressableScale
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setPhrasesOpen(false);
+                  setBodyMapOpen(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${other.whereHurts} — ${en.whereHurts}`}
+                style={styles.bodyMapCard}
+              >
+                <View style={styles.bodyMapIcon} importantForAccessibility="no">
+                  <Ionicons name="body-outline" size={30} color={colors.onPrimary} />
+                </View>
+                <View style={styles.bodyMapTextWrap}>
+                  <Text style={styles.bodyMapTitle} accessibilityLanguage={otherLanguage.speechTag}>
+                    {other.whereHurts}
+                  </Text>
+                  <Text style={styles.bodyMapSub}>{en.whereHurts}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={26} color={colors.onPrimary} importantForAccessibility="no" />
+              </PressableScale>
+
               <Text style={[styles.sheetSection, styles.sheetSectionUrgent]} importantForAccessibility="no">
                 {other.emergency} · {en.emergency}
               </Text>
@@ -1219,6 +1265,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </View>
         </Modal>
       ) : null}
+
+      {/* F4: where does it hurt — tap the body, pick 0–10, it speaks English. */}
+      <BodyMapModal
+        visible={bodyMapOpen}
+        otherLanguage={otherLanguage}
+        onClose={() => setBodyMapOpen(false)}
+        onConfirm={confirmBodyPain}
+      />
 
       {/* F3: ephemeral visit summary — closing it wipes the text from memory. */}
       <SummaryModal state={summary} otherLanguage={otherLanguage} onClose={() => setSummary(null)} />
@@ -1701,6 +1755,39 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
     color: colors.secondary,
+  },
+  bodyMapCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    minHeight: MIN_TARGET + 8,
+    ...shadows.raised,
+  },
+  bodyMapIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bodyMapTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  bodyMapTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.body,
+    color: colors.onPrimary,
+  },
+  bodyMapSub: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.onPrimary,
+    opacity: 0.9,
   },
   summaryRow: {
     flexDirection: 'row',
