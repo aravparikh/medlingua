@@ -19,6 +19,7 @@ import { clearSpokenAudio, MissingKeyError, synthesize, transcribe, translate, T
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
+import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { PressableScale } from '../components/PressableScale';
 import { TurnSkeleton } from '../components/Skeleton';
 import { AutoSpeakButton, SpeakButton } from '../components/SpeakButton';
@@ -69,6 +70,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [phrasesOpen, setPhrasesOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [typedDraft, setTypedDraft] = useState('');
+  /** Turn whose translation is blown up fullscreen; null when closed. */
+  const [fullscreenTurn, setFullscreenTurn] = useState<Turn | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
   const pressStartedAt = useRef(0);
@@ -507,10 +510,25 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 {turn.original}
               </Text>
 
-              <View style={[styles.translationBlock, flipped && isLatest && styles.flippedBlock]}>
-                <Text style={styles.translationLabel} accessibilityLanguage={turn.listener.speechTag}>
-                  {t(turn.listener.code).translationLabel}
-                </Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setFullscreenTurn(turn);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t(turn.listener.code).fullscreen} — ${en.fullscreen}`}
+                style={({ pressed }) => [
+                  styles.translationBlock,
+                  flipped && isLatest && styles.flippedBlock,
+                  pressed && styles.pressedDim,
+                ]}
+              >
+                <View style={styles.translationLabelRow}>
+                  <Text style={styles.translationLabel} accessibilityLanguage={turn.listener.speechTag}>
+                    {t(turn.listener.code).translationLabel}
+                  </Text>
+                  <Ionicons name="expand-outline" size={16} color={colors.textFaint} importantForAccessibility="no" />
+                </View>
                 <Text
                   style={isLatest ? styles.translationText : styles.translationTextOld}
                   accessibilityLanguage={turn.listener.speechTag}
@@ -518,7 +536,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 >
                   {turn.translation}
                 </Text>
-              </View>
+              </Pressable>
 
               <View style={styles.turnActions}>
                 <PressableScale
@@ -965,6 +983,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* F1: a translation blown up to fill the screen. */}
+      <FullscreenTranslation
+        text={fullscreenTurn?.translation ?? null}
+        language={fullscreenTurn?.listener ?? null}
+        otherLanguage={otherLanguage}
+        onClose={() => setFullscreenTurn(null)}
+      />
     </View>
   );
 }
@@ -1143,6 +1169,12 @@ const styles = StyleSheet.create({
   translationBlock: {
     marginTop: spacing.sm,
     gap: spacing.xxs,
+  },
+  translationLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
   },
   flippedBlock: {
     transform: [{ rotate: '180deg' }],
