@@ -121,6 +121,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
    * a synthesize request still in flight can't start playing stale audio. */
   const speakSessionRef = useRef(0);
   const lastPhraseAtRef = useRef(0);
+  /** Pending sheet→modal handoff (see the body-map hero card). */
+  const modalSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const en = t('en');
@@ -130,6 +132,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   useEffect(() => {
     return () => {
       speakSessionRef.current += 1;
+      if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
       playerRef.current?.remove();
       Speech.stop();
       clearSpokenAudio();
@@ -703,6 +706,34 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         {turns.map((turn) => {
           const isLatest = turn.id === latestTurn?.id;
           const fromEnglish = turn.speaker.code === 'en';
+          // Latest clinician turns carry three actions — too many for one row
+          // at 375pt, so the play pill gets its own row and the other two share.
+          const hasCheck = isLatest && fromEnglish;
+          const flipPill = isLatest ? (
+            <PressableScale
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFlipped(!flipped);
+              }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: flipped }}
+              accessibilityLabel={`${t(turn.listener.code).flip} — ${en.flip}`}
+              flexFill
+              style={[styles.turnButton, flipped && styles.turnButtonActive]}
+            >
+              <Ionicons name="eye-outline" size={20} color={colors.primary} />
+              <View style={styles.turnButtonLabels}>
+                <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+                  {t(turn.listener.code).flip}
+                </Text>
+                {turn.listener.code !== 'en' ? (
+                  <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                    {en.flip}
+                  </Text>
+                ) : null}
+              </View>
+            </PressableScale>
+          ) : null;
           return (
             <Appear
               key={turn.id}
@@ -757,74 +788,55 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 </Text>
               </Pressable>
 
-              <View style={styles.turnActions}>
-                <PressableScale
-                  onPress={() => playTurn(turn)}
-                  disabled={phase !== 'idle'}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${t(turn.listener.code).playAgain} — ${en.playAgain}`}
-                  flexFill
-                  style={[styles.turnButton, phase !== 'idle' && !(isLatest && phase === 'speaking') && styles.dimmed]}
-                >
-                  <Ionicons name="volume-high" size={20} color={colors.primary} />
-                  <View style={styles.turnButtonLabels}>
-                    <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                      {isLatest && phase === 'speaking'
-                        ? t(turn.listener.code).playing
-                        : t(turn.listener.code).playAgain}
-                    </Text>
-                    {turn.listener.code !== 'en' ? (
-                      <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                        {isLatest && phase === 'speaking' ? en.playing : en.playAgain}
-                      </Text>
-                    ) : null}
-                  </View>
-                </PressableScale>
-                {!isLatest && <View style={styles.turnActionSpacer} />}
-                {isLatest && (
+              <View style={styles.turnActionsWrap}>
+                <View style={styles.turnActions}>
                   <PressableScale
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setFlipped(!flipped);
-                    }}
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: flipped }}
-                    accessibilityLabel={`${t(turn.listener.code).flip} — ${en.flip}`}
+                    onPress={() => playTurn(turn)}
+                    disabled={phase !== 'idle'}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t(turn.listener.code).playAgain} — ${en.playAgain}`}
                     flexFill
-                    style={[styles.turnButton, flipped && styles.turnButtonActive]}
+                    style={[styles.turnButton, phase !== 'idle' && !(isLatest && phase === 'speaking') && styles.dimmed]}
                   >
-                    <Ionicons name="eye-outline" size={20} color={colors.primary} />
+                    <Ionicons name="volume-high" size={20} color={colors.primary} />
                     <View style={styles.turnButtonLabels}>
                       <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                        {t(turn.listener.code).flip}
+                        {isLatest && phase === 'speaking'
+                          ? t(turn.listener.code).playing
+                          : t(turn.listener.code).playAgain}
                       </Text>
                       {turn.listener.code !== 'en' ? (
                         <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                          {en.flip}
+                          {isLatest && phase === 'speaking' ? en.playing : en.playAgain}
                         </Text>
                       ) : null}
                     </View>
                   </PressableScale>
-                )}
-                {isLatest && turn.speaker.code === 'en' && (
-                  <PressableScale
-                    onPress={() => startTeachBack(turn)}
-                    disabled={phase !== 'idle'}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${other.checkLabel} — ${en.checkLabel}`}
-                    flexFill
-                    style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
-                  >
-                    <Ionicons name="school-outline" size={20} color={colors.primary} />
-                    <View style={styles.turnButtonLabels}>
-                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                        {other.checkLabel}
-                      </Text>
-                      <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                        {en.checkLabel}
-                      </Text>
-                    </View>
-                  </PressableScale>
+                  {!isLatest && <View style={styles.turnActionSpacer} />}
+                  {isLatest && !hasCheck && flipPill}
+                </View>
+                {hasCheck && (
+                  <View style={styles.turnActions}>
+                    {flipPill}
+                    <PressableScale
+                      onPress={() => startTeachBack(turn)}
+                      disabled={phase !== 'idle'}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${other.checkLabel} — ${en.checkLabel}`}
+                      flexFill
+                      style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
+                    >
+                      <Ionicons name="school-outline" size={20} color={colors.primary} />
+                      <View style={styles.turnButtonLabels}>
+                        <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+                          {other.checkLabel}
+                        </Text>
+                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                          {en.checkLabel}
+                        </Text>
+                      </View>
+                    </PressableScale>
+                  </View>
                 )}
               </View>
             </Appear>
@@ -1069,8 +1081,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               <PressableScale
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  // Never dismiss one modal and present another in the same
+                  // frame — iOS drops the second present while the first is
+                  // still animating out. Close, let the dismissal settle, open.
                   setPhrasesOpen(false);
-                  setBodyMapOpen(true);
+                  if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
+                  modalSwapTimer.current = setTimeout(() => setBodyMapOpen(true), 350);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`${other.whereHurts} — ${en.whereHurts}`}
@@ -1749,10 +1765,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: type.body * 1.4,
   },
+  turnActionsWrap: {
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
   turnActions: {
     flexDirection: 'row',
     gap: spacing.xs,
-    marginTop: spacing.sm,
   },
   turnButton: {
     minHeight: 52,
