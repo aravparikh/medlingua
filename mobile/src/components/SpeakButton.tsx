@@ -65,12 +65,12 @@ export function SpeakButton({ language, state, awaitingTapToStop, fill, fillPres
               <Text
                 style={[styles.label, { fontFamily: displayFontFor(language.code) }]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={1.3}
               >
                 {strings.listening}
               </Text>
               {awaitingTapToStop ? (
-                <Text style={styles.sub} allowFontScaling maxFontSizeMultiplier={2}>
+                <Text style={styles.sub} allowFontScaling maxFontSizeMultiplier={1.3}>
                   {strings.tapWhenDone}
                 </Text>
               ) : null}
@@ -83,7 +83,7 @@ export function SpeakButton({ language, state, awaitingTapToStop, fill, fillPres
               <Text
                 style={[styles.label, { fontFamily: displayFontFor(language.code) }]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={1.3}
               >
                 {language.speakLabel}
               </Text>
@@ -144,10 +144,10 @@ export function AutoSpeakButton({ otherLanguage, state, awaitingTapToStop, onPre
               <View style={styles.iconCircle}>
                 <Pulse color={colors.onPrimary} size={44} />
               </View>
-              <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={1.3}>
                 {other.listening}
               </Text>
-              <Text style={styles.sub} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.sub} allowFontScaling maxFontSizeMultiplier={1.3}>
                 {awaitingTapToStop ? `${other.tapWhenDone} · ${en.tapWhenDone}` : en.listening}
               </Text>
             </>
@@ -156,7 +156,7 @@ export function AutoSpeakButton({ otherLanguage, state, awaitingTapToStop, onPre
               <View style={styles.iconCircle} importantForAccessibility="no">
                 <Ionicons name="mic" size={26} color={colors.onPrimary} />
               </View>
-              <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={1.3}>
                 {other.speakAuto} · {en.speakAuto}
               </Text>
               <View style={styles.autoBadge} importantForAccessibility="no">

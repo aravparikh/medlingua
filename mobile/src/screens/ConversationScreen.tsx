@@ -272,6 +272,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           // The recording is still on disk — offer a one-tap retry.
           setRetryCtx({ uri, who });
           setError('connectionError');
+          // Dev builds surface the underlying cause (timeout, HTTP status,
+          // upload failure) in the error card — invisible in production.
+          if (__DEV__) setSetupError(err.message);
         }
       } else if (err instanceof MissingKeyError) {
         setError('notReady');
@@ -383,6 +386,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         setSetupError(err.message);
       } else if (err instanceof TranslationError) {
         setError('connectionError');
+        if (__DEV__) setSetupError(err.message);
       } else {
         setError('notReady');
         setSetupError(err instanceof Error ? err.message : String(err));
@@ -650,10 +654,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="language" size={20} color={colors.textMuted} />
           <View>
-            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
+            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {other.languageShort}
             </Text>
-            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
+            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {en.languageShort}
             </Text>
           </View>
@@ -667,10 +671,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="information-circle-outline" size={20} color={colors.textMuted} />
           <View>
-            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
+            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {other.aboutShort}
             </Text>
-            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={2} numberOfLines={1}>
+            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {en.aboutShort}
             </Text>
           </View>
@@ -682,10 +686,17 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         <View style={styles.disclaimer}>
           <Ionicons name="information-circle" size={22} color={colors.secondary} />
           <View style={styles.disclaimerBody}>
-            <Text style={styles.disclaimerText} accessibilityLanguage={otherLanguage.speechTag}>
+            <Text
+              style={styles.disclaimerText}
+              accessibilityLanguage={otherLanguage.speechTag}
+              allowFontScaling
+              maxFontSizeMultiplier={1.3}
+            >
               {other.aiDisclaimer}
             </Text>
-            <Text style={styles.disclaimerTextEn}>{en.aiDisclaimer}</Text>
+            <Text style={styles.disclaimerTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {en.aiDisclaimer}
+            </Text>
           </View>
           <Pressable
             onPress={dismissDisclaimer}
@@ -693,7 +704,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             accessibilityLabel={`${other.ok} — ${en.ok}`}
             style={({ pressed }) => [styles.disclaimerOk, pressed && styles.pressedDim]}
           >
-            <Text style={styles.disclaimerOkText}>
+            <Text style={styles.disclaimerOkText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.ok === en.ok ? en.ok : `${other.ok} · ${en.ok}`}
             </Text>
           </Pressable>
@@ -711,7 +722,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             style={[styles.summaryPill, busy && styles.dimmed]}
           >
             <Ionicons name="document-text-outline" size={18} color={colors.primary} />
-            <Text style={styles.summaryPillText} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.summaryPillText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.summary === en.summary ? en.summary : `${other.summary} · ${en.summary}`}
             </Text>
           </PressableScale>
@@ -945,10 +956,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="chatbubbles-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.quickPhrases}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
               {en.quickPhrases}
             </Text>
           </View>
@@ -966,10 +977,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="create-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.typeLabel}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
               {en.typeLabel}
             </Text>
           </View>
@@ -984,10 +995,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="camera-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.scanLabel}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
               {en.scanLabel}
             </Text>
           </View>
@@ -1006,7 +1017,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <Text
               style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
               allowFontScaling
-              maxFontSizeMultiplier={2}
+              maxFontSizeMultiplier={1.3}
             >
               {other.auto}
             </Text>
@@ -1014,7 +1025,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               <Text
                 style={[styles.toolButtonTextEn, autoMode && styles.toolButtonTextOn]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={1.3}
               >
                 {en.auto}
               </Text>
@@ -1061,9 +1072,13 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       <View style={styles.privacy}>
         <View style={styles.privacyRow}>
           <Ionicons name="lock-closed" size={13} color={colors.textFaint} />
-          <Text style={styles.privacyText}>{other.privacyLine}</Text>
+          <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={1.2}>
+            {other.privacyLine}
+          </Text>
         </View>
-        <Text style={styles.privacyText}>{en.privacyLine}</Text>
+        <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={1.2}>
+          {en.privacyLine}
+        </Text>
       </View>
 
       {/* Quick phrases sheet. */}
