@@ -136,6 +136,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const latestTurn = turns.length > 0 ? turns[turns.length - 1] : null;
 
   useEffect(() => {
+    // iOS audio sessions respect the silent switch by default, so on a muted
+    // phone (most phones in a clinic) playback is inaudible until the session
+    // is configured for playback. The recording flow sets this as a side
+    // effect, but phrases/typed/body-map/replay speak without ever recording.
+    setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     return () => {
       speakSessionRef.current += 1;
       if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
@@ -297,6 +302,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const speak = async (text: string, language: Language, turnId: number) => {
     const session = speakSessionRef.current;
     setPhase('speaking');
+    // Re-assert playback mode: a recording may have routed audio to the quiet
+    // earpiece, and the session must override the silent switch (see mount).
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     const uri = ttsUriRef.current ?? (await synthesize(text, language));
     // Superseded while synthesizing (new recording, phrase, or screen change):
     // whoever superseded us owns the audio and the phase now — do nothing.
