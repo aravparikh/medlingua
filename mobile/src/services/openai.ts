@@ -1,3 +1,4 @@
+import { fetch as expoFetch } from 'expo/fetch';
 import { File, Paths } from 'expo-file-system';
 
 import type { Language } from '../config/languages';
@@ -45,12 +46,21 @@ function requireKey(): string {
   return API_KEY;
 }
 
-/** fetch with a hard timeout; timeouts surface as retryable TranslationErrors. */
-async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+type FetchInit = NonNullable<Parameters<typeof expoFetch>[1]>;
+type ApiResponse = Awaited<ReturnType<typeof expoFetch>>;
+
+/**
+ * fetch with a hard timeout; timeouts surface as retryable TranslationErrors.
+ * Uses expo/fetch explicitly: on SDK 54 the global fetch is still React
+ * Native's, which can't upload expo-file-system Files as Blobs (the Whisper
+ * request) and is unreliable for arrayBuffer() (the TTS bytes). The browser
+ * preview masked both — expo/fetch behaves the same everywhere.
+ */
+async function fetchWithTimeout(url: string, init: FetchInit): Promise<ApiResponse> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await expoFetch(url, { ...init, signal: controller.signal });
   } catch (err) {
     if (controller.signal.aborted) {
       throw new TranslationError('Request timed out');
@@ -143,7 +153,7 @@ export async function transcribe(audioUri: string, language: Language | null): P
     form.append('language', language.whisper);
   }
 
-  let res: Response;
+  let res: ApiResponse;
   try {
     res = await fetchWithTimeout(`${BASE_URL}/audio/transcriptions`, {
       method: 'POST',
@@ -194,7 +204,7 @@ export async function translate(text: string, from: Language, to: Language): Pro
     '- Return only the translation, with no commentary, notes, or quotation marks.',
   ].join('\n');
 
-  let res: Response;
+  let res: ApiResponse;
   try {
     res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -258,7 +268,7 @@ export async function simplify(
     .filter(Boolean)
     .join('\n');
 
-  let res: Response;
+  let res: ApiResponse;
   try {
     res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -369,7 +379,7 @@ export async function summarizeVisit(lines: SummaryLine[], patient: Language): P
     ];
     if (feedback) messages.push({ role: 'user', content: feedback });
 
-    let res: Response;
+    let res: ApiResponse;
     try {
       res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
         method: 'POST',
@@ -452,7 +462,7 @@ export async function readMedicationLabel(base64Jpeg: string, patient: Language)
     'NEVER guess a medication name — misreading a label can hurt someone. When unsure, return readable: false.',
   ].join('\n');
 
-  let res: Response;
+  let res: ApiResponse;
   try {
     res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
