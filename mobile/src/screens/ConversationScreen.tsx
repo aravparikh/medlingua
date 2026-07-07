@@ -92,6 +92,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [teach, setTeach] = useState<{
     stage: 'loading' | 'ask' | 'loading2' | 'ask2' | 'failed' | 'error';
     text?: string;
+    /** The clinician message being explained — carried through every stage so
+     * the "explain simpler" retry can never target a different turn. */
+    source?: string;
   } | null>(null);
   /** Ephemeral visit summary — state-only, wiped when the modal closes. */
   const [summary, setSummary] = useState<SummaryState | null>(null);
@@ -121,6 +124,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
    * a synthesize request still in flight can't start playing stale audio. */
   const speakSessionRef = useRef(0);
   const lastPhraseAtRef = useRef(0);
+  /** Rapid double-taps on API-firing buttons must not fire twice (same 600ms
+   * window usePhrase uses). */
+  const lastActionAtRef = useRef(0);
   /** Pending sheet→modal handoff (see the body-map hero card). */
   const modalSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -355,7 +361,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   /** Translate + speak typed text — the fallback for loud rooms or a failing mic. */
   const useTypedText = async (who: Language) => {
     const text = typedDraft.trim();
-    if (!text || phase === 'listening' || phase === 'translating') return;
+    if (!text || phase === 'listening' || phase === 'translating' || doubleTapped()) return;
     setTypeOpen(false);
     setTypedDraft('');
     setError(null);
@@ -396,15 +402,23 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await usePhrase(phrase, otherLanguage);
   };
 
+  /** True when this tap follows another API-firing tap within 600ms. */
+  const doubleTapped = () => {
+    const now = Date.now();
+    if (now - lastActionAtRef.current < 600) return true;
+    lastActionAtRef.current = now;
+    return false;
+  };
+
   /** F2: teach-back — re-explain the clinician's message as simply as possible. */
   const startTeachBack = async (turn: Turn) => {
-    if (phase !== 'idle') return;
+    if (phase !== 'idle' || doubleTapped()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setTeach({ stage: 'loading' });
+    setTeach({ stage: 'loading', source: turn.original });
     try {
       const explained = await simplify(turn.original, otherLanguage, false);
       stopAllAudio();
-      setTeach({ stage: 'ask', text: explained });
+      setTeach({ stage: 'ask', text: explained, source: turn.original });
       // Negative id: teach-back audio must never be mistaken for a turn's
       // cached audio by the replay path.
       await speak(explained, otherLanguage, -turn.id);
@@ -430,11 +444,18 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       setTeach({ stage: 'failed' });
       return;
     }
-    setTeach({ stage: 'loading2' });
+    setTeach({ stage: 'loading2', source: teach.source });
     try {
-      const latest = turns[turns.length - 1];
-      const simpler = await simplify(latest?.original ?? teach.text ?? '', otherLanguage, true);
-      setTeach({ stage: 'ask2', text: simpler });
+      const source = teach.source ?? teach.text ?? '';
+      let simpler = await simplify(source, otherLanguage, true);
+      // A retry that repeats the first explanation verbatim is a silent no-op
+      // for the patient — push back once, then accept whatever comes.
+      const same = (a: string, b?: string) =>
+        !!b && a.replace(/\s+/g, ' ').trim().toLowerCase() === b.replace(/\s+/g, ' ').trim().toLowerCase();
+      if (same(simpler, teach.text)) {
+        simpler = await simplify(source, otherLanguage, true, simpler);
+      }
+      setTeach({ stage: 'ask2', text: simpler, source: teach.source });
       await speak(simpler, otherLanguage, -Date.now());
     } catch {
       stopAllAudio();
@@ -458,6 +479,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   /** F4: body map picked a region + intensity — say it in English, log the turn. */
   const confirmBodyPain = async (regionId: BodyRegionId, n: number) => {
+    if (doubleTapped()) return;
     const region = BODY_REGIONS[regionId];
     const sentence = (code: string) =>
       t(code).myHurtsPain.replace('{part}', region.name[code]).replace('{n}', String(n));
@@ -549,7 +571,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   /** F3: builds the ephemeral bilingual visit summary from the in-memory thread. */
   const openSummary = async (currentTurns: Turn[]) => {
-    if (busy || currentTurns.length < 2) return;
+    if (busy || currentTurns.length < 2 || doubleTapped()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSummary({ status: 'loading' });
     try {
@@ -893,9 +915,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
         {turns.length === 0 && !error && !setupError && phase === 'idle' ? (
           <View style={styles.hint}>
-            <View style={styles.hintIconCircle} importantForAccessibility="no">
-              <Ionicons name="mic-outline" size={42} color={colors.primary} />
-            </View>
+            {/* The disclaimer banner already fills the top of a first-run
+               screen — drop the decorative mic circle so the instruction and
+               its arrow stay above the fold. */}
+            {!showDisclaimer ? (
+              <View style={styles.hintIconCircle} importantForAccessibility="no">
+                <Ionicons name="mic-outline" size={42} color={colors.primary} />
+              </View>
+            ) : null}
             <Text style={styles.hintText}>{other.holdAndSpeak}</Text>
             <Text style={styles.hintTextSmall}>{en.holdAndSpeak}</Text>
             <Ionicons name="arrow-down" size={30} color={colors.accent} style={styles.hintArrow} />
@@ -1152,7 +1179,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               </ScrollView>
 
               <Text style={styles.sheetSection} importantForAccessibility="no">
-                English → {otherLanguage.nativeName}
+                {ENGLISH.nativeName} → {otherLanguage.nativeName}
               </Text>
               {CLINICIAN_PHRASES.map((phrase) => (
                 <PressableScale
@@ -1176,7 +1203,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               ))}
 
               <Text style={styles.sheetSection} importantForAccessibility="no">
-                {otherLanguage.nativeName} → English
+                {otherLanguage.nativeName} → {ENGLISH.nativeName}
               </Text>
               {PATIENT_PHRASES.map((phrase) => (
                 <PressableScale
@@ -1259,7 +1286,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   flexFill
                   style={[styles.typeSend, { backgroundColor: colors.primary }, !typedDraft.trim() && styles.dimmed]}
                 >
-                  <Text style={styles.typeSendText}>English</Text>
+                  <Text style={styles.typeSendText}>{ENGLISH.nativeName}</Text>
                   <Ionicons name="arrow-forward" size={20} color={colors.onPrimary} />
                 </PressableScale>
                 <PressableScale

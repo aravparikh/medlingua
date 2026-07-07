@@ -232,7 +232,13 @@ export async function translate(text: string, from: Language, to: Language): Pro
  * the simplest possible level. `evenSimpler` is the second attempt, used when
  * the patient answered "no" to "did you understand?".
  */
-export async function simplify(text: string, into: Language, evenSimpler: boolean): Promise<string> {
+export async function simplify(
+  text: string,
+  into: Language,
+  evenSimpler: boolean,
+  /** A previous explanation that came back unchanged — tells the model its retry was a no-op. */
+  rejectedAttempt?: string,
+): Promise<string> {
   const key = requireKey();
 
   const system = [
@@ -243,6 +249,9 @@ export async function simplify(text: string, into: Language, evenSimpler: boolea
     '- Do not add information that is not in the message.',
     evenSimpler
       ? '- The patient did NOT understand the previous explanation. Go even simpler: one idea per sentence, as you would explain to a child, and keep it short.'
+      : '',
+    rejectedAttempt
+      ? `- Your previous answer was identical to the explanation the patient already failed to understand: "${rejectedAttempt}". Say it a DIFFERENT, shorter, simpler way.`
       : '',
     '- Return only the explanation, no commentary.',
   ]
