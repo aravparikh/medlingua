@@ -65,5 +65,9 @@ export function PressableScale({
 }
 
 const styles = {
-  fill: { flex: 1 } as ViewStyle,
+  // NOT `flex: 1`: its implicit flexBasis 0 makes native Yoga collapse this
+  // view to zero height inside an auto-sized Pressable, so buttons paint over
+  // their siblings on device. Web flexbox clamps to content size and hides
+  // the bug — which is why every browser preview looked fine.
+  fill: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto' } as ViewStyle,
 };
