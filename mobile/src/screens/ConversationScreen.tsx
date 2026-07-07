@@ -8,6 +8,7 @@ import {
   useAudioRecorder,
   type AudioPlayer,
 } from 'expo-audio';
+import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
@@ -472,12 +473,31 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await speak(turn.translation, ENGLISH, turn.id);
   };
 
+  /**
+   * Privacy contract: the picker writes the photo into the app cache as a side
+   * effect. The label photo is the most sensitive artifact this app touches,
+   * and the UI promises "nothing is saved" — so every exit path (success,
+   * unreadable, error, even a crash mid-scan) must delete the cached file(s).
+   * Only the in-memory base64 is sent to the API; nothing image-shaped remains
+   * on disk afterwards.
+   */
+  const deletePickedAssets = (picked: ImagePicker.ImagePickerResult | null) => {
+    if (Platform.OS === 'web' || !picked || picked.canceled) return;
+    for (const asset of picked.assets ?? []) {
+      try {
+        new File(asset.uri).delete();
+      } catch {
+        // Best-effort: the OS clears its own cache eventually regardless.
+      }
+    }
+  };
+
   /** F5: photograph a medication label → plain-language bilingual explanation. */
   const openScanner = async () => {
     if (busy) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    let picked: ImagePicker.ImagePickerResult | null = null;
     try {
-      let picked: ImagePicker.ImagePickerResult;
       if (Platform.OS === 'web') {
         // Browsers can't reliably open a camera capture flow — the library
         // picker covers web preview/testing.
@@ -503,6 +523,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setScan({ status: 'error' });
+    } finally {
+      deletePickedAssets(picked);
     }
   };
 

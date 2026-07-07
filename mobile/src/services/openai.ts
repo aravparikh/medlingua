@@ -288,55 +288,127 @@ export interface SummaryLine {
   text: string;
 }
 
+/** Strips accents and lowercases, so "Ibuprofeno" matches "ibuprofeno". */
+function normalizeForMatch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * Fact-checks a generated summary against the transcript it claims to
+ * summarize. Returns tokens in the summary that the transcript cannot back up:
+ * dose-like tokens ("200 mg") and words with common medication-name suffixes
+ * ("ibuprofeno"). A heuristic, not a proof — the prompt is the primary
+ * defense; this is the hard gate for the most dangerous fabrication class
+ * (invented drugs and doses on a take-home medical document).
+ */
+export function findUngroundedTokens(summary: string, transcript: string): string[] {
+  const t = normalizeForMatch(transcript);
+  const s = normalizeForMatch(summary);
+  const violations = new Set<string>();
+
+  // Any dose (number + unit) in the summary must have its number in the source.
+  for (const m of s.matchAll(/\d+(?:[.,]\d+)?\s?(?:mg|mcg|ug|ml|g|iu|ui)\b/g)) {
+    const num = m[0].match(/\d+(?:[.,]\d+)?/)?.[0];
+    if (num && !t.includes(num)) violations.add(m[0]);
+  }
+
+  // Medication-name heuristic: common pharma suffixes across our languages.
+  const drugSuffix =
+    /(?:cilina|cillin|micina|mycin|profeno|profen|statina|statin|prazol|prazole|pril|sartan|dipina|dipine|zepam|zolam|formina|formin|oxacina|oxacin|tamol|tinib|semida|semide)$/;
+  for (const m of s.matchAll(/\p{L}{6,}/gu)) {
+    if (drugSuffix.test(m[0]) && !t.includes(m[0])) violations.add(m[0]);
+  }
+
+  return [...violations];
+}
+
 /**
  * Builds a short bilingual visit summary (patient language first, English
  * second) from the in-memory transcript. The result is only ever held in
  * component state and shown behind a countdown — never written to disk.
+ *
+ * Grounding contract: every bullet must restate a transcript line. The model
+ * is instructed quote-only, and the output is fact-checked with
+ * `findUngroundedTokens`; one retry with the violations fed back, then fail —
+ * an error state is safer than a take-home document naming a medication
+ * nobody prescribed.
  */
 export async function summarizeVisit(lines: SummaryLine[], patient: Language): Promise<string> {
   const key = requireKey();
 
   const system = [
-    `You are a medical interpreter writing a short summary of a clinic conversation for the patient to keep. Write the ENTIRE summary twice: first in ${patient.englishName}, then in English.`,
+    `You are a medical interpreter creating a take-home summary of a clinic conversation. Write the ENTIRE summary twice: first in ${patient.englishName}, then in English.`,
+    'THE ONE UNBREAKABLE RULE: every bullet must restate something explicitly present in the transcript. You may translate and simplify wording, but you may not add ANY fact, symptom, medication, dose, or time that the transcript does not contain. Inventing content in a medical document is a safety failure.',
     'Rules:',
+    '- Before writing a bullet, identify the exact transcript line it restates. If you cannot point to a line, do not write the bullet.',
     '- Use these four section headings, translated appropriately: Symptoms, Medications, Instructions, Follow-up.',
-    '- Under each heading, short plain lines starting with "• ". If nothing was discussed for a section, write "• —".',
-    '- Simple words a 6th grader would understand. Preserve medication names, doses, and times exactly.',
-    '- Only include what was actually said — never invent or infer details.',
+    `- The output always has exactly eight sections: the four headings in ${patient.englishName}, then the same four headings again in English. Never stop after the first half.`,
+    '- Under each heading, short plain lines starting with "• ". If the transcript has no content for a section, output exactly "• —". An empty section is correct and expected — most short conversations fill only one or two sections.',
+    '- Simple words a 6th grader would understand. Copy medication names, doses, and times exactly as the transcript writes them.',
     '- Plain text only: no markdown besides the "• " bullets, no extra commentary.',
   ].join('\n');
 
   const transcript = lines.map((l) => `${l.speaker.englishName}: ${l.text}`).join('\n');
 
-  let res: Response;
-  try {
-    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        temperature: 0.2,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: transcript },
-        ],
-      }),
-    });
-  } catch (err) {
-    if (err instanceof TranslationError) throw err;
-    throw new TranslationError('Network error during summary');
-  }
-  if (!res.ok) {
-    throw new TranslationError(`Summary failed (${res.status}): ${await res.text()}`);
-  }
+  const generate = async (feedback: string | null): Promise<string> => {
+    const messages: { role: string; content: string }[] = [
+      { role: 'system', content: system },
+      { role: 'user', content: transcript },
+    ];
+    if (feedback) messages.push({ role: 'user', content: feedback });
 
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  const summary = data.choices?.[0]?.message?.content?.trim();
-  if (!summary) {
-    throw new TranslationError('Empty summary');
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ model: 'gpt-4o', temperature: 0, messages }),
+      });
+    } catch (err) {
+      if (err instanceof TranslationError) throw err;
+      throw new TranslationError('Network error during summary');
+    }
+    if (!res.ok) {
+      throw new TranslationError(`Summary failed (${res.status}): ${await res.text()}`);
+    }
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const summary = data.choices?.[0]?.message?.content?.trim();
+    if (!summary) {
+      throw new TranslationError('Empty summary');
+    }
+    return summary;
+  };
+
+  // Both fabricated facts AND a missing English half are validation failures —
+  // the clinician must be able to read the take-home document too.
+  const problemsWith = (text: string): string | null => {
+    const ungrounded = findUngroundedTokens(text, transcript);
+    if (ungrounded.length > 0) {
+      return `Your summary included "${ungrounded.join('", "')}" — none of which appear in the transcript. That is a safety failure. Regenerate using ONLY facts from the transcript; leave sections as "• —" when the transcript says nothing about them.`;
+    }
+    const englishHalf = ['Symptoms', 'Medications', 'Instructions', 'Follow-up'].every((h) =>
+      new RegExp(h, 'i').test(text),
+    );
+    if (!englishHalf) {
+      return 'Your summary is missing the English half. Regenerate with all eight sections: the four headings in the patient language first, then the same four sections again in English.';
+    }
+    return null;
+  };
+
+  let summary = await generate(null);
+  let problem = problemsWith(summary);
+  if (problem) {
+    summary = await generate(problem);
+    problem = problemsWith(summary);
+    if (problem) {
+      throw new TranslationError(`Summary failed validation: ${problem}`);
+    }
   }
   return summary;
 }
