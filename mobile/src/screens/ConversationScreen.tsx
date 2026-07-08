@@ -6,6 +6,7 @@ import {
   RecordingPresets,
   setAudioModeAsync,
   useAudioRecorder,
+  useAudioRecorderState,
   type AudioPlayer,
 } from 'expo-audio';
 import { File } from 'expo-file-system';
@@ -30,11 +31,13 @@ import {
   TranslationError,
   type MedLabelResult,
 } from '../services/openai';
+import { playStartChime, playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
 import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
+import { LevelMeter } from '../components/LevelMeter';
 import { PressableScale } from '../components/PressableScale';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
 import { TurnSkeleton } from '../components/Skeleton';
@@ -60,18 +63,28 @@ interface Props {
   onShowAbout: () => void;
 }
 
-/** Releasing the button after this long counts as hold-to-talk; a quicker tap
- * keeps recording until the button is tapped again. Forgiving either way. */
-const HOLD_THRESHOLD_MS = 700;
+/** Below this normalized mic level for SILENCE_NUDGE_MS, show "speak louder". */
+const QUIET_LEVEL = 0.14;
+const SILENCE_NUDGE_MS = 2000;
+
+const formatElapsed = (ms: number) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
 
 /**
  * The conversation screen — where 95% of usage happens. Two big buttons, one
- * per language (or a single auto-detect button); each person holds or taps,
- * speaks, and hears the translation aloud. The running thread makes the
- * back-and-forth visible; nothing is ever written to disk.
+ * per language (or a single auto-detect button). One tap starts recording;
+ * the bottom of the screen becomes a recording panel (elapsed time, a live
+ * mic meter, one giant Done button) so nothing needs to be held and nothing
+ * needs precision. The running thread makes the back-and-forth visible;
+ * nothing is ever written to disk.
  */
 export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChangeLanguage, onShowAbout }: Props) {
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  // Metering powers the live level meter — real "I can hear you" feedback,
+  // not a decorative pulse.
+  const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
+  const recorderState = useAudioRecorderState(recorder, 150);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [speaker, setSpeaker] = useState<Language | null>(null);
@@ -80,7 +93,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   >(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [retryCtx, setRetryCtx] = useState<{ uri: string; who: Language | null } | null>(null);
-  const [awaitingTap, setAwaitingTap] = useState(false);
+  /** True after ~2s of near-silence while recording — shows "speak louder". */
+  const [tooQuiet, setTooQuiet] = useState(false);
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
   const [flipped, setFlipped] = useState(false);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
@@ -110,12 +124,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   >(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
 
-  const pressStartedAt = useRef(0);
   const startingRef = useRef(false);
   const finishingRef = useRef(false);
-  /** Set when the button is released before recording has started (see handlePressOut). */
-  const releasedEarlyRef = useRef(false);
   const listeningStartedAtRef = useRef(0);
+  /** Last time the mic heard something above QUIET_LEVEL. */
+  const lastLoudAtRef = useRef(0);
   const playerRef = useRef<AudioPlayer | null>(null);
   /** Which turn the loaded player belongs to — replay must never play another turn's audio. */
   const playerTurnIdRef = useRef<number | null>(null);
@@ -135,6 +148,29 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const other = t(otherLanguage.code);
   const latestTurn = turns.length > 0 ? turns[turns.length - 1] : null;
 
+  /** Recorder metering is in dB (≈ -160 silent … 0 loudest); normal speech at
+   * arm's length sits around -30 to -15. Normalized to 0..1 for the meter;
+   * null when metering isn't available (web), which renders resting bars. */
+  const meterLevel =
+    phase === 'listening' && typeof recorderState.metering === 'number'
+      ? Math.min(1, Math.max(0, (recorderState.metering + 50) / 50))
+      : null;
+
+  // The "speak louder" nudge: quiet for SILENCE_NUDGE_MS while recording.
+  // People fix their volume mid-sentence instead of after a failed attempt.
+  useEffect(() => {
+    if (phase !== 'listening' || meterLevel == null) {
+      if (tooQuiet) setTooQuiet(false);
+      return;
+    }
+    if (meterLevel > QUIET_LEVEL) {
+      lastLoudAtRef.current = Date.now();
+      if (tooQuiet) setTooQuiet(false);
+    } else if (!tooQuiet && Date.now() - lastLoudAtRef.current > SILENCE_NUDGE_MS) {
+      setTooQuiet(true);
+    }
+  }, [phase, meterLevel, tooQuiet]);
+
   useEffect(() => {
     // iOS audio sessions respect the silent switch by default, so on a muted
     // phone (most phones in a clinic) playback is inaudible until the session
@@ -145,6 +181,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       speakSessionRef.current += 1;
       if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
       playerRef.current?.remove();
+      releaseChimes();
       Speech.stop();
       clearSpokenAudio();
     };
@@ -175,7 +212,6 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setError(null);
     setSetupError(null);
     setRetryCtx(null);
-    releasedEarlyRef.current = false;
     stopAllAudio();
 
     try {
@@ -186,23 +222,20 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         return;
       }
 
+      // The start chime plays before the session flips to recording, while
+      // audio still routes to the loud speaker.
+      playStartChime();
       // allowsRecording routes iOS audio to the quiet earpiece, so it is only
       // enabled while actually recording and switched off again for playback.
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
       listeningStartedAtRef.current = Date.now();
+      lastLoudAtRef.current = Date.now();
+      setTooQuiet(false);
       setSpeaker(who);
       setPhase('listening');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      if (releasedEarlyRef.current) {
-        // The finger already lifted while we were still starting up: don't
-        // leave the mic recording indefinitely — stop it cleanly now, the
-        // same as a normal release. `who` is passed explicitly since the
-        // `speaker` state from setSpeaker above hasn't committed yet.
-        releasedEarlyRef.current = false;
-        void finishListening(who);
-      }
     } catch {
       setError('connectionError');
       setPhase('idle');
@@ -211,17 +244,15 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     }
   };
 
-  /** `who` defaults to the current speaker state; callers that stop a recording
-   * before that state has committed (see startListening's early-release path)
-   * must pass it explicitly to avoid attributing the turn to a stale speaker. */
   const finishListening = async (who: Language | null = speaker) => {
     if (finishingRef.current) return;
     finishingRef.current = true;
-    setAwaitingTap(false);
+    setTooQuiet(false);
     setPhase('translating');
     try {
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      playStopChime();
 
       const heldFor = Date.now() - listeningStartedAtRef.current;
       const uri = recorder.uri;
@@ -612,42 +643,34 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     savePrefs({ autoMode: next });
   };
 
-  const sameSide = (a: Language | null, b: Language | null) => (a?.code ?? null) === (b?.code ?? null);
-
-  const handlePressIn = (who: Language | null) => {
-    if (phase === 'listening') {
-      // Second tap of tap-to-talk mode: finish.
-      if (sameSide(speaker, who)) void finishListening();
-      return;
-    }
+  /** One tap starts recording. The whole bottom of the screen then becomes
+   * the recording panel, so finishing is one giant unmissable Done tap. */
+  const startTap = (who: Language | null) => {
     if (phase !== 'idle' && phase !== 'speaking') return;
-    pressStartedAt.current = Date.now();
     void startListening(who);
   };
 
-  const handlePressOut = (who: Language | null) => {
-    if (phase !== 'listening' || !sameSide(speaker, who)) {
-      // Released while the recorder was still starting up — note it so the
-      // "tap when finished" hint appears once listening actually begins.
-      if (startingRef.current) releasedEarlyRef.current = true;
-      return;
+  /** Stops the recording and throws it away — no transcription, no turn. */
+  const cancelListening = async () => {
+    if (finishingRef.current || phase !== 'listening') return;
+    finishingRef.current = true;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTooQuiet(false);
+    try {
+      await recorder.stop();
+    } catch {
+      // Discarding anyway.
     }
-    const heldFor = Date.now() - pressStartedAt.current;
-    if (heldFor >= HOLD_THRESHOLD_MS) {
-      void finishListening();
-    } else if (pressStartedAt.current !== 0) {
-      // A quick tap: keep listening and wait for a second tap to finish.
-      setAwaitingTap(true);
-    }
-  };
-
-  const buttonState = (who: Language | null) => {
-    if (phase === 'listening') return sameSide(speaker, who) ? 'listening' : 'disabled';
-    if (phase === 'translating') return 'disabled';
-    return 'idle';
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+    setPhase('idle');
+    finishingRef.current = false;
   };
 
   const busy = phase === 'listening' || phase === 'translating';
+
+  /** Recording-panel strings: the speaker's own language, English secondary.
+   * Auto mode (speaker unknown) falls back to the bilingual pair. */
+  const rec = speaker ? t(speaker.code) : other;
 
   return (
     <View style={styles.screen}>
@@ -921,17 +944,6 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </Appear>
         ) : null}
 
-        {phase === 'listening' ? (
-          <Appear style={styles.statusRow}>
-            <View accessibilityLiveRegion="polite" style={styles.statusInner}>
-              <Ionicons name="mic" size={26} color={colors.listening} />
-              <Text style={styles.statusBig}>
-                {speaker ? t(speaker.code).listening : `${other.listening} · ${en.listening}`}
-              </Text>
-            </View>
-          </Appear>
-        ) : null}
-
         {turns.length === 0 && !error && !setupError && phase === 'idle' ? (
           <View style={styles.hint}>
             {/* The disclaimer banner already fills the top of a first-run
@@ -949,6 +961,85 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         ) : null}
       </ScrollView>
 
+      {phase === 'listening' ? (
+        /* While recording, the bottom of the screen becomes one thing: the
+         * phone is visibly a microphone. Elapsed time, a live level meter,
+         * and a giant Done button — no tools, no clutter, no precision. */
+        <Appear style={styles.recordPanel}>
+          <View style={styles.recordStatus} accessibilityLiveRegion="polite">
+            <Ionicons name="mic" size={26} color={colors.listening} />
+            <Text style={styles.recordTimer} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {formatElapsed(recorderState.durationMillis)}
+            </Text>
+            <Text
+              style={styles.recordLabel}
+              accessibilityLanguage={speaker?.speechTag}
+              allowFontScaling
+              maxFontSizeMultiplier={1.3}
+              numberOfLines={1}
+            >
+              {speaker ? rec.listening : `${other.listening} · ${en.listening}`}
+            </Text>
+          </View>
+
+          <LevelMeter level={meterLevel} />
+
+          {/* Fixed-height slot so the nudge appearing never shifts the Done button. */}
+          <View style={styles.nudgeSlot} accessibilityLiveRegion="polite">
+            {tooQuiet ? (
+              <>
+                <Text style={styles.nudgeText} accessibilityLanguage={speaker?.speechTag}>
+                  {rec.speakLouder}
+                </Text>
+                {rec.speakLouder !== en.speakLouder ? (
+                  <Text style={styles.nudgeTextEn}>{en.speakLouder}</Text>
+                ) : null}
+              </>
+            ) : null}
+          </View>
+
+          <PressableScale
+            onPress={() => void finishListening()}
+            accessibilityRole="button"
+            accessibilityLabel={`${rec.doneLabel} — ${en.doneLabel}`}
+            accessibilityHint={`${rec.tapWhenDone} — ${en.tapWhenDone}`}
+            style={styles.doneOuter}
+          >
+            {({ pressed }) => (
+              <View style={[styles.doneInner, pressed && styles.doneInnerPressed]}>
+                <Ionicons name="checkmark" size={44} color={colors.onPrimary} />
+                <View style={styles.doneLabels}>
+                  <Text
+                    style={styles.doneText}
+                    accessibilityLanguage={speaker?.speechTag}
+                    allowFontScaling
+                    maxFontSizeMultiplier={1.3}
+                  >
+                    {rec.doneLabel}
+                  </Text>
+                  {rec.doneLabel !== en.doneLabel ? (
+                    <Text style={styles.doneTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+                      {en.doneLabel}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            )}
+          </PressableScale>
+
+          <Pressable
+            onPress={() => void cancelListening()}
+            accessibilityRole="button"
+            accessibilityLabel={`${rec.cancel} — ${en.cancel}`}
+            style={({ pressed }) => [styles.cancelLink, pressed && styles.pressedDim]}
+          >
+            <Text style={styles.cancelText} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {rec.cancel === en.cancel ? en.cancel : `${rec.cancel} · ${en.cancel}`}
+            </Text>
+          </Pressable>
+        </Appear>
+      ) : (
+        <>
       {/* Tools: quick phrases + auto-detect toggle. */}
       <View style={styles.toolRow}>
         <PressableScale
@@ -1053,30 +1144,24 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         {autoMode ? (
           <AutoSpeakButton
             otherLanguage={otherLanguage}
-            state={buttonState(null)}
-            awaitingTapToStop={awaitingTap}
-            onPressIn={() => handlePressIn(null)}
-            onPressOut={() => handlePressOut(null)}
+            disabled={phase === 'translating'}
+            onStart={() => startTap(null)}
           />
         ) : (
           <>
             <SpeakButton
               language={ENGLISH}
-              state={buttonState(ENGLISH)}
-              awaitingTapToStop={awaitingTap && speaker?.code === 'en'}
+              disabled={phase === 'translating'}
               fill={colors.primary}
               fillPressed={colors.primaryPressed}
-              onPressIn={() => handlePressIn(ENGLISH)}
-              onPressOut={() => handlePressOut(ENGLISH)}
+              onStart={() => startTap(ENGLISH)}
             />
             <SpeakButton
               language={otherLanguage}
-              state={buttonState(otherLanguage)}
-              awaitingTapToStop={awaitingTap && speaker?.code === otherLanguage.code}
+              disabled={phase === 'translating'}
               fill={colors.secondary}
               fillPressed={colors.secondaryPressed}
-              onPressIn={() => handlePressIn(otherLanguage)}
-              onPressOut={() => handlePressOut(otherLanguage)}
+              onStart={() => startTap(otherLanguage)}
             />
           </>
         )}
@@ -1094,6 +1179,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           {en.privacyLine}
         </Text>
       </View>
+        </>
+      )}
 
       {/* Quick phrases sheet. */}
       <Modal
@@ -1694,20 +1781,91 @@ const styles = StyleSheet.create({
   hintArrow: {
     marginTop: spacing.md,
   },
-  statusRow: {
-    paddingVertical: spacing.sm,
+  recordPanel: {
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  statusInner: {
+  recordStatus: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  statusBig: {
-    fontFamily: fonts.displayMedium,
+  recordTimer: {
+    fontFamily: fonts.display,
     fontSize: type.title,
     color: colors.listening,
+    fontVariant: ['tabular-nums'],
+  },
+  recordLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.textMuted,
+    flexShrink: 1,
+  },
+  nudgeSlot: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  nudgeText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.small,
+    color: colors.listening,
     textAlign: 'center',
+  },
+  nudgeTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.listening,
+    textAlign: 'center',
+    opacity: 0.85,
+  },
+  doneOuter: {
+    borderRadius: radius.xl,
+    ...shadows.raised,
+  },
+  doneInner: {
+    minHeight: 120,
+    borderRadius: radius.xl,
+    backgroundColor: colors.listening,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  doneInnerPressed: {
+    backgroundColor: colors.listeningPressed,
+  },
+  doneLabels: {
+    alignItems: 'center',
+  },
+  doneText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.title,
+    color: colors.onPrimary,
+    textAlign: 'center',
+  },
+  doneTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.onPrimary,
+    opacity: 0.9,
+    textAlign: 'center',
+  },
+  cancelLink: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  cancelText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.textMuted,
   },
   pendingWrap: {
     gap: spacing.xs,

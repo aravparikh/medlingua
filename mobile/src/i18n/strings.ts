@@ -14,6 +14,9 @@ export interface UIStrings {
   translationLabel: string;
   holdAndSpeak: string;
   tapWhenDone: string;
+  doneLabel: string;
+  cancel: string;
+  speakLouder: string;
   didntCatch: string;
   connectionError: string;
   notReady: string;
@@ -91,8 +94,11 @@ export const STRINGS: Record<string, UIStrings> = {
     playAgain: 'Play again',
     youSaid: 'You said',
     translationLabel: 'Translation',
-    holdAndSpeak: 'Hold your button and speak',
+    holdAndSpeak: 'Tap your button and speak',
     tapWhenDone: 'Tap when finished',
+    doneLabel: 'Done',
+    cancel: 'Cancel',
+    speakLouder: 'Speak louder or move closer',
     didntCatch: "I didn't catch that — tap and try again.",
     connectionError: "Couldn't connect — please try again.",
     notReady: 'Translation is not available right now.',
@@ -162,8 +168,11 @@ export const STRINGS: Record<string, UIStrings> = {
     playAgain: 'Repetir',
     youSaid: 'Usted dijo',
     translationLabel: 'Traducción',
-    holdAndSpeak: 'Mantenga pulsado su botón y hable',
+    holdAndSpeak: 'Toque su botón y hable',
     tapWhenDone: 'Toque al terminar',
+    doneLabel: 'Listo',
+    cancel: 'Cancelar',
+    speakLouder: 'Hable más fuerte o acérquese',
     didntCatch: 'No escuché bien. Toque y vuelva a intentarlo.',
     connectionError: 'No se pudo conectar. Vuelva a intentarlo.',
     notReady: 'La traducción no está disponible en este momento.',
@@ -233,8 +242,11 @@ export const STRINGS: Record<string, UIStrings> = {
     playAgain: '再听一遍',
     youSaid: '您说',
     translationLabel: '翻译',
-    holdAndSpeak: '按住您的按钮说话',
+    holdAndSpeak: '点击您的按钮说话',
     tapWhenDone: '说完后再点一下',
+    doneLabel: '完成',
+    cancel: '取消',
+    speakLouder: '请大声一点或靠近一些',
     didntCatch: '没有听清，请点击后再试一次。',
     connectionError: '无法连接，请再试一次。',
     notReady: '目前无法使用翻译。',
@@ -304,8 +316,11 @@ export const STRINGS: Record<string, UIStrings> = {
     playAgain: 'Nghe lại',
     youSaid: 'Bạn đã nói',
     translationLabel: 'Bản dịch',
-    holdAndSpeak: 'Giữ nút của bạn và nói',
+    holdAndSpeak: 'Chạm nút của bạn và nói',
     tapWhenDone: 'Chạm khi nói xong',
+    doneLabel: 'Xong',
+    cancel: 'Hủy',
+    speakLouder: 'Nói to hơn hoặc lại gần hơn',
     didntCatch: 'Tôi chưa nghe rõ — hãy chạm và thử lại.',
     connectionError: 'Không thể kết nối — vui lòng thử lại.',
     notReady: 'Hiện không thể dịch được.',
@@ -375,8 +390,11 @@ export const STRINGS: Record<string, UIStrings> = {
     playAgain: 'Повторить',
     youSaid: 'Вы сказали',
     translationLabel: 'Перевод',
-    holdAndSpeak: 'Удерживайте свою кнопку и говорите',
+    holdAndSpeak: 'Нажмите свою кнопку и говорите',
     tapWhenDone: 'Нажмите, когда закончите',
+    doneLabel: 'Готово',
+    cancel: 'Отмена',
+    speakLouder: 'Говорите громче или ближе',
     didntCatch: 'Я не расслышал — нажмите и попробуйте ещё раз.',
     connectionError: 'Не удалось подключиться — попробуйте ещё раз.',
     notReady: 'Перевод сейчас недоступен.',
