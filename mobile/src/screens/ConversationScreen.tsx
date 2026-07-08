@@ -964,11 +964,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="chatbubbles-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {other.quickPhrases}
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+              {other.quickPhrasesShort}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {en.quickPhrases}
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+              {en.quickPhrasesShort}
             </Text>
           </View>
         </PressableScale>
@@ -985,10 +985,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="create-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {other.typeLabel}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {en.typeLabel}
             </Text>
           </View>
@@ -1003,10 +1003,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         >
           <Ionicons name="camera-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {other.scanLabel}
             </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {en.scanLabel}
             </Text>
           </View>
@@ -1026,6 +1026,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
               allowFontScaling
               maxFontSizeMultiplier={1.3}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.65}
             >
               {other.auto}
             </Text>
@@ -1034,6 +1037,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 style={[styles.toolButtonTextEn, autoMode && styles.toolButtonTextOn]}
                 allowFontScaling
                 maxFontSizeMultiplier={1.3}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.65}
               >
                 {en.auto}
               </Text>
@@ -1934,7 +1940,7 @@ const styles = StyleSheet.create({
   },
   toolButtonLabels: {
     flexShrink: 1,
-    alignItems: 'center',
+    alignSelf: 'stretch',
   },
   toolButtonText: {
     fontFamily: fonts.bodyMedium,

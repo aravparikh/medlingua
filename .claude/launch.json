@@ -9,6 +9,15 @@
         "cd mobile && npx expo start --web --port 8095"
       ],
       "port": 8095
+    },
+    {
+      "name": "suvidha-hackathon",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd suvidha-hackathon && npm run dev -- --port 3111"
+      ],
+      "port": 3111
     }
   ]
 }

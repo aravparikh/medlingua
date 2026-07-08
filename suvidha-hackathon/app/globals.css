@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* ── Art Deco design tokens ─────────────────────────────────────── */
+@theme {
+  --color-obsidian: #0a0a0a;
+  --color-charcoal: #141414;
+  --color-cream: #f2f0e4;
+  --color-gold: #d4af37;
+  --color-gold-light: #f2e8c4;
+  --color-midnight: #1e3d59;
+  --color-pewter: #888888;
+}
+
+@theme inline {
+  --font-display: var(--font-marcellus), serif;
+  --font-body: var(--font-josefin), sans-serif;
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  /* keep anchored sections clear of the sticky nav */
+  scroll-padding-top: 6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  background-color: var(--color-obsidian);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  /* diagonal crosshatch — signature background pattern */
+  background-image: repeating-linear-gradient(
+      45deg,
+      rgba(212, 175, 55, 0.035) 0px,
+      rgba(212, 175, 55, 0.035) 1px,
+      transparent 1px,
+      transparent 28px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(212, 175, 55, 0.035) 0px,
+      rgba(212, 175, 55, 0.035) 1px,
+      transparent 1px,
+      transparent 28px
+    );
+}
+
+/* vintage film grain overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background-color: var(--color-gold);
+  color: var(--color-obsidian);
+}
+
+/* ── Deco set pieces ────────────────────────────────────────────── */
+
+/* sunburst rays emanating from the hero title */
+.sunburst {
+  background: repeating-conic-gradient(
+    from -90deg at 50% 42%,
+    rgba(212, 175, 55, 0.09) 0deg 4deg,
+    transparent 4deg 12deg
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 55% at 50% 42%,
+    black 0%,
+    transparent 70%
+  );
+}
+
+/* soft golden halo behind focal points */
+.deco-halo {
+  background: radial-gradient(
+    ellipse 55% 45% at 50% 42%,
+    rgba(212, 175, 55, 0.16) 0%,
+    transparent 70%
+  );
+}
+
+/* ziggurat-stepped top edge for major section frames */
+.stepped-corners {
+  clip-path: polygon(
+    0 24px,
+    12px 24px,
+    12px 12px,
+    24px 12px,
+    24px 0,
+    calc(100% - 24px) 0,
+    calc(100% - 24px) 12px,
+    calc(100% - 12px) 12px,
+    calc(100% - 12px) 24px,
+    100% 24px,
+    100% 100%,
+    0 100%
+  );
+}

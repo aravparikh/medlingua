@@ -27,6 +27,8 @@ export interface UIStrings {
   /** Template — {n} is replaced with the chosen 0-10 pain number. */
   painIs: string;
   quickPhrases: string;
+  /** Short form for the narrow toolbar chip; the sheet title uses the full form. */
+  quickPhrasesShort: string;
   close: string;
   auto: string;
   speakAuto: string;
@@ -103,6 +105,7 @@ export const STRINGS: Record<string, UIStrings> = {
     painScaleLabel: 'Pain scale',
     painIs: 'My pain is {n} out of 10.',
     quickPhrases: 'Quick phrases',
+    quickPhrasesShort: 'Phrases',
     close: 'Close',
     auto: 'Auto',
     speakAuto: 'Speak',
@@ -173,6 +176,7 @@ export const STRINGS: Record<string, UIStrings> = {
     painScaleLabel: 'Escala de dolor',
     painIs: 'Mi dolor es {n} de 10.',
     quickPhrases: 'Frases rápidas',
+    quickPhrasesShort: 'Frases',
     close: 'Cerrar',
     auto: 'Automático',
     speakAuto: 'Hablar',
@@ -243,6 +247,7 @@ export const STRINGS: Record<string, UIStrings> = {
     painScaleLabel: '疼痛等级',
     painIs: '我的疼痛程度是{n}分（满分10分）。',
     quickPhrases: '常用短语',
+    quickPhrasesShort: '短语',
     close: '关闭',
     auto: '自动',
     speakAuto: '说话',
@@ -313,6 +318,7 @@ export const STRINGS: Record<string, UIStrings> = {
     painScaleLabel: 'Mức độ đau',
     painIs: 'Cơn đau của tôi là {n} trên 10.',
     quickPhrases: 'Câu thường dùng',
+    quickPhrasesShort: 'Câu nói',
     close: 'Đóng',
     auto: 'Tự động',
     speakAuto: 'Nói',
@@ -383,6 +389,7 @@ export const STRINGS: Record<string, UIStrings> = {
     painScaleLabel: 'Шкала боли',
     painIs: 'Моя боль — {n} из 10.',
     quickPhrases: 'Частые фразы',
+    quickPhrasesShort: 'Фразы',
     close: 'Закрыть',
     auto: 'Авто',
     speakAuto: 'Говорите',
