@@ -64,8 +64,31 @@ interface Props {
 }
 
 /** Below this normalized mic level for SILENCE_NUDGE_MS, show "speak louder". */
-const QUIET_LEVEL = 0.14;
-const SILENCE_NUDGE_MS = 2000;
+const QUIET_LEVEL = 0.12;
+const SILENCE_NUDGE_MS = 2500;
+
+/**
+ * Recording options. Metering must be enabled here AND the same options are
+ * passed to prepareToRecordAsync so the flag is unambiguously applied on the
+ * native side. Mono (numberOfChannels 1): a phone has one useful mic, and
+ * Whisper wants mono — stereo can leave one channel dead and the file quiet.
+ */
+const RECORDING_OPTIONS = {
+  ...RecordingPresets.HIGH_QUALITY,
+  isMeteringEnabled: true,
+  numberOfChannels: 1,
+};
+
+/**
+ * iOS/Android metering is dBFS: roughly -60 (silent) … 0 (full scale), with
+ * arm's-length speech around -35…-12. Map that speech window to 0..1 so quiet
+ * talkers still move the bars; clamp the rest.
+ */
+const DB_FLOOR = -55;
+const DB_CEIL = -8;
+function normalizeMetering(db: number): number {
+  return Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
+}
 
 const formatElapsed = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -83,8 +106,8 @@ const formatElapsed = (ms: number) => {
 export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChangeLanguage, onShowAbout }: Props) {
   // Metering powers the live level meter — real "I can hear you" feedback,
   // not a decorative pulse.
-  const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
-  const recorderState = useAudioRecorderState(recorder, 150);
+  const recorder = useAudioRecorder(RECORDING_OPTIONS);
+  const recorderState = useAudioRecorderState(recorder, 120);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [speaker, setSpeaker] = useState<Language | null>(null);
@@ -153,7 +176,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
    * null when metering isn't available (web), which renders resting bars. */
   const meterLevel =
     phase === 'listening' && typeof recorderState.metering === 'number'
-      ? Math.min(1, Math.max(0, (recorderState.metering + 50) / 50))
+      ? normalizeMetering(recorderState.metering)
       : null;
 
   // The "speak louder" nudge: quiet for SILENCE_NUDGE_MS while recording.
@@ -228,7 +251,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       // allowsRecording routes iOS audio to the quiet earpiece, so it is only
       // enabled while actually recording and switched off again for playback.
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      await recorder.prepareToRecordAsync();
+      // Pass options explicitly so isMeteringEnabled is unambiguously applied
+      // for this prepare — the constructor flag alone is not always honored.
+      await recorder.prepareToRecordAsync(RECORDING_OPTIONS);
       recorder.record();
       listeningStartedAtRef.current = Date.now();
       lastLoudAtRef.current = Date.now();
@@ -983,6 +1008,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           </View>
 
           <LevelMeter level={meterLevel} />
+
+          {__DEV__ ? (
+            <Text style={styles.meterDebug}>
+              {`raw metering: ${
+                typeof recorderState.metering === 'number' ? recorderState.metering.toFixed(1) : 'undefined'
+              }  →  level ${meterLevel == null ? 'null' : meterLevel.toFixed(2)}`}
+            </Text>
+          ) : null}
 
           {/* Fixed-height slot so the nudge appearing never shifts the Done button. */}
           <View style={styles.nudgeSlot} accessibilityLiveRegion="polite">
@@ -1808,6 +1841,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+  },
+  meterDebug: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.textFaint,
+    textAlign: 'center',
   },
   nudgeText: {
     fontFamily: fonts.bodyBold,
