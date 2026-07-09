@@ -1,7 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { Language } from '../config/languages';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/links';
 import { t } from '../i18n/strings';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 
@@ -55,6 +56,10 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
             {other.aiDisclaimer}
           </Text>
           <Text style={styles.privacyTextSmall}>{en.aiDisclaimer}</Text>
+          <Text style={styles.privacyText} accessibilityLanguage={otherLanguage.speechTag}>
+            {other.dataConsent}
+          </Text>
+          <Text style={styles.privacyTextSmall}>{en.dataConsent}</Text>
         </View>
       </View>
 
@@ -66,6 +71,37 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           </Text>
           <Text style={styles.privacyTextSmall}>{en.privacyLine}</Text>
         </View>
+      </View>
+
+      <View style={styles.legalRow}>
+        <Pressable
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL).catch(() => {})}
+          accessibilityRole="link"
+          accessibilityLabel={`${other.privacyPolicy} — ${en.privacyPolicy}`}
+          style={({ pressed }) => [styles.legalLink, pressed && styles.pressedDim]}
+        >
+          <Ionicons name="open-outline" size={18} color={colors.primary} />
+          <View style={styles.legalLabels}>
+            <Text style={styles.legalText} accessibilityLanguage={otherLanguage.speechTag}>
+              {other.privacyPolicy}
+            </Text>
+            <Text style={styles.legalTextEn}>{en.privacyPolicy}</Text>
+          </View>
+        </Pressable>
+        <Pressable
+          onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+          accessibilityRole="link"
+          accessibilityLabel={`${other.termsLabel} — ${en.termsLabel}`}
+          style={({ pressed }) => [styles.legalLink, pressed && styles.pressedDim]}
+        >
+          <Ionicons name="open-outline" size={18} color={colors.primary} />
+          <View style={styles.legalLabels}>
+            <Text style={styles.legalText} accessibilityLanguage={otherLanguage.speechTag}>
+              {other.termsLabel}
+            </Text>
+            <Text style={styles.legalTextEn}>{en.termsLabel}</Text>
+          </View>
+        </Pressable>
       </View>
     </ScrollView>
   );
@@ -146,6 +182,36 @@ const styles = StyleSheet.create({
     fontSize: type.small,
     color: colors.text,
     lineHeight: type.small * 1.45,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  legalLink: {
+    flex: 1,
+    minHeight: MIN_TARGET,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+  },
+  legalLabels: {
+    flexShrink: 1,
+  },
+  legalText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.primary,
+  },
+  legalTextEn: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMuted,
   },
   privacyTextSmall: {
     fontFamily: fonts.body,

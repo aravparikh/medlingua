@@ -753,6 +753,17 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <Text style={styles.disclaimerTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
               {en.aiDisclaimer}
             </Text>
+            <Text
+              style={styles.disclaimerText}
+              accessibilityLanguage={otherLanguage.speechTag}
+              allowFontScaling
+              maxFontSizeMultiplier={1.3}
+            >
+              {other.dataConsent}
+            </Text>
+            <Text style={styles.disclaimerTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {en.dataConsent}
+            </Text>
           </View>
           <Pressable
             onPress={dismissDisclaimer}

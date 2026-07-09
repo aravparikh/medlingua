@@ -2,23 +2,24 @@ import { fetch as expoFetch } from 'expo/fetch';
 import { File, Paths } from 'expo-file-system';
 
 import type { Language } from '../config/languages';
+import { getDeviceId } from './storage';
 
 /**
  * All OpenAI calls live here: Whisper (speech-to-text), GPT-4o (translation),
  * and TTS (speech synthesis).
  *
- * The key is read from EXPO_PUBLIC_OPENAI_API_KEY (see .env.example). For an
- * App Store release, proxy these calls through your own server instead of
- * shipping a key in the binary — swap BASE_URL and drop the Authorization
- * header to do that; the call sites don't change.
+ * Backend selection: EXPO_PUBLIC_API_PROXY_URL (production — key lives on the
+ * proxy, see proxy/README.md) or EXPO_PUBLIC_OPENAI_API_KEY (local dev,
+ * key inlined into the dev bundle only).
  *
  * Privacy: nothing is persisted. Transcripts and translations only ever live
  * in component state, and the one temporary TTS audio file in the OS cache is
  * overwritten every turn and deleted as soon as the next recording starts.
  */
-const BASE_URL = 'https://api.openai.com/v1';
-
+const PROXY_URL = process.env.EXPO_PUBLIC_API_PROXY_URL?.replace(/\/$/, '');
 const API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+
+const BASE_URL = PROXY_URL ? `${PROXY_URL}/v1` : 'https://api.openai.com/v1';
 
 /** A hung request must never brick the conversation — abort and show a retry. */
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -41,9 +42,11 @@ export class MissingKeyError extends Error {
   }
 }
 
-function requireKey(): string {
+/** Auth for the active backend: device id for the proxy, bearer key direct. */
+function apiHeaders(): Record<string, string> {
+  if (PROXY_URL) return { 'x-medlingua-device': getDeviceId() };
   if (!API_KEY) throw new MissingKeyError();
-  return API_KEY;
+  return { Authorization: `Bearer ${API_KEY}` };
 }
 
 type FetchInit = NonNullable<Parameters<typeof expoFetch>[1]>;
@@ -138,8 +141,6 @@ function isHallucination(text: string, segments: WhisperSegment[] | undefined): 
  * accurate transcript; pass null to let Whisper detect it (auto mode).
  */
 export async function transcribe(audioUri: string, language: Language | null): Promise<TranscriptionResult> {
-  const key = requireKey();
-
   const audioFile = new File(audioUri);
   const form = new FormData();
   // expo-file-system's File implements Blob, so it can be uploaded directly.
@@ -157,7 +158,7 @@ export async function transcribe(audioUri: string, language: Language | null): P
   try {
     res = await fetchWithTimeout(`${BASE_URL}/audio/transcriptions`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}` },
+      headers: apiHeaders(),
       body: form,
     });
   } catch (err) {
@@ -191,8 +192,6 @@ export async function transcribe(audioUri: string, language: Language | null): P
 
 /** Translates a transcript between the two active languages with GPT-4o. */
 export async function translate(text: string, from: Language, to: Language): Promise<string> {
-  const key = requireKey();
-
   const system = [
     `You are a professional medical interpreter. Translate the user's message from ${from.englishName} into ${to.englishName}.`,
     'Rules:',
@@ -209,7 +208,7 @@ export async function translate(text: string, from: Language, to: Language): Pro
     res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${key}`,
+        ...apiHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -249,8 +248,6 @@ export async function simplify(
   /** A previous explanation that came back unchanged — tells the model its retry was a no-op. */
   rejectedAttempt?: string,
 ): Promise<string> {
-  const key = requireKey();
-
   const system = [
     `You are a medical interpreter using the teach-back method. Re-explain the clinician's message below in ${into.englishName} at the simplest possible level.`,
     'Rules:',
@@ -273,7 +270,7 @@ export async function simplify(
     res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${key}`,
+        ...apiHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -356,8 +353,6 @@ export function findUngroundedTokens(summary: string, transcript: string): strin
  * nobody prescribed.
  */
 export async function summarizeVisit(lines: SummaryLine[], patient: Language): Promise<string> {
-  const key = requireKey();
-
   const system = [
     `You are a medical interpreter creating a take-home summary of a clinic conversation. Write the ENTIRE summary twice: first in ${patient.englishName}, then in English.`,
     'THE ONE UNBREAKABLE RULE: every bullet must restate something explicitly present in the transcript. You may translate and simplify wording, but you may not add ANY fact, symptom, medication, dose, or time that the transcript does not contain. Inventing content in a medical document is a safety failure.',
@@ -384,7 +379,7 @@ export async function summarizeVisit(lines: SummaryLine[], patient: Language): P
       res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${key}`,
+          ...apiHeaders(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ model: 'gpt-4o', temperature: 0, messages }),
@@ -449,8 +444,6 @@ export interface MedLabelResult {
  * `readable: false` so the UI can show a friendly retry, never a raw error.
  */
 export async function readMedicationLabel(base64Jpeg: string, patient: Language): Promise<MedLabelResult> {
-  const key = requireKey();
-
   const system = [
     'You read photos of medication labels for patients with low health literacy.',
     'Respond ONLY with a JSON object of this exact shape:',
@@ -467,7 +460,7 @@ export async function readMedicationLabel(base64Jpeg: string, patient: Language)
     res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${key}`,
+        ...apiHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -527,13 +520,13 @@ function ttsFile(): File {
  * Returns null on failure so the caller can fall back to on-device speech.
  */
 export async function synthesize(text: string, language: Language): Promise<string | null> {
-  if (!API_KEY) return null;
+  if (!PROXY_URL && !API_KEY) return null;
 
   try {
     const res = await fetchWithTimeout(`${BASE_URL}/audio/speech`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${API_KEY}`,
+        ...apiHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

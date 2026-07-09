@@ -24,6 +24,10 @@ export interface UIStrings {
   micPermission: string;
   mayHaveMisheard: string;
   aiDisclaimer: string;
+  /** AI/data-sharing disclosure shown with the first-run notice and in About. */
+  dataConsent: string;
+  privacyPolicy: string;
+  termsLabel: string;
   ok: string;
   emergency: string;
   painScaleLabel: string;
@@ -106,6 +110,9 @@ export const STRINGS: Record<string, UIStrings> = {
     micPermission: 'MedLingua needs the microphone to hear you. Please allow microphone access in Settings.',
     mayHaveMisheard: 'I may have misheard — please try again.',
     aiDisclaimer: 'AI translation can make mistakes. For important medical decisions, ask for a certified interpreter.',
+    dataConsent: 'To translate, your voice, photos, and words are sent securely to OpenAI for processing. MedLingua never stores them.',
+    privacyPolicy: 'Privacy policy',
+    termsLabel: 'Terms of use',
     ok: 'OK',
     emergency: 'Emergency',
     painScaleLabel: 'Pain scale',
@@ -180,6 +187,9 @@ export const STRINGS: Record<string, UIStrings> = {
     micPermission: 'MedLingua necesita el micrófono para escucharle. Permita el acceso al micrófono en Ajustes.',
     mayHaveMisheard: 'Puede que no haya oído bien. Inténtelo de nuevo.',
     aiDisclaimer: 'La traducción con IA puede cometer errores. Para decisiones médicas importantes, pida un intérprete certificado.',
+    dataConsent: 'Para traducir, su voz, sus fotos y sus palabras se envían de forma segura a OpenAI para su procesamiento. MedLingua nunca las guarda.',
+    privacyPolicy: 'Política de privacidad',
+    termsLabel: 'Términos de uso',
     ok: 'Entendido',
     emergency: 'Emergencia',
     painScaleLabel: 'Escala de dolor',
@@ -254,6 +264,9 @@ export const STRINGS: Record<string, UIStrings> = {
     micPermission: 'MedLingua 需要使用麦克风才能听到您说话。请在“设置”中允许使用麦克风。',
     mayHaveMisheard: '我可能没有听清，请再试一次。',
     aiDisclaimer: 'AI 翻译可能出错。涉及重要医疗决定时，请要求专业医疗口译员。',
+    dataConsent: '为了翻译，您的语音、照片和文字会安全地发送给 OpenAI 进行处理。MedLingua 绝不会保存它们。',
+    privacyPolicy: '隐私政策',
+    termsLabel: '使用条款',
     ok: '好的',
     emergency: '紧急情况',
     painScaleLabel: '疼痛等级',
@@ -328,6 +341,9 @@ export const STRINGS: Record<string, UIStrings> = {
     micPermission: 'MedLingua cần micrô để nghe bạn nói. Vui lòng cho phép truy cập micrô trong Cài đặt.',
     mayHaveMisheard: 'Có thể tôi đã nghe nhầm — hãy thử lại.',
     aiDisclaimer: 'Bản dịch AI có thể sai. Với các quyết định y tế quan trọng, hãy yêu cầu thông dịch viên có chứng nhận.',
+    dataConsent: 'Để dịch, giọng nói, ảnh và lời của bạn được gửi an toàn đến OpenAI để xử lý. MedLingua không bao giờ lưu chúng.',
+    privacyPolicy: 'Chính sách bảo mật',
+    termsLabel: 'Điều khoản sử dụng',
     ok: 'Đã hiểu',
     emergency: 'Khẩn cấp',
     painScaleLabel: 'Mức độ đau',
@@ -402,6 +418,9 @@ export const STRINGS: Record<string, UIStrings> = {
     micPermission: 'MedLingua нужен микрофон, чтобы вас слышать. Разрешите доступ к микрофону в Настройках.',
     mayHaveMisheard: 'Возможно, я расслышал неверно — попробуйте ещё раз.',
     aiDisclaimer: 'ИИ-перевод может ошибаться. Для важных медицинских решений попросите сертифицированного переводчика.',
+    dataConsent: 'Для перевода ваш голос, фото и слова безопасно передаются в OpenAI для обработки. MedLingua никогда их не сохраняет.',
+    privacyPolicy: 'Политика конфиденциальности',
+    termsLabel: 'Условия использования',
     ok: 'Понятно',
     emergency: 'Срочно',
     painScaleLabel: 'Шкала боли',
