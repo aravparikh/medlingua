@@ -15,7 +15,7 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": [
         "-c",
-        "cd suvidha-hackathon && npm run dev -- --port 3111"
+        "cd ../suvidha-hackathon && npm run dev -- --port 3111"
       ],
       "port": 3111
     }

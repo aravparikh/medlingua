@@ -31,7 +31,7 @@ import {
   TranslationError,
   type MedLabelResult,
 } from '../services/openai';
-import { playStartChime, playStopChime, releaseChimes } from '../services/chimes';
+import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
@@ -118,6 +118,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [retryCtx, setRetryCtx] = useState<{ uri: string; who: Language | null } | null>(null);
   /** True after ~2s of near-silence while recording — shows "speak louder". */
   const [tooQuiet, setTooQuiet] = useState(false);
+  /** Dev-only: last recording's actual audio length (Whisper-measured), to
+   * confirm the recording is not being cut short. */
+  const [devAudioLen, setDevAudioLen] = useState<number | null>(null);
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
   const [flipped, setFlipped] = useState(false);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
@@ -245,9 +248,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         return;
       }
 
-      // The start chime plays before the session flips to recording, while
-      // audio still routes to the loud speaker.
-      playStartChime();
+      // NOTE: the start chime is deliberately NOT played here. Playing it
+      // through an audio player as recording begins shares the iOS audio
+      // session, and the chime's completion (~1s in) reconfigures that session
+      // and cuts the just-started recording short — the recording died right
+      // after it began. Haptics + the recording panel already signal "started";
+      // the stop chime is safe because it fires after recorder.stop().
       // allowsRecording routes iOS audio to the quiet earpiece, so it is only
       // enabled while actually recording and switched off again for playback.
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
@@ -303,7 +309,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setPhase('translating');
     setError(null);
     try {
-      const { text, detectedCode, lowConfidence } = await transcribe(uri, who);
+      const { text, detectedCode, lowConfidence, durationSec } = await transcribe(uri, who);
+      // Dev diagnostic: the actual captured audio length. If this is ~1s while
+      // you spoke for several, the recording is being cut short (not Whisper).
+      if (__DEV__) setDevAudioLen(durationSec);
       if (lowConfidence) {
         // Whisper wasn't sure what it heard. Asking to repeat beats
         // confidently speaking a possibly-wrong translation.
@@ -803,6 +812,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         contentContainerStyle={[styles.threadContent, turns.length === 0 && styles.threadEmpty]}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
+        {__DEV__ && devAudioLen != null ? (
+          <Text style={styles.meterDebug}>{`last recording: ${devAudioLen.toFixed(1)}s of audio`}</Text>
+        ) : null}
         {turns.map((turn) => {
           const isLatest = turn.id === latestTurn?.id;
           const fromEnglish = turn.speaker.code === 'en';

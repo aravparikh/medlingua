@@ -91,6 +91,9 @@ export interface TranscriptionResult {
   /** True when Whisper itself wasn't confident — better to ask the person to
    * repeat than to confidently speak a possibly-wrong translation. */
   lowConfidence: boolean;
+  /** Actual audio length Whisper measured, in seconds. Dev diagnostic: reveals
+   * a recording that was cut short before the person finished speaking. */
+  durationSec: number | null;
 }
 
 /**
@@ -173,7 +176,12 @@ export async function transcribe(audioUri: string, language: Language | null): P
     throw new TranslationError(`Transcription failed (${res.status}): ${await res.text()}`);
   }
 
-  const data = (await res.json()) as { text?: string; language?: string; segments?: WhisperSegment[] };
+  const data = (await res.json()) as {
+    text?: string;
+    language?: string;
+    duration?: number;
+    segments?: WhisperSegment[];
+  };
   const trimmed = (data.text ?? '').trim();
   if (!trimmed || isHallucination(trimmed, data.segments)) {
     throw new TranslationError('Nothing was heard', true);
@@ -191,7 +199,12 @@ export async function transcribe(audioUri: string, language: Language | null): P
   const meanLogprob = logprobs.length > 0 ? logprobs.reduce((a, b) => a + b, 0) / logprobs.length : 0;
   const lowConfidence = meanLogprob < -1.2;
 
-  return { text: trimmed, detectedCode, lowConfidence };
+  return {
+    text: trimmed,
+    detectedCode,
+    lowConfidence,
+    durationSec: typeof data.duration === 'number' ? data.duration : null,
+  };
 }
 
 /** Translates a transcript between the two active languages with GPT-4o. */
