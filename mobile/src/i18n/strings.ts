@@ -42,6 +42,9 @@ export interface UIStrings {
   flip: string;
   typeLabel: string;
   typePlaceholder: string;
+  nameLabel: string;
+  nameHint: string;
+  namePlaceholder: string;
   privacyLine: string;
   changeLanguage: string;
   languageShort: string;
@@ -125,6 +128,9 @@ export const STRINGS: Record<string, UIStrings> = {
     flip: 'Show',
     typeLabel: 'Type',
     typePlaceholder: 'Type here…',
+    nameLabel: 'Name',
+    nameHint: 'Keep it exactly — don\'t translate',
+    namePlaceholder: 'Type the name…',
     privacyLine: 'Your conversation is private — nothing is saved.',
     changeLanguage: 'Change language',
     languageShort: 'Language',
@@ -202,6 +208,9 @@ export const STRINGS: Record<string, UIStrings> = {
     flip: 'Mostrar',
     typeLabel: 'Escribir',
     typePlaceholder: 'Escriba aquí…',
+    nameLabel: 'Nombre',
+    nameHint: 'Se mantiene igual — no se traduce',
+    namePlaceholder: 'Escriba el nombre…',
     privacyLine: 'Su conversación es privada — no se guarda nada.',
     changeLanguage: 'Cambiar idioma',
     languageShort: 'Idioma',
@@ -279,6 +288,9 @@ export const STRINGS: Record<string, UIStrings> = {
     flip: '展示',
     typeLabel: '输入',
     typePlaceholder: '在这里输入…',
+    nameLabel: '姓名',
+    nameHint: '原样保留，不翻译',
+    namePlaceholder: '输入姓名…',
     privacyLine: '您的对话是私密的——不会保存任何内容。',
     changeLanguage: '更换语言',
     languageShort: '语言',
@@ -356,6 +368,9 @@ export const STRINGS: Record<string, UIStrings> = {
     flip: 'Cho xem',
     typeLabel: 'Nhập',
     typePlaceholder: 'Nhập tại đây…',
+    nameLabel: 'Tên',
+    nameHint: 'Giữ nguyên — không dịch',
+    namePlaceholder: 'Nhập tên…',
     privacyLine: 'Cuộc trò chuyện của bạn là riêng tư — không có gì được lưu lại.',
     changeLanguage: 'Đổi ngôn ngữ',
     languageShort: 'Ngôn ngữ',
@@ -433,6 +448,9 @@ export const STRINGS: Record<string, UIStrings> = {
     flip: 'Показать',
     typeLabel: 'Печатать',
     typePlaceholder: 'Введите здесь…',
+    nameLabel: 'Имя',
+    nameHint: 'Оставить как есть — не переводить',
+    namePlaceholder: 'Введите имя…',
     privacyLine: 'Ваш разговор конфиденциален — ничего не сохраняется.',
     changeLanguage: 'Сменить язык',
     languageShort: 'Язык',

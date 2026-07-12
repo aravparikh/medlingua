@@ -51,6 +51,8 @@ export interface Turn {
   translation: string;
   speaker: Language;
   listener: Language;
+  /** A verbatim name entry (no translation): renders as a single-name card. */
+  isName?: boolean;
 }
 
 interface Props {
@@ -126,6 +128,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [phrasesOpen, setPhrasesOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [typedDraft, setTypedDraft] = useState('');
+  /** When true, the Type sheet enters a name in verbatim (no translation). */
+  const [nameMode, setNameMode] = useState(false);
   /** Turn whose translation is blown up fullscreen; null when closed. */
   const [fullscreenTurn, setFullscreenTurn] = useState<Turn | null>(null);
   /** Teach-back flow. ask → (no) → loading2 → ask2 → (no) → failed. */
@@ -443,6 +447,20 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setError(null);
     setRetryCtx(null);
     stopAllAudio();
+
+    // Name mode: no API call. The name is added verbatim (never translated or
+    // "corrected") and spoken in the chosen language so the other person hears
+    // the right pronunciation. This is the reliable path for names Whisper
+    // can't capture cold — the person spells it out themselves.
+    if (nameMode) {
+      setNameMode(false);
+      const turn: Turn = { id: Date.now(), original: '', translation: text, speaker: who, listener: who, isName: true };
+      addTurn(turn);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await speak(text, who, turn.id);
+      return;
+    }
+
     setPhase('translating');
     try {
       const listener = who.code === 'en' ? otherLanguage : ENGLISH;
@@ -820,8 +838,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           const fromEnglish = turn.speaker.code === 'en';
           // Latest clinician turns carry three actions — too many for one row
           // at 375pt, so the play pill gets its own row and the other two share.
-          const hasCheck = isLatest && fromEnglish;
-          const flipPill = isLatest ? (
+          // Name cards get neither flip nor teach-back — just play again.
+          const hasCheck = isLatest && fromEnglish && !turn.isName;
+          const flipPill = isLatest && !turn.isName ? (
             <PressableScale
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -865,12 +884,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   </Text>
                 </View>
                 <Text style={styles.originalLabel} accessibilityLanguage={turn.speaker.speechTag}>
-                  {t(turn.speaker.code).youSaid}
+                  {turn.isName ? `${t(turn.speaker.code).nameLabel} · ${en.nameLabel}` : t(turn.speaker.code).youSaid}
                 </Text>
               </View>
-              <Text style={styles.originalText} accessibilityLanguage={turn.speaker.speechTag}>
-                {turn.original}
-              </Text>
+              {turn.original ? (
+                <Text style={styles.originalText} accessibilityLanguage={turn.speaker.speechTag}>
+                  {turn.original}
+                </Text>
+              ) : null}
 
               <Pressable
                 onPress={() => {
@@ -886,9 +907,13 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 ]}
               >
                 <View style={styles.translationLabelRow}>
-                  <Text style={styles.translationLabel} accessibilityLanguage={turn.listener.speechTag}>
-                    {t(turn.listener.code).translationLabel}
-                  </Text>
+                  {turn.isName ? (
+                    <View />
+                  ) : (
+                    <Text style={styles.translationLabel} accessibilityLanguage={turn.listener.speechTag}>
+                      {t(turn.listener.code).translationLabel}
+                    </Text>
+                  )}
                   <Ionicons name="expand-outline" size={16} color={colors.textFaint} importantForAccessibility="no" />
                 </View>
                 <Text
@@ -1122,6 +1147,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         <PressableScale
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setNameMode(false);
             setTypeOpen(true);
           }}
           disabled={busy}
@@ -1439,14 +1465,51 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               </Pressable>
             </View>
             <View style={styles.typeContent}>
+              {/* Name mode: enter a person's name verbatim (never translated) —
+                 the reliable path for names the mic can't capture. */}
+              <PressableScale
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setNameMode((v) => !v);
+                }}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: nameMode }}
+                accessibilityLabel={`${other.nameLabel} — ${en.nameLabel}. ${other.nameHint}`}
+                style={[styles.nameToggle, nameMode && styles.nameToggleOn]}
+              >
+                <Ionicons
+                  name={nameMode ? 'person' : 'person-outline'}
+                  size={20}
+                  color={nameMode ? colors.primary : colors.textMuted}
+                />
+                <View style={styles.nameToggleLabels}>
+                  <Text style={[styles.nameToggleText, nameMode && styles.nameToggleTextOn]}>
+                    {other.nameLabel} · {en.nameLabel}
+                  </Text>
+                  <Text style={styles.nameToggleHint}>
+                    {nameMode ? `${other.nameHint} · ${en.nameHint}` : `${other.typeLabel} · ${en.typeLabel}`}
+                  </Text>
+                </View>
+                <View style={[styles.nameCheck, nameMode && styles.nameCheckOn]}>
+                  {nameMode ? <Ionicons name="checkmark" size={16} color={colors.onPrimary} /> : null}
+                </View>
+              </PressableScale>
               <TextInput
                 value={typedDraft}
                 onChangeText={setTypedDraft}
-                placeholder={`${other.typePlaceholder} · ${en.typePlaceholder}`}
+                placeholder={
+                  nameMode
+                    ? `${other.namePlaceholder} · ${en.namePlaceholder}`
+                    : `${other.typePlaceholder} · ${en.typePlaceholder}`
+                }
                 placeholderTextColor={colors.textFaint}
-                multiline
+                multiline={!nameMode}
                 autoFocus
-                accessibilityLabel={`${other.typeLabel} — ${en.typeLabel}`}
+                autoCapitalize={nameMode ? 'words' : 'sentences'}
+                autoCorrect={!nameMode}
+                accessibilityLabel={
+                  nameMode ? `${other.nameLabel} — ${en.nameLabel}` : `${other.typeLabel} — ${en.typeLabel}`
+                }
                 style={styles.typeInput}
               />
               <View style={styles.typeSendRow}>
@@ -2600,6 +2663,51 @@ const styles = StyleSheet.create({
     fontSize: type.body,
     color: colors.text,
     textAlignVertical: 'top',
+  },
+  nameToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: MIN_TARGET,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  nameToggleOn: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+    backgroundColor: colors.surfaceTint,
+  },
+  nameToggleLabels: {
+    flex: 1,
+  },
+  nameToggleText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.textMuted,
+  },
+  nameToggleTextOn: {
+    color: colors.primary,
+  },
+  nameToggleHint: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.textFaint,
+  },
+  nameCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameCheckOn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   typeSendRow: {
     flexDirection: 'row',
