@@ -152,6 +152,10 @@ export async function transcribe(audioUri: string, language: Language | null): P
   form.append('response_format', 'verbose_json');
   if (language) {
     form.append('language', language.whisper);
+    // A domain prompt in the target language biases Whisper toward clinical
+    // vocabulary and correct spelling. Only sent when the language is known:
+    // in auto mode a language-specific prompt would skew language detection.
+    form.append('prompt', language.whisperPrompt);
   }
 
   let res: ApiResponse;
