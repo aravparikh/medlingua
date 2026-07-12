@@ -215,6 +215,7 @@ export async function translate(text: string, from: Language, to: Language): Pro
     '- Translate for meaning and clarity in a medical setting, not word-for-word.',
     '- Use plain, simple language a patient would understand.',
     '- Preserve important medical terms accurately: medications, symptoms, body parts, dosages, and yes/no answers.',
+    '- Never translate or localize proper nouns: keep people\'s names, place names, and medication brand names exactly as written (do not turn "John" into "Juan").',
     '- Respect the natural grammar and politeness norms of the target language.',
     '- If the input is ambiguous, translate the most likely meaning faithfully — do not invent details.',
     '- Return only the translation, with no commentary, notes, or quotation marks.',

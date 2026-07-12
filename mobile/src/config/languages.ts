@@ -37,7 +37,7 @@ export const ENGLISH: Language = {
   monogram: 'En',
   whisper: 'en',
   whisperPrompt:
-    'A medical clinic conversation. Symptoms, pain level, allergies, medications and dosage, blood pressure, diabetes, ibuprofen, acetaminophen, twice a day with food.',
+    'A medical clinic conversation. Symptoms, pain level, allergies, medications and dosage, blood pressure, diabetes, ibuprofen, acetaminophen, twice a day with food. Medication names may include: lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
   speechTag: 'en-US',
   ttsVoice: 'alloy',
   speakLabel: 'Speak English',
@@ -51,7 +51,7 @@ export const LANGUAGES: Language[] = [
     monogram: 'Es',
     whisper: 'es',
     whisperPrompt:
-      'Una conversación en una clínica médica. Síntomas, nivel de dolor, alergias, medicamentos y dosis, presión arterial, diabetes, ibuprofeno, paracetamol, dos veces al día con comida.',
+      'Una conversación en una clínica médica. Síntomas, nivel de dolor, alergias, medicamentos y dosis, presión arterial, diabetes, ibuprofeno, paracetamol, dos veces al día con comida. Los nombres de medicamentos pueden incluir: lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
     speechTag: 'es-MX',
     ttsVoice: 'nova',
     speakLabel: 'Hablar español',
@@ -63,7 +63,7 @@ export const LANGUAGES: Language[] = [
     monogram: '中',
     whisper: 'zh',
     whisperPrompt:
-      '一段医疗诊所的对话。症状、疼痛程度、过敏、药物和剂量、血压、糖尿病、布洛芬、对乙酰氨基酚、每天两次随餐服用。',
+      '一段医疗诊所的对话。症状、疼痛程度、过敏、药物和剂量、血压、糖尿病、布洛芬、对乙酰氨基酚、每天两次随餐服用。 药物名称可能包括： lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
     speechTag: 'zh-CN',
     ttsVoice: 'nova',
     speakLabel: '说中文',
@@ -75,7 +75,7 @@ export const LANGUAGES: Language[] = [
     monogram: 'Vi',
     whisper: 'vi',
     whisperPrompt:
-      'Một cuộc trò chuyện tại phòng khám. Triệu chứng, mức độ đau, dị ứng, thuốc và liều lượng, huyết áp, tiểu đường, ibuprofen, paracetamol, uống hai lần mỗi ngày cùng với thức ăn.',
+      'Một cuộc trò chuyện tại phòng khám. Triệu chứng, mức độ đau, dị ứng, thuốc và liều lượng, huyết áp, tiểu đường, ibuprofen, paracetamol, uống hai lần mỗi ngày cùng với thức ăn. Tên thuốc có thể bao gồm: lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
     speechTag: 'vi-VN',
     ttsVoice: 'nova',
     speakLabel: 'Nói tiếng Việt',
@@ -87,7 +87,7 @@ export const LANGUAGES: Language[] = [
     monogram: 'Ру',
     whisper: 'ru',
     whisperPrompt:
-      'Разговор в медицинской клинике. Симптомы, уровень боли, аллергия, лекарства и дозировка, артериальное давление, диабет, ибупрофен, парацетамол, два раза в день во время еды.',
+      'Разговор в медицинской клинике. Симптомы, уровень боли, аллергия, лекарства и дозировка, артериальное давление, диабет, ибупрофен, парацетамол, два раза в день во время еды. Названия лекарств могут включать: lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
     speechTag: 'ru-RU',
     ttsVoice: 'nova',
     speakLabel: 'Говорить по-русски',
