@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   legalTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.textMuted,
   },
   privacyTextSmall: {

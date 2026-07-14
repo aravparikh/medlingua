@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   timerTextWrap: {
     flex: 1,
-    gap: 1,
+    gap: spacing.hairline,
   },
   timerText: {
     fontFamily: fonts.bodyMedium,
@@ -320,9 +320,9 @@ const styles = StyleSheet.create({
   },
   timerTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.textMuted,
-    lineHeight: 12 * 1.35,
+    lineHeight: type.micro * 1.35,
   },
   timerTextWarn: {
     color: colors.onPrimary,
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   actionTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.onPrimary,
     opacity: 0.9,
   },

@@ -3,8 +3,11 @@
  *
  * Two hues only — a deep clinical teal (brand, primary actions, English side)
  * and a muted indigo (the other language's side) — on warm paper neutrals.
- * Calm and trustworthy, never loud. All text/fill pairs used in the app meet
- * WCAG AAA (≥7:1) unless noted.
+ * Calm and trustworthy, never loud. Every text/fill pair in the app meets
+ * WCAG AA (≥4.5:1 normal, ≥3:1 large); primary text pairs reach AAA. Measured:
+ * ink/paper ≈13.2:1, inkMuted/paper ≈5.7:1, inkFaint/paper ≈5.1:1,
+ * white/primary ≈8.4:1, white/secondary ≈11.2:1, white/listening ≈6:1,
+ * accent (decorative only) ≈3.1:1.
  *
  * Type: Lexend for display/headings (designed to improve reading proficiency —
  * right for seniors), Noto Sans for body (Latin, Vietnamese, and Cyrillic
@@ -62,7 +65,7 @@ export const colors = {
   border: palette.sand,
   borderStrong: palette.sandStrong,
 
-  // Recording state. White on listening is ~7.2:1.
+  // Recording state. White on listening is ~6:1 — AA at every size used.
   listening: palette.clay700,
   listeningPressed: palette.clay900,
 
@@ -70,6 +73,8 @@ export const colors = {
   dangerText: palette.clay900,
 
   overlay: 'rgba(18, 30, 27, 0.52)',
+  /** Translucent white fill for icon circles/badges sitting on a brand color. */
+  onPrimaryTint: 'rgba(255, 255, 255, 0.18)',
 } as const;
 
 /** Font families. One weight per family name (Expo Google Fonts convention). */
@@ -87,6 +92,9 @@ export const fonts = {
  * minHeights and wrapping so they grow instead of clipping.
  */
 export const type = {
+  /** Secondary-of-secondary only (the small English line under a bilingual
+   * label) — never for standalone content. */
+  micro: 12,
   caption: 14,
   small: 17,
   body: 20,
@@ -96,8 +104,10 @@ export const type = {
   hero: 40,
 } as const;
 
-/** 4-pt spacing rhythm. */
+/** 4-pt spacing rhythm. `hairline` is the one sub-grid value: the optical
+ * gap between a bilingual label and its small English echo. */
 export const spacing = {
+  hairline: 2,
   xxs: 4,
   xs: 8,
   sm: 12,

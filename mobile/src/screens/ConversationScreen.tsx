@@ -39,6 +39,7 @@ import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { LevelMeter } from '../components/LevelMeter';
 import { PressableScale } from '../components/PressableScale';
+import { Pulse } from '../components/Pulse';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
 import { TurnSkeleton } from '../components/Skeleton';
 import { AutoSpeakButton, SpeakButton } from '../components/SpeakButton';
@@ -872,6 +873,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 styles.turnCard,
                 fromEnglish ? styles.turnLeft : styles.turnRight,
                 isLatest && styles.turnLatest,
+                isLatest && (fromEnglish ? styles.turnLatestLeft : styles.turnLatestRight),
               ]}
             >
               <View style={styles.speakerRow}>
@@ -981,7 +983,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         })}
 
         {error ? (
-          <View style={styles.errorCard} accessibilityLiveRegion="assertive">
+          <Appear style={styles.errorCard} accessibilityLiveRegion="assertive">
             <Ionicons name="alert-circle" size={26} color={colors.dangerText} />
             <View style={styles.errorBody}>
               <Text style={styles.errorText} accessibilityLanguage={otherLanguage.speechTag}>
@@ -1004,7 +1006,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 </PressableScale>
               ) : null}
             </View>
-          </View>
+          </Appear>
         ) : null}
 
         {phase === 'translating' ? (
@@ -1018,7 +1020,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         ) : null}
 
         {turns.length === 0 && !error && !setupError && phase === 'idle' ? (
-          <View style={styles.hint}>
+          <Appear style={styles.hint}>
             {/* The disclaimer banner already fills the top of a first-run
                screen — drop the decorative mic circle so the instruction and
                its arrow stay above the fold. */}
@@ -1030,7 +1032,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <Text style={styles.hintText}>{other.holdAndSpeak}</Text>
             <Text style={styles.hintTextSmall}>{en.holdAndSpeak}</Text>
             <Ionicons name="arrow-down" size={30} color={colors.accent} style={styles.hintArrow} />
-          </View>
+          </Appear>
         ) : null}
       </ScrollView>
 
@@ -1040,20 +1042,20 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
          * and a giant Done button — no tools, no clutter, no precision. */
         <Appear style={styles.recordPanel}>
           <View style={styles.recordStatus} accessibilityLiveRegion="polite">
-            <Ionicons name="mic" size={26} color={colors.listening} />
+            <Pulse color={colors.listening} size={36} />
             <Text style={styles.recordTimer} allowFontScaling maxFontSizeMultiplier={1.3}>
               {formatElapsed(recorderState.durationMillis)}
             </Text>
-            <Text
-              style={styles.recordLabel}
-              accessibilityLanguage={speaker?.speechTag}
-              allowFontScaling
-              maxFontSizeMultiplier={1.3}
-              numberOfLines={1}
-            >
-              {speaker ? rec.listening : `${other.listening} · ${en.listening}`}
-            </Text>
           </View>
+          <Text
+            style={styles.recordLabel}
+            accessibilityLanguage={speaker?.speechTag}
+            allowFontScaling
+            maxFontSizeMultiplier={1.3}
+            numberOfLines={1}
+          >
+            {speaker ? rec.listening : `${other.listening} · ${en.listening}`}
+          </Text>
 
           <LevelMeter level={meterLevel} />
 
@@ -1850,7 +1852,7 @@ const styles = StyleSheet.create({
   },
   headerChipTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.textMuted,
     flexShrink: 1,
   },
@@ -1901,8 +1903,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   recordPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
     gap: spacing.xs,
     marginBottom: spacing.sm,
+    ...shadows.floating,
   },
   recordStatus: {
     flexDirection: 'row',
@@ -1912,7 +1920,7 @@ const styles = StyleSheet.create({
   },
   recordTimer: {
     fontFamily: fonts.display,
-    fontSize: type.title,
+    fontSize: type.hero,
     color: colors.listening,
     fontVariant: ['tabular-nums'],
   },
@@ -1921,12 +1929,13 @@ const styles = StyleSheet.create({
     fontSize: type.small,
     color: colors.textMuted,
     flexShrink: 1,
+    textAlign: 'center',
   },
   nudgeSlot: {
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: spacing.hairline,
   },
   meterDebug: {
     fontFamily: fonts.body,
@@ -2028,9 +2037,17 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.sm,
   },
   turnLatest: {
+    ...shadows.raised,
+  },
+  // The accent bar sits on the card's "tail" side, so emphasis and alignment
+  // read as one gesture.
+  turnLatestLeft: {
     borderLeftWidth: 4,
     borderLeftColor: colors.accent,
-    ...shadows.raised,
+  },
+  turnLatestRight: {
+    borderRightWidth: 4,
+    borderRightColor: colors.accent,
   },
   speakerRow: {
     flexDirection: 'row',
@@ -2050,7 +2067,7 @@ const styles = StyleSheet.create({
   },
   monogramText: {
     fontFamily: fonts.bodyBold,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.primary,
   },
   monogramTextSecondary: {
@@ -2141,7 +2158,7 @@ const styles = StyleSheet.create({
   },
   turnButtonTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.primary,
     opacity: 0.85,
     flexShrink: 1,
@@ -2152,10 +2169,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
     backgroundColor: colors.dangerBg,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: spacing.md,
     width: '94%',
     alignSelf: 'center',
+    ...shadows.card,
   },
   errorBody: {
     flex: 1,
@@ -2234,7 +2252,7 @@ const styles = StyleSheet.create({
   },
   toolButtonTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.textMuted,
     textAlign: 'center',
     flexShrink: 1,
@@ -2250,7 +2268,7 @@ const styles = StyleSheet.create({
   privacy: {
     alignItems: 'center',
     marginBottom: spacing.sm,
-    gap: 2,
+    gap: spacing.hairline,
   },
   privacyRow: {
     flexDirection: 'row',
@@ -2342,7 +2360,7 @@ const styles = StyleSheet.create({
   },
   disclaimerBody: {
     flex: 1,
-    gap: 2,
+    gap: spacing.hairline,
   },
   disclaimerText: {
     fontFamily: fonts.bodyMedium,
@@ -2352,9 +2370,9 @@ const styles = StyleSheet.create({
   },
   disclaimerTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.textMuted,
-    lineHeight: 12 * 1.4,
+    lineHeight: type.micro * 1.4,
   },
   disclaimerOk: {
     minHeight: 44,
@@ -2470,7 +2488,7 @@ const styles = StyleSheet.create({
   },
   scanSpeakTextEn: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: type.micro,
     color: colors.onPrimary,
     opacity: 0.9,
   },
@@ -2481,7 +2499,7 @@ const styles = StyleSheet.create({
   },
   scanPharmacistText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.hairline,
   },
   bodyMapCard: {
     flexDirection: 'row',
@@ -2497,13 +2515,13 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: colors.onPrimaryTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bodyMapTextWrap: {
     flex: 1,
-    gap: 2,
+    gap: spacing.hairline,
   },
   bodyMapTitle: {
     fontFamily: fonts.bodyBold,
@@ -2627,7 +2645,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: spacing.hairline,
     paddingVertical: spacing.sm,
   },
   teachYes: {
@@ -2792,7 +2810,7 @@ const styles = StyleSheet.create({
   },
   phraseTextWrap: {
     flex: 1,
-    gap: 2,
+    gap: spacing.hairline,
   },
   phrasePrimary: {
     fontFamily: fonts.bodyMedium,

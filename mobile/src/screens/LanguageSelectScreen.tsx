@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   cardText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.hairline,
   },
   nativeName: {
     fontFamily: fonts.displayMedium,
