@@ -35,7 +35,7 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
             style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
           >
             <Ionicons name="close" size={24} color={colors.primary} />
-            <Text style={styles.closeText}>
+            <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.close} · {en.close}
             </Text>
           </Pressable>
@@ -43,20 +43,20 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
 
         <ScrollView contentContainerStyle={styles.content}>
           <Text
-            style={[styles.title, { fontFamily: displayFontFor(otherLanguage.code) }]}
+            style={[styles.title, { fontFamily: displayFontFor(otherLanguage.code) }]} allowFontScaling maxFontSizeMultiplier={2}
             accessibilityRole="header"
             accessibilityLanguage={otherLanguage.speechTag}
           >
             {other.rightsTitle}
           </Text>
-          <Text style={styles.body} accessibilityLanguage={otherLanguage.speechTag}>
+          <Text style={styles.body} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
             {other.rightsBody}
           </Text>
 
           <View style={styles.divider} importantForAccessibility="no" />
 
-          <Text style={styles.titleEn}>{en.rightsTitle}</Text>
-          <Text style={styles.bodyEn}>{en.rightsBody}</Text>
+          <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={2}>{en.rightsTitle}</Text>
+          <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={2}>{en.rightsBody}</Text>
         </ScrollView>
       </View>
     </Modal>

@@ -88,17 +88,22 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.dismiss} onPress={onClose} accessibilityLabel={`${other.close} — ${en.close}`} />
+        <Pressable
+          style={styles.dismiss}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.close} — ${en.close}`}
+        />
         <View style={styles.sheet}>
           <View style={styles.handle} importantForAccessibility="no" />
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Ionicons name="document-text" size={24} color={colors.primary} />
               <View style={styles.titleWrap}>
-                <Text style={styles.title} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
+                <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
                   {other.summary}
                 </Text>
-                <Text style={styles.titleEn}>{en.summary}</Text>
+                <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.summary}</Text>
               </View>
             </View>
             <Pressable
@@ -108,7 +113,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
             >
               <Ionicons name="close" size={22} color={colors.primary} />
-              <Text style={styles.closeText}>
+              <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
                 {other.close} · {en.close}
               </Text>
             </Pressable>
@@ -119,20 +124,20 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               <SkeletonBar width="62%" height={16} />
               <SkeletonBar width="88%" height={16} />
               <SkeletonBar width="74%" height={16} />
-              <Text style={styles.loadingText} accessibilityLanguage={otherLanguage.speechTag}>
+              <Text style={styles.loadingText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.generatingSummary}
               </Text>
-              <Text style={styles.loadingTextEn}>{en.generatingSummary}</Text>
+              <Text style={styles.loadingTextEn} allowFontScaling maxFontSizeMultiplier={2}>{en.generatingSummary}</Text>
             </View>
           ) : null}
 
           {state.status === 'error' ? (
             <View style={styles.loading} accessibilityLiveRegion="assertive">
               <Ionicons name="alert-circle" size={30} color={colors.dangerText} />
-              <Text style={styles.errorText} accessibilityLanguage={otherLanguage.speechTag}>
+              <Text style={styles.errorText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.connectionError}
               </Text>
-              <Text style={styles.loadingTextEn}>{en.connectionError}</Text>
+              <Text style={styles.loadingTextEn} allowFontScaling maxFontSizeMultiplier={2}>{en.connectionError}</Text>
             </View>
           ) : null}
 
@@ -142,12 +147,12 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               <View style={[styles.timerBanner, warn && styles.timerBannerWarn]} accessibilityLiveRegion="polite">
                 <Ionicons name="time-outline" size={20} color={warn ? colors.onPrimary : colors.secondary} />
                 <View style={styles.timerTextWrap}>
-                  <Text style={[styles.timerText, warn && styles.timerTextWarn]} accessibilityLanguage={otherLanguage.speechTag}>
+                  <Text style={[styles.timerText, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.summaryEphemeral}
                   </Text>
-                  <Text style={[styles.timerTextEn, warn && styles.timerTextWarn]}>{en.summaryEphemeral}</Text>
+                  <Text style={[styles.timerTextEn, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3}>{en.summaryEphemeral}</Text>
                 </View>
-                <Text style={[styles.timerClock, warn && styles.timerTextWarn]}>
+                <Text style={[styles.timerClock, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3}>
                   {mm}:{ss}
                 </Text>
               </View>
@@ -162,7 +167,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               </View>
 
               <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-                <Text style={styles.summaryText} accessibilityLanguage={otherLanguage.speechTag}>
+                <Text style={styles.summaryText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                   {state.text}
                 </Text>
               </ScrollView>
@@ -177,10 +182,10 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                 >
                   <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={22} color={colors.onPrimary} />
                   <View style={styles.actionLabels}>
-                    <Text style={styles.actionText} accessibilityLanguage={otherLanguage.speechTag}>
+                    <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                       {copied ? other.copied : other.copy}
                     </Text>
-                    <Text style={styles.actionTextEn}>{copied ? en.copied : en.copy}</Text>
+                    <Text style={styles.actionTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{copied ? en.copied : en.copy}</Text>
                   </View>
                 </PressableScale>
                 <PressableScale
@@ -192,10 +197,10 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                 >
                   <Ionicons name="share-outline" size={22} color={colors.onPrimary} />
                   <View style={styles.actionLabels}>
-                    <Text style={styles.actionText} accessibilityLanguage={otherLanguage.speechTag}>
+                    <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                       {other.share}
                     </Text>
-                    <Text style={styles.actionTextEn}>{en.share}</Text>
+                    <Text style={styles.actionTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.share}</Text>
                   </View>
                 </PressableScale>
               </View>

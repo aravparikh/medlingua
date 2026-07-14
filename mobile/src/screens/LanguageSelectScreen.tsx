@@ -59,7 +59,11 @@ export function LanguageSelectScreen({ onSelect }: Props) {
           style={styles.card}
         >
           <View style={styles.flagCircle} importantForAccessibility="no">
-            <Text style={[styles.monogram, { fontFamily: displayFontFor(language.code) }]}>
+            <Text
+              style={[styles.monogram, { fontFamily: displayFontFor(language.code) }]}
+              allowFontScaling
+              maxFontSizeMultiplier={1.3}
+            >
               {language.monogram}
             </Text>
           </View>

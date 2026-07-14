@@ -56,6 +56,7 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
       <Pressable
         style={styles.screen}
         onPress={onClose}
+        accessibilityRole="button"
         accessibilityLabel={`${other.tapToClose} — ${en.tapToClose}`}
       >
         <View style={styles.topBar}>
@@ -92,12 +93,15 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
             style={[styles.bigText, { fontSize, lineHeight: fontSize * 1.2 }]}
             accessibilityLanguage={language.speechTag}
             accessibilityLiveRegion="polite"
+            // Already sized to the largest type that fits — scaling on top
+            // of that would push text off-screen with no way to scroll.
+            allowFontScaling={false}
           >
             {text}
           </Text>
         </View>
 
-        <Text style={styles.closeHint} importantForAccessibility="no">
+        <Text style={styles.closeHint} allowFontScaling maxFontSizeMultiplier={1.3} importantForAccessibility="no">
           {other.tapToClose === en.tapToClose ? en.tapToClose : `${other.tapToClose} · ${en.tapToClose}`}
         </Text>
       </Pressable>

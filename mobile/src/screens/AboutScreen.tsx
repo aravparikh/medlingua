@@ -31,12 +31,12 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         style={({ pressed }) => [styles.back, pressed && styles.pressedDim]}
       >
         <Ionicons name="chevron-back" size={24} color={colors.primary} />
-        <Text style={styles.backText}>
+        <Text style={styles.backText} allowFontScaling maxFontSizeMultiplier={1.3}>
           {other.back} · {en.back}
         </Text>
       </Pressable>
 
-      <Text style={styles.title} accessibilityRole="header">
+      <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header">
         MedLingua
       </Text>
 
@@ -55,49 +55,49 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           <Ionicons name="shield-checkmark" size={28} color={colors.onPrimary} />
         </View>
         <View style={styles.rightsTextWrap}>
-          <Text style={styles.rightsEntryTitle} accessibilityLanguage={otherLanguage.speechTag}>
+          <Text style={styles.rightsEntryTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
             {other.rightsShow}
           </Text>
-          <Text style={styles.rightsEntrySub}>{en.rightsShow}</Text>
+          <Text style={styles.rightsEntrySub} allowFontScaling maxFontSizeMultiplier={1.3}>{en.rightsShow}</Text>
         </View>
         <Ionicons name="chevron-forward" size={26} color={colors.onPrimary} importantForAccessibility="no" />
       </PressableScale>
 
       <View style={styles.card}>
-        <Text style={styles.heading} accessibilityLanguage={otherLanguage.speechTag}>
+        <Text style={styles.heading} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
           {other.about}
         </Text>
-        <Text style={styles.body} accessibilityLanguage={otherLanguage.speechTag}>
+        <Text style={styles.body} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
           {other.aboutBody}
         </Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.heading}>{en.about}</Text>
-        <Text style={styles.body}>{en.aboutBody}</Text>
+        <Text style={styles.heading} allowFontScaling maxFontSizeMultiplier={2}>{en.about}</Text>
+        <Text style={styles.body} allowFontScaling maxFontSizeMultiplier={2}>{en.aboutBody}</Text>
       </View>
 
       <View style={styles.disclaimerCard}>
         <Ionicons name="information-circle" size={22} color={colors.secondary} />
         <View style={styles.privacyBody}>
-          <Text style={styles.privacyText} accessibilityLanguage={otherLanguage.speechTag}>
+          <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
             {other.aiDisclaimer}
           </Text>
-          <Text style={styles.privacyTextSmall}>{en.aiDisclaimer}</Text>
-          <Text style={styles.privacyText} accessibilityLanguage={otherLanguage.speechTag}>
+          <Text style={styles.privacyTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.aiDisclaimer}</Text>
+          <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
             {other.dataConsent}
           </Text>
-          <Text style={styles.privacyTextSmall}>{en.dataConsent}</Text>
+          <Text style={styles.privacyTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.dataConsent}</Text>
         </View>
       </View>
 
       <View style={styles.privacyCard}>
         <Ionicons name="lock-closed" size={22} color={colors.primary} />
         <View style={styles.privacyBody}>
-          <Text style={styles.privacyText} accessibilityLanguage={otherLanguage.speechTag}>
+          <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
             {other.privacyLine}
           </Text>
-          <Text style={styles.privacyTextSmall}>{en.privacyLine}</Text>
+          <Text style={styles.privacyTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.privacyLine}</Text>
         </View>
       </View>
 
@@ -110,10 +110,10 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         >
           <Ionicons name="open-outline" size={18} color={colors.primary} />
           <View style={styles.legalLabels}>
-            <Text style={styles.legalText} accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={styles.legalText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
               {other.privacyPolicy}
             </Text>
-            <Text style={styles.legalTextEn}>{en.privacyPolicy}</Text>
+            <Text style={styles.legalTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.privacyPolicy}</Text>
           </View>
         </Pressable>
         <Pressable
@@ -124,10 +124,10 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         >
           <Ionicons name="open-outline" size={18} color={colors.primary} />
           <View style={styles.legalLabels}>
-            <Text style={styles.legalText} accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={styles.legalText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
               {other.termsLabel}
             </Text>
-            <Text style={styles.legalTextEn}>{en.termsLabel}</Text>
+            <Text style={styles.legalTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.termsLabel}</Text>
           </View>
         </Pressable>
       </View>

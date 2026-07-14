@@ -108,10 +108,13 @@ function Figure({
   view,
   selected,
   onSelect,
+  labelFor,
 }: {
   view: BodyView;
   selected: BodyRegionId | null;
   onSelect: (id: BodyRegionId) => void;
+  /** Bilingual screen-reader label for a region. */
+  labelFor: (id: BodyRegionId) => string;
 }) {
   const anchor = selected != null ? FIGURE[view].find((r) => r.id === selected)?.anchor : undefined;
 
@@ -124,7 +127,14 @@ function Figure({
           const stroke = colors.primary;
           const strokeWidth = isSelected ? 4 : 2.5;
           return (
-            <G key={region.id} onPress={() => onSelect(region.id)}>
+            <G
+              key={region.id}
+              onPress={() => onSelect(region.id)}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={labelFor(region.id)}
+              accessibilityState={{ selected: isSelected }}
+            >
               {region.shapes.map((shape, i) => {
                 const common = { fill, stroke, strokeWidth, strokeLinejoin: 'round' as const };
                 if (shape.kind === 'circle') {
@@ -208,10 +218,10 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
       <View style={styles.screen}>
         <View style={styles.header}>
           <View style={styles.titleWrap}>
-            <Text style={styles.title} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
               {other.whereHurts}
             </Text>
-            <Text style={styles.titleEn}>{en.whereHurts}</Text>
+            <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.whereHurts}</Text>
           </View>
           <Pressable
             onPress={onClose}
@@ -220,7 +230,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
             style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
           >
             <Ionicons name="close" size={24} color={colors.primary} />
-            <Text style={styles.closeText}>
+            <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.close} · {en.close}
             </Text>
           </Pressable>
@@ -252,13 +262,18 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
           </View>
 
           {selected == null ? (
-            <Text style={styles.hint} accessibilityLiveRegion="polite" accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={styles.hint} allowFontScaling maxFontSizeMultiplier={2} accessibilityLiveRegion="polite" accessibilityLanguage={otherLanguage.speechTag}>
               {other.bodyMapHint}
             </Text>
           ) : null}
 
           <View style={styles.figureWrap}>
-            <Figure view={view} selected={selected} onSelect={pickRegion} />
+            <Figure
+              view={view}
+              selected={selected}
+              onSelect={pickRegion}
+              labelFor={(id) => `${BODY_REGIONS[id].name[otherLanguage.code]} — ${BODY_REGIONS[id].name.en}`}
+            />
           </View>
 
           {region ? (
@@ -266,17 +281,17 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
               <View style={styles.regionRow}>
                 <Ionicons name="location" size={22} color={colors.accent} importantForAccessibility="no" />
                 <View style={styles.regionLabels}>
-                  <Text style={styles.regionName} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
+                  <Text style={styles.regionName} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
                     {region.name[otherLanguage.code]}
                   </Text>
-                  <Text style={styles.regionNameEn}>{region.name.en}</Text>
+                  <Text style={styles.regionNameEn} allowFontScaling maxFontSizeMultiplier={2}>{region.name.en}</Text>
                 </View>
               </View>
 
-              <Text style={styles.panelQuestion} accessibilityLanguage={otherLanguage.speechTag}>
+              <Text style={styles.panelQuestion} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.howMuchHurt}
               </Text>
-              <Text style={styles.panelQuestionEn}>{en.howMuchHurt}</Text>
+              <Text style={styles.panelQuestionEn} allowFontScaling maxFontSizeMultiplier={2}>{en.howMuchHurt}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.painRow}>
                 {Array.from({ length: 11 }, (_, n) => {
                   const active = intensity === n;
@@ -289,11 +304,14 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
                       }}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={String(n)}
+                      accessibilityLabel={other.painIs.replace('{n}', String(n))}
+                      accessibilityLanguage={otherLanguage.speechTag}
                       style={[styles.painChip, n >= 7 && styles.painChipHigh, active && styles.painChipActive]}
                     >
                       <Text
                         style={[styles.painChipText, n >= 7 && styles.painChipTextHigh, active && styles.painChipTextActive]}
+                        allowFontScaling
+                        maxFontSizeMultiplier={1.4}
                       >
                         {n}
                       </Text>
@@ -311,10 +329,10 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
               >
                 <Ionicons name="volume-high" size={26} color={colors.onPrimary} />
                 <View style={styles.sayLabels}>
-                  <Text style={styles.sayText} accessibilityLanguage={otherLanguage.speechTag}>
+                  <Text style={styles.sayText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.sayIt}
                   </Text>
-                  {other.sayIt !== en.sayIt ? <Text style={styles.sayTextEn}>{en.sayIt}</Text> : null}
+                  {other.sayIt !== en.sayIt ? <Text style={styles.sayTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.sayIt}</Text> : null}
                 </View>
               </PressableScale>
             </Appear>

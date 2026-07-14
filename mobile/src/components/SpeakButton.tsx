@@ -91,7 +91,7 @@ export function AutoSpeakButton({ otherLanguage, disabled, onStart }: AutoProps)
           </Text>
           <View style={styles.autoBadge} importantForAccessibility="no">
             <Ionicons name="sparkles" size={13} color={colors.onPrimary} />
-            <Text style={styles.autoBadgeText}>
+            <Text style={styles.autoBadgeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {otherLanguage.nativeName} · English
             </Text>
           </View>
