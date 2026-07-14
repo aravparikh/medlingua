@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, MicIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, UnderstandIcon } from '../components/icons';
+import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, TwoVoicesScene, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -1109,9 +1109,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                screen — drop the decorative mic circle so the instruction and
                its arrow stay above the fold. */}
             {!showDisclaimer ? (
-              <View style={styles.hintIconCircle} importantForAccessibility="no">
-                <MicIcon  size={42} color={colors.primary} />
-              </View>
+              /* Two capsule figures, the sound arc between them — the promise
+                 as a picture: two people, two languages, one conversation. */
+              <TwoVoicesScene width={272} style={styles.hintScene} />
             ) : null}
             {/* The promise first, in the patient's own language — then how. */}
             <Text
@@ -2000,14 +2000,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  hintIconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.surfaceTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
+  hintScene: {
+    alignSelf: 'center',
+    marginBottom: spacing.md,
   },
   hintTagline: {
     fontSize: type.title,

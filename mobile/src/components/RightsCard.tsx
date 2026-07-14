@@ -1,5 +1,5 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CloseIcon, ShieldIcon } from './icons';
+import { CloseIcon, SealMark } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
@@ -14,8 +14,10 @@ interface Props {
 /**
  * The interpreter-rights card. Title VI of the Civil Rights Act and §1557 of
  * the ACA entitle every patient to a free, qualified medical interpreter —
- * and most patients don't know it. This screen exists to be handed to staff:
- * patient language first and large, English below, fully static and offline.
+ * and most patients don't know it. This screen exists to be handed to staff,
+ * so it is drawn like a document: a double-rule frame and a seal mark, made
+ * to photograph like something official. Patient language first and large,
+ * English below, fully static and offline.
  */
 export function RightsCard({ visible, otherLanguage, onClose }: Props) {
   const en = t('en');
@@ -25,16 +27,13 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.screen}>
         <View style={styles.topBar}>
-          <View style={styles.badge} importantForAccessibility="no">
-            <ShieldIcon  size={26} color={colors.onPrimary} />
-          </View>
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel={`${other.close} — ${en.close}`}
             style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
           >
-            <CloseIcon  size={24} color={colors.primary} />
+            <CloseIcon size={24} color={colors.primary} />
             <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.close} · {en.close}
             </Text>
@@ -42,21 +41,38 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
-          <Text
-            style={[styles.title, { fontFamily: displayFontFor(otherLanguage.code) }]} allowFontScaling maxFontSizeMultiplier={2}
-            accessibilityRole="header"
-            accessibilityLanguage={otherLanguage.speechTag}
-          >
-            {other.rightsTitle}
-          </Text>
-          <Text style={styles.body} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-            {other.rightsBody}
-          </Text>
+          {/* The document: double-rule frame, seal on top — certificate grammar. */}
+          <View style={styles.frameOuter}>
+            <View style={styles.frameInner}>
+              <SealMark size={56} color={colors.secondary} style={styles.seal} />
+              <Text
+                style={[styles.title, { fontFamily: displayFontFor(otherLanguage.code) }]}
+                allowFontScaling
+                maxFontSizeMultiplier={2}
+                accessibilityRole="header"
+                accessibilityLanguage={otherLanguage.speechTag}
+              >
+                {other.rightsTitle}
+              </Text>
+              <Text
+                style={styles.body}
+                allowFontScaling
+                maxFontSizeMultiplier={2}
+                accessibilityLanguage={otherLanguage.speechTag}
+              >
+                {other.rightsBody}
+              </Text>
 
-          <View style={styles.divider} importantForAccessibility="no" />
+              <View style={styles.divider} importantForAccessibility="no" />
 
-          <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={2}>{en.rightsTitle}</Text>
-          <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={2}>{en.rightsBody}</Text>
+              <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={2}>
+                {en.rightsTitle}
+              </Text>
+              <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={2}>
+                {en.rightsBody}
+              </Text>
+            </View>
+          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -72,17 +88,8 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: spacing.md,
-  },
-  badge: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.card,
   },
   close: {
     minHeight: MIN_TARGET - 4,
@@ -101,14 +108,33 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   content: {
-    padding: spacing.lg,
+    padding: spacing.md,
     paddingBottom: spacing.xxl,
+  },
+  frameOuter: {
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.xl,
+    padding: spacing.xxs,
+    backgroundColor: colors.surface,
+    ...shadows.card,
+  },
+  frameInner: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
     gap: spacing.md,
+  },
+  seal: {
+    alignSelf: 'center',
   },
   title: {
     fontSize: type.title,
     color: colors.text,
     lineHeight: type.title * 1.25,
+    textAlign: 'center',
   },
   body: {
     fontFamily: fonts.bodyMedium,
