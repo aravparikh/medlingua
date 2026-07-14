@@ -34,7 +34,7 @@ import {
 } from '../services/openai';
 import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
-import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
+import { colors, displayFontFor, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
 import { Appear } from '../components/Appear';
 import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
@@ -1109,7 +1109,26 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 <Ionicons name="mic-outline" size={42} color={colors.primary} />
               </View>
             ) : null}
-            <Text style={styles.hintText} allowFontScaling maxFontSizeMultiplier={2}>{other.holdAndSpeak}</Text>
+            {/* The promise first, in the patient's own language — then how. */}
+            <Text
+              style={[styles.hintTagline, { fontFamily: displayFontFor(otherLanguage.code) }]}
+              accessibilityLanguage={otherLanguage.speechTag}
+              allowFontScaling
+              maxFontSizeMultiplier={2}
+            >
+              {other.tagline}
+            </Text>
+            <Text style={styles.hintTaglineEn} allowFontScaling maxFontSizeMultiplier={2}>
+              {en.tagline}
+            </Text>
+            <Text
+              style={styles.hintText}
+              accessibilityLanguage={otherLanguage.speechTag}
+              allowFontScaling
+              maxFontSizeMultiplier={2}
+            >
+              {other.holdAndSpeak}
+            </Text>
             <Text style={styles.hintTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.holdAndSpeak}</Text>
             <Ionicons name="arrow-down" size={30} color={colors.accent} style={styles.hintArrow} />
           </Appear>
@@ -1987,15 +2006,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.sm,
   },
+  hintTagline: {
+    fontSize: type.title,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: type.title * 1.25,
+    paddingHorizontal: spacing.md,
+  },
+  hintTaglineEn: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
   hintText: {
-    fontFamily: fonts.displayMedium,
-    fontSize: type.body,
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
     color: colors.text,
     textAlign: 'center',
   },
   hintTextSmall: {
     fontFamily: fonts.body,
-    fontSize: type.small,
+    fontSize: type.caption,
     color: colors.textMuted,
     textAlign: 'center',
   },

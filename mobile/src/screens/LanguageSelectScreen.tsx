@@ -21,13 +21,16 @@ export function LanguageSelectScreen({ onSelect }: Props) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.brand}>
         <View style={styles.brandMark} importantForAccessibility="no">
-          <Ionicons name="chatbubble" size={26} color={colors.onPrimary} style={styles.brandBubble} />
-          <Ionicons name="add" size={16} color={colors.primary} style={styles.brandCross} />
+          <Ionicons name="chatbubble" size={34} color={colors.onPrimary} style={styles.brandBubble} />
+          <Ionicons name="add" size={20} color={colors.primary} style={styles.brandCross} />
         </View>
-        <Text style={styles.appName} accessibilityRole="header">
+        <Text style={styles.appName} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.3}>
           MedLingua
         </Text>
       </View>
+      <Text style={styles.tagline} allowFontScaling maxFontSizeMultiplier={2}>
+        {STRINGS.en.tagline}
+      </Text>
 
       <View style={styles.prompts} accessibilityRole="header">
         <Text style={styles.promptMain} allowFontScaling maxFontSizeMultiplier={2}>
@@ -104,12 +107,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   brandMark: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.card,
   },
   brandBubble: {
     position: 'absolute',
@@ -120,8 +124,15 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontFamily: fonts.display,
-    fontSize: type.title,
+    fontSize: type.hero,
     color: colors.primary,
+  },
+  tagline: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   prompts: {
     marginTop: spacing.lg,
