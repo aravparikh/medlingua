@@ -1,5 +1,5 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { CloseIcon, ShieldIcon } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
@@ -26,7 +26,7 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
       <View style={styles.screen}>
         <View style={styles.topBar}>
           <View style={styles.badge} importantForAccessibility="no">
-            <Ionicons name="shield-checkmark" size={26} color={colors.onPrimary} />
+            <ShieldIcon  size={26} color={colors.onPrimary} />
           </View>
           <Pressable
             onPress={onClose}
@@ -34,7 +34,7 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
             accessibilityLabel={`${other.close} — ${en.close}`}
             style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
           >
-            <Ionicons name="close" size={24} color={colors.primary} />
+            <CloseIcon  size={24} color={colors.primary} />
             <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.close} · {en.close}
             </Text>

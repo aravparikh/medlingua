@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MicIcon, SparkleIcon } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
@@ -39,7 +39,7 @@ export function SpeakButton({ language, disabled, fill, fillPressed, onStart }: 
       {({ pressed }) => (
         <View style={[styles.inner, { backgroundColor: pressed ? fillPressed : fill }]}>
           <View style={styles.iconCircle} importantForAccessibility="no">
-            <Ionicons name="mic" size={26} color={colors.onPrimary} />
+            <MicIcon  size={26} color={colors.onPrimary} />
           </View>
           <Text
             style={[styles.label, { fontFamily: displayFontFor(language.code) }]}
@@ -84,13 +84,13 @@ export function AutoSpeakButton({ otherLanguage, disabled, onStart }: AutoProps)
           style={[styles.inner, { backgroundColor: pressed ? colors.primaryPressed : colors.primary }]}
         >
           <View style={styles.iconCircle} importantForAccessibility="no">
-            <Ionicons name="mic" size={26} color={colors.onPrimary} />
+            <MicIcon  size={26} color={colors.onPrimary} />
           </View>
           <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={1.3}>
             {other.speakAuto} · {en.speakAuto}
           </Text>
           <View style={styles.autoBadge} importantForAccessibility="no">
-            <Ionicons name="sparkles" size={13} color={colors.onPrimary} />
+            <SparkleIcon  size={13} color={colors.onPrimary} />
             <Text style={styles.autoBadgeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {otherLanguage.nativeName} · English
             </Text>

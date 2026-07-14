@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { Ionicons } from '@expo/vector-icons';
+import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, MicIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -778,7 +778,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           accessibilityLabel={`${other.changeLanguage} — ${en.changeLanguage}`}
           style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
         >
-          <Ionicons name="language" size={20} color={colors.textMuted} />
+          <LanguageIcon  size={20} color={colors.textMuted} />
           <View>
             <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {other.languageShort}
@@ -795,7 +795,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           accessibilityLabel={`${other.about} — ${en.about}`}
           style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
         >
-          <Ionicons name="information-circle-outline" size={20} color={colors.textMuted} />
+          <InfoIcon  size={20} color={colors.textMuted} />
           <View>
             <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
               {other.aboutShort}
@@ -810,7 +810,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       {/* Offline: a calm heads-up, not an alarm — and a pointer to what still works. */}
       {offline ? (
         <Appear style={styles.offlineBanner} accessibilityLiveRegion="polite">
-          <Ionicons name="cloud-offline-outline" size={22} color={colors.textMuted} />
+          <CloudOffIcon  size={22} color={colors.textMuted} />
           <View style={styles.offlineBody}>
             <Text
               style={styles.offlineText}
@@ -832,7 +832,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
          button off a 375×812 screen on a first-run recording. */}
       {showDisclaimer && !recordingPanelVisible ? (
         <View style={styles.disclaimer}>
-          <Ionicons name="information-circle" size={22} color={colors.secondary} />
+          <InfoIcon  size={22} color={colors.secondary} />
           <View style={styles.disclaimerBody}>
             <Text
               style={styles.disclaimerText}
@@ -880,7 +880,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             accessibilityLabel={`${other.summary} — ${en.summary}`}
             style={[styles.summaryPill, (busy || offline) && styles.dimmed]}
           >
-            <Ionicons name="document-text-outline" size={18} color={colors.primary} />
+            <DocumentIcon  size={18} color={colors.primary} />
             <Text style={styles.summaryPillText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.summary === en.summary ? en.summary : `${other.summary} · ${en.summary}`}
             </Text>
@@ -917,7 +917,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               flexFill
               style={[styles.turnButton, flipped && styles.turnButtonActive]}
             >
-              <Ionicons name="eye-outline" size={20} color={colors.primary} />
+              <EyeIcon  size={20} color={colors.primary} />
               <View style={styles.turnButtonLabels}>
                 <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                   {t(turn.listener.code).flip}
@@ -980,7 +980,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       {t(turn.listener.code).translationLabel}
                     </Text>
                   )}
-                  <Ionicons name="expand-outline" size={16} color={colors.textFaint} importantForAccessibility="no" />
+                  <ExpandIcon  size={16} color={colors.textFaint} importantForAccessibility="no" />
                 </View>
                 <Text
                   style={isLatest ? styles.translationText : styles.translationTextOld}
@@ -1001,7 +1001,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     flexFill
                     style={[styles.turnButton, phase !== 'idle' && !(isLatest && phase === 'speaking') && styles.dimmed]}
                   >
-                    <Ionicons name="volume-high" size={20} color={colors.primary} />
+                    <SpeakIcon  size={20} color={colors.primary} />
                     <View style={styles.turnButtonLabels}>
                       <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                         {isLatest && phase === 'speaking'
@@ -1023,7 +1023,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     flexFill
                     style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
                   >
-                    <Ionicons name="footsteps-outline" size={20} color={colors.primary} />
+                    <SlowIcon  size={20} color={colors.primary} />
                     <View style={styles.turnButtonLabels}>
                       <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                         {t(turn.listener.code).slowLabel}
@@ -1048,7 +1048,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                         flexFill
                         style={[styles.turnButton, (phase !== 'idle' || offline) && styles.dimmed]}
                       >
-                        <Ionicons name="school-outline" size={20} color={colors.primary} />
+                        <UnderstandIcon  size={20} color={colors.primary} />
                         <View style={styles.turnButtonLabels}>
                           <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
                             {other.checkLabel}
@@ -1068,7 +1068,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
         {error ? (
           <Appear style={styles.errorCard} accessibilityLiveRegion="assertive">
-            <Ionicons name="alert-circle" size={26} color={colors.dangerText} />
+            <AlertCircleIcon  size={26} color={colors.dangerText} />
             <View style={styles.errorBody}>
               <Text style={styles.errorText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                 {other[error]}
@@ -1083,7 +1083,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   accessibilityLabel={`${other.tryAgain} — ${en.tryAgain}`}
                   style={[styles.retryButton, phase !== 'idle' && styles.dimmed]}
                 >
-                  <Ionicons name="refresh" size={20} color={colors.dangerText} />
+                  <RefreshIcon  size={20} color={colors.dangerText} />
                   <Text style={styles.retryText} allowFontScaling maxFontSizeMultiplier={2}>
                     {other.tryAgain} · {en.tryAgain}
                   </Text>
@@ -1110,7 +1110,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                its arrow stay above the fold. */}
             {!showDisclaimer ? (
               <View style={styles.hintIconCircle} importantForAccessibility="no">
-                <Ionicons name="mic-outline" size={42} color={colors.primary} />
+                <MicIcon  size={42} color={colors.primary} />
               </View>
             ) : null}
             {/* The promise first, in the patient's own language — then how. */}
@@ -1134,7 +1134,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               {other.holdAndSpeak}
             </Text>
             <Text style={styles.hintTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.holdAndSpeak}</Text>
-            <Ionicons name="arrow-down" size={30} color={colors.accent} style={styles.hintArrow} />
+            <ArrowDownIcon  size={30} color={colors.accent} style={styles.hintArrow} />
           </Appear>
         ) : null}
       </ScrollView>
@@ -1193,7 +1193,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           >
             {({ pressed }) => (
               <View style={[styles.doneInner, pressed && styles.doneInnerPressed]}>
-                <Ionicons name="checkmark" size={44} color={colors.onPrimary} />
+                <CheckIcon  size={44} color={colors.onPrimary} />
                 <View style={styles.doneLabels}>
                   <Text
                     style={styles.doneText}
@@ -1239,7 +1239,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           flexFill
           style={[styles.toolButton, busy && styles.dimmed]}
         >
-          <Ionicons name="chatbubbles-outline" size={20} color={colors.text} />
+          <ChatIcon  size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
             <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {other.quickPhrasesShort}
@@ -1261,7 +1261,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           flexFill
           style={[styles.toolButton, (busy || offline) && styles.dimmed]}
         >
-          <Ionicons name="create-outline" size={20} color={colors.text} />
+          <PencilIcon  size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
             <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {other.typeLabel}
@@ -1279,7 +1279,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           flexFill
           style={[styles.toolButton, (busy || offline) && styles.dimmed]}
         >
-          <Ionicons name="camera-outline" size={20} color={colors.text} />
+          <CameraIcon  size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
             <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {other.scanLabel}
@@ -1298,7 +1298,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           flexFill
           style={[styles.toolButton, autoMode && styles.toolButtonOn, busy && styles.dimmed]}
         >
-          <Ionicons name="sparkles" size={18} color={autoMode ? colors.primary : colors.text} />
+          <SparkleIcon  size={18} color={autoMode ? colors.primary : colors.text} />
           <View style={styles.toolButtonLabels}>
             <Text
               style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
@@ -1357,7 +1357,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       {/* Trust cue, in both active languages. */}
       <View style={styles.privacy}>
         <View style={styles.privacyRow}>
-          <Ionicons name="lock-closed" size={13} color={colors.textFaint} />
+          <LockIcon  size={13} color={colors.textFaint} />
           <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={1.2}>
             {other.privacyLine}
           </Text>
@@ -1387,7 +1387,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <View style={styles.sheetHandle} importantForAccessibility="no" />
             <View style={styles.sheetHeader}>
               <View style={styles.sheetTitleRow}>
-                <Ionicons name="chatbubbles" size={24} color={colors.primary} />
+                <ChatIcon  size={24} color={colors.primary} />
                 <View style={styles.sheetTitleWrap}>
                   <Text style={styles.sheetTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
                     {other.quickPhrases}
@@ -1401,7 +1401,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 accessibilityLabel={`${other.close} — ${en.close}`}
                 style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
               >
-                <Ionicons name="close" size={22} color={colors.primary} />
+                <CloseIcon  size={22} color={colors.primary} />
                 <Text style={styles.sheetCloseText} allowFontScaling maxFontSizeMultiplier={1.3}>
                   {other.close} · {en.close}
                 </Text>
@@ -1424,7 +1424,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 style={styles.bodyMapCard}
               >
                 <View style={styles.bodyMapIcon} importantForAccessibility="no">
-                  <Ionicons name="body-outline" size={30} color={colors.onPrimary} />
+                  <BodyIcon  size={30} color={colors.onPrimary} />
                 </View>
                 <View style={styles.bodyMapTextWrap}>
                   <Text style={styles.bodyMapTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
@@ -1432,7 +1432,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   </Text>
                   <Text style={styles.bodyMapSub} allowFontScaling maxFontSizeMultiplier={1.3}>{en.whereHurts}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={26} color={colors.onPrimary} importantForAccessibility="no" />
+                <ChevronForwardIcon  size={26} color={colors.onPrimary} importantForAccessibility="no" />
               </PressableScale>
 
               <Text style={[styles.sheetSection, styles.sheetSectionUrgent]} allowFontScaling maxFontSizeMultiplier={2} importantForAccessibility="no">
@@ -1448,7 +1448,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   style={styles.phraseRow}
                 >
                   <View style={[styles.phraseIconCircle, styles.phraseIconCircleUrgent]} importantForAccessibility="no">
-                    <Ionicons name={phrase.icon} size={24} color={colors.dangerText} />
+                    <BrandGlyph name={phrase.icon} size={24} color={colors.dangerText} />
                   </View>
                   <View style={styles.phraseTextWrap}>
                     <Text style={styles.phrasePrimary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
@@ -1456,7 +1456,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     </Text>
                     <Text style={styles.phraseSecondary} allowFontScaling maxFontSizeMultiplier={2}>{phrase.text.en}</Text>
                   </View>
-                  <Ionicons name="volume-high" size={22} color={colors.textFaint} />
+                  <SpeakIcon  size={22} color={colors.textFaint} />
                 </PressableScale>
               ))}
 
@@ -1494,7 +1494,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   style={styles.phraseRow}
                 >
                   <View style={styles.phraseIconCircle} importantForAccessibility="no">
-                    <Ionicons name={phrase.icon} size={24} color={colors.primary} />
+                    <BrandGlyph name={phrase.icon} size={24} color={colors.primary} />
                   </View>
                   <View style={styles.phraseTextWrap}>
                     <Text style={styles.phrasePrimary} allowFontScaling maxFontSizeMultiplier={2}>{phrase.text.en}</Text>
@@ -1502,7 +1502,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       {phrase.text[otherLanguage.code]}
                     </Text>
                   </View>
-                  <Ionicons name="volume-high" size={22} color={colors.textFaint} />
+                  <SpeakIcon  size={22} color={colors.textFaint} />
                 </PressableScale>
               ))}
 
@@ -1519,7 +1519,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   style={styles.phraseRow}
                 >
                   <View style={[styles.phraseIconCircle, styles.phraseIconCircleSecondary]} importantForAccessibility="no">
-                    <Ionicons name={phrase.icon} size={24} color={colors.secondary} />
+                    <BrandGlyph name={phrase.icon} size={24} color={colors.secondary} />
                   </View>
                   <View style={styles.phraseTextWrap}>
                     <Text style={styles.phrasePrimary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
@@ -1527,7 +1527,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     </Text>
                     <Text style={styles.phraseSecondary} allowFontScaling maxFontSizeMultiplier={2}>{phrase.text.en}</Text>
                   </View>
-                  <Ionicons name="volume-high" size={22} color={colors.textFaint} />
+                  <SpeakIcon  size={22} color={colors.textFaint} />
                 </PressableScale>
               ))}
             </ScrollView>
@@ -1551,7 +1551,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             <View style={styles.sheetHandle} importantForAccessibility="no" />
             <View style={styles.sheetHeader}>
               <View style={styles.sheetTitleRow}>
-                <Ionicons name="create" size={24} color={colors.primary} />
+                <PencilIcon  size={24} color={colors.primary} />
                 <View style={styles.sheetTitleWrap}>
                   <Text style={styles.sheetTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
                     {other.typeLabel}
@@ -1565,7 +1565,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 accessibilityLabel={`${other.close} — ${en.close}`}
                 style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
               >
-                <Ionicons name="close" size={22} color={colors.primary} />
+                <CloseIcon  size={22} color={colors.primary} />
                 <Text style={styles.sheetCloseText} allowFontScaling maxFontSizeMultiplier={1.3}>
                   {other.close} · {en.close}
                 </Text>
@@ -1584,8 +1584,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 accessibilityLabel={`${other.nameLabel} — ${en.nameLabel}. ${other.nameHint}`}
                 style={[styles.nameToggle, nameMode && styles.nameToggleOn]}
               >
-                <Ionicons
-                  name={nameMode ? 'person' : 'person-outline'}
+                <PersonIcon
                   size={20}
                   color={nameMode ? colors.primary : colors.textMuted}
                 />
@@ -1598,7 +1597,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   </Text>
                 </View>
                 <View style={[styles.nameCheck, nameMode && styles.nameCheckOn]}>
-                  {nameMode ? <Ionicons name="checkmark" size={16} color={colors.onPrimary} /> : null}
+                  {nameMode ? <CheckIcon  size={16} color={colors.onPrimary} /> : null}
                 </View>
               </PressableScale>
               <TextInput
@@ -1629,7 +1628,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   style={[styles.typeSend, { backgroundColor: colors.primary }, !typedDraft.trim() && styles.dimmed]}
                 >
                   <Text style={styles.typeSendText} allowFontScaling maxFontSizeMultiplier={1.3}>{ENGLISH.nativeName}</Text>
-                  <Ionicons name="arrow-forward" size={20} color={colors.onPrimary} />
+                  <ArrowForwardIcon  size={20} color={colors.onPrimary} />
                 </PressableScale>
                 <PressableScale
                   onPress={() => useTypedText(otherLanguage)}
@@ -1641,7 +1640,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   style={[styles.typeSend, { backgroundColor: colors.secondary }, !typedDraft.trim() && styles.dimmed]}
                 >
                   <Text style={styles.typeSendText} allowFontScaling maxFontSizeMultiplier={1.3}>{otherLanguage.nativeName}</Text>
-                  <Ionicons name="arrow-forward" size={20} color={colors.onPrimary} />
+                  <ArrowForwardIcon  size={20} color={colors.onPrimary} />
                 </PressableScale>
               </View>
             </View>
@@ -1660,12 +1659,12 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 accessibilityLabel={`${other.close} — ${en.close}`}
                 style={({ pressed }) => [styles.teachClose, pressed && styles.pressedDim]}
               >
-                <Ionicons name="close" size={24} color={colors.textMuted} />
+                <CloseIcon  size={24} color={colors.textMuted} />
               </Pressable>
 
               {teach.stage === 'loading' || teach.stage === 'loading2' ? (
                 <View style={styles.teachCenter} accessibilityLiveRegion="polite">
-                  <Ionicons name="school-outline" size={34} color={colors.primary} />
+                  <UnderstandIcon  size={34} color={colors.primary} />
                   <Text style={styles.teachQuestion} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.simplifying}
                   </Text>
@@ -1677,7 +1676,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 <>
                   {teach.stage === 'ask2' ? (
                     <View style={styles.teachBanner}>
-                      <Ionicons name="megaphone-outline" size={20} color={colors.secondary} />
+                      <MegaphoneIcon  size={20} color={colors.secondary} />
                       <Text style={styles.teachBannerText} allowFontScaling maxFontSizeMultiplier={2}>{en.explainAgain}</Text>
                     </View>
                   ) : null}
@@ -1694,7 +1693,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     accessibilityLabel={`${other.playAgain} — ${en.playAgain}`}
                     style={styles.teachReplay}
                   >
-                    <Ionicons name="volume-high" size={18} color={colors.primary} />
+                    <SpeakIcon  size={18} color={colors.primary} />
                     <Text style={styles.teachReplayText} allowFontScaling maxFontSizeMultiplier={2}>
                       {other.playAgain} · {en.playAgain}
                     </Text>
@@ -1711,7 +1710,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       flexFill
                       style={[styles.teachChoice, styles.teachYes]}
                     >
-                      <Ionicons name="checkmark" size={36} color={colors.onPrimary} />
+                      <CheckIcon  size={36} color={colors.onPrimary} />
                       <Text style={styles.teachChoiceText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                         {other.yes}
                       </Text>
@@ -1724,7 +1723,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       flexFill
                       style={[styles.teachChoice, styles.teachNo]}
                     >
-                      <Ionicons name="close" size={36} color={colors.onPrimary} />
+                      <CloseIcon  size={36} color={colors.onPrimary} />
                       <Text style={styles.teachChoiceText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                         {other.no}
                       </Text>
@@ -1736,7 +1735,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
               {teach.stage === 'failed' ? (
                 <View style={styles.teachCenter}>
-                  <Ionicons name="people-outline" size={34} color={colors.secondary} />
+                  <PeopleIcon  size={34} color={colors.secondary} />
                   <Text
                     style={styles.teachExplanation} allowFontScaling maxFontSizeMultiplier={2}
                     accessibilityLanguage={otherLanguage.speechTag}
@@ -1751,7 +1750,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     accessibilityLabel={`${other.rightsShow} — ${en.rightsShow}`}
                     style={styles.rightsButton}
                   >
-                    <Ionicons name="shield-checkmark" size={22} color={colors.onPrimary} />
+                    <ShieldIcon  size={22} color={colors.onPrimary} />
                     <View style={styles.rightsButtonLabels}>
                       <Text style={styles.rightsButtonText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                         {other.rightsShow}
@@ -1764,7 +1763,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
               {teach.stage === 'error' ? (
                 <View style={styles.teachCenter} accessibilityLiveRegion="assertive">
-                  <Ionicons name="alert-circle" size={34} color={colors.dangerText} />
+                  <AlertCircleIcon  size={34} color={colors.dangerText} />
                   <Text style={styles.teachExplanation} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.connectionError}
                   </Text>
@@ -1790,7 +1789,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               <View style={styles.sheetHandle} importantForAccessibility="no" />
               <View style={styles.sheetHeader}>
                 <View style={styles.sheetTitleRow}>
-                  <Ionicons name="medkit" size={24} color={colors.primary} />
+                  <MedkitIcon  size={24} color={colors.primary} />
                   <View style={styles.sheetTitleWrap}>
                     <Text style={styles.sheetTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
                       {other.scanTitle}
@@ -1804,7 +1803,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   accessibilityLabel={`${other.close} — ${en.close}`}
                   style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
                 >
-                  <Ionicons name="close" size={22} color={colors.primary} />
+                  <CloseIcon  size={22} color={colors.primary} />
                   <Text style={styles.sheetCloseText} allowFontScaling maxFontSizeMultiplier={1.3}>
                     {other.close} · {en.close}
                   </Text>
@@ -1823,7 +1822,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
               {scan.status === 'unreadable' || scan.status === 'permission' || scan.status === 'error' ? (
                 <View style={styles.scanCenter} accessibilityLiveRegion="assertive">
-                  <Ionicons
+                  <BrandGlyph
                     name={scan.status === 'permission' ? 'camera-outline' : 'alert-circle'}
                     size={34}
                     color={colors.dangerText}
@@ -1852,7 +1851,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       accessibilityLabel={`${other.tryAgain} — ${en.tryAgain}`}
                       style={styles.scanRetry}
                     >
-                      <Ionicons name="refresh" size={20} color={colors.dangerText} />
+                      <RefreshIcon  size={20} color={colors.dangerText} />
                       <Text style={styles.scanRetryText} allowFontScaling maxFontSizeMultiplier={2}>
                         {other.tryAgain} · {en.tryAgain}
                       </Text>
@@ -1875,7 +1874,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     .map((section) => (
                       <View key={section.labelEn} style={styles.scanSection}>
                         <View style={styles.scanSectionHead}>
-                          <Ionicons name={section.icon} size={18} color={colors.primary} importantForAccessibility="no" />
+                          <BrandGlyph name={section.icon} size={18} color={colors.primary} importantForAccessibility="no" />
                           <Text style={styles.scanSectionLabel} allowFontScaling maxFontSizeMultiplier={2}>
                             {section.label === section.labelEn ? section.labelEn : `${section.label} · ${section.labelEn}`}
                           </Text>
@@ -1894,7 +1893,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     accessibilityLabel={`${other.speakAloud} — ${en.speakAloud}`}
                     style={[styles.scanSpeak, phase !== 'idle' && styles.dimmed]}
                   >
-                    <Ionicons name="volume-high" size={24} color={colors.onPrimary} />
+                    <SpeakIcon  size={24} color={colors.onPrimary} />
                     <View style={styles.sayLabelsInline}>
                       <Text style={styles.scanSpeakText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                         {other.speakAloud}
@@ -1906,7 +1905,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   </PressableScale>
 
                   <View style={styles.scanPharmacist}>
-                    <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
+                    <InfoIcon  size={18} color={colors.textMuted} />
                     <View style={styles.scanPharmacistText}>
                       <Text style={styles.scanSecondary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                         {other.pharmacistLine}

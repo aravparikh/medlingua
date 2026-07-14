@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { CloseIcon, PinIcon, SpeakIcon } from './icons';
 import Svg, { Circle, Ellipse, G, Rect } from 'react-native-svg';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
@@ -230,7 +230,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
             accessibilityLabel={`${other.close} — ${en.close}`}
             style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
           >
-            <Ionicons name="close" size={24} color={colors.primary} />
+            <CloseIcon  size={24} color={colors.primary} />
             <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
               {other.close} · {en.close}
             </Text>
@@ -280,7 +280,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
           {region ? (
             <Appear style={styles.panel}>
               <View style={styles.regionRow}>
-                <Ionicons name="location" size={22} color={colors.accent} importantForAccessibility="no" />
+                <PinIcon  size={22} color={colors.accent} importantForAccessibility="no" />
                 <View style={styles.regionLabels}>
                   <Text style={styles.regionName} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
                     {region.name[otherLanguage.code]}
@@ -328,7 +328,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
                 accessibilityLabel={`${other.sayIt} — ${en.sayIt}`}
                 style={[styles.sayButton, intensity == null && styles.dimmed]}
               >
-                <Ionicons name="volume-high" size={26} color={colors.onPrimary} />
+                <SpeakIcon  size={26} color={colors.onPrimary} />
                 <View style={styles.sayLabels}>
                   <Text style={styles.sayText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.sayIt}

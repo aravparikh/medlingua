@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { BrandMark, ChevronForwardIcon } from '../components/icons';
 
 import { LANGUAGES, type Language } from '../config/languages';
 import { STRINGS } from '../i18n/strings';
@@ -21,8 +21,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.brand}>
         <View style={styles.brandMark} importantForAccessibility="no">
-          <Ionicons name="chatbubble" size={34} color={colors.onPrimary} style={styles.brandBubble} />
-          <Ionicons name="add" size={20} color={colors.primary} style={styles.brandCross} />
+          <BrandMark size={36} color={colors.onPrimary} />
         </View>
         <Text style={styles.appName} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.3}>
           MedLingua
@@ -82,7 +81,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
               {language.nativeName}  ·  English
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={26} color={colors.textFaint} />
+          <ChevronForwardIcon size={26} color={colors.textFaint} />
         </PressableScale>
       ))}
     </ScrollView>
@@ -114,13 +113,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.card,
-  },
-  brandBubble: {
-    position: 'absolute',
-  },
-  brandCross: {
-    position: 'absolute',
-    marginTop: -2,
   },
   appName: {
     fontFamily: fonts.display,

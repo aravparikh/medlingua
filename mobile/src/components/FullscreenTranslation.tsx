@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { CloseIcon, SwapIcon } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
@@ -70,7 +70,7 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
             accessibilityLabel={`${other.flip} — ${en.flip}`}
             style={[styles.topButton, flipped && styles.topButtonActive]}
           >
-            <Ionicons name="swap-vertical" size={22} color={colors.primary} />
+            <SwapIcon  size={22} color={colors.primary} />
             <Text style={styles.topButtonText} allowFontScaling maxFontSizeMultiplier={2}>
               {other.flip === en.flip ? en.flip : `${other.flip} · ${en.flip}`}
             </Text>
@@ -81,7 +81,7 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
             accessibilityLabel={`${other.close} — ${en.close}`}
             style={styles.topButton}
           >
-            <Ionicons name="close" size={24} color={colors.primary} />
+            <CloseIcon  size={24} color={colors.primary} />
             <Text style={styles.topButtonText} allowFontScaling maxFontSizeMultiplier={2}>
               {other.close === en.close ? en.close : `${other.close} · ${en.close}`}
             </Text>

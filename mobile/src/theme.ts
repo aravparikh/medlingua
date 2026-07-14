@@ -128,6 +128,16 @@ export const radius = {
 /** Minimum touch target (spec: at least 60×60pt). */
 export const MIN_TARGET = 64;
 
+/**
+ * Icon stroke geometry — one drawing language for every glyph (see
+ * components/icons): 24×24 grid, 2px optical margin, round caps/joins.
+ * `iconSmall` keeps visual weight when a glyph renders at ≤16px.
+ */
+export const strokes = {
+  icon: 2.5,
+  iconSmall: 3,
+} as const;
+
 /** Elevation scale — use these three, never ad-hoc shadow values. */
 export const shadows = {
   card: {

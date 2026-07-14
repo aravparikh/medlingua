@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { AlertCircleIcon, BrandGlyph, CloseIcon, DocumentIcon, ShareIcon, TimeIcon } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
@@ -98,7 +98,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
           <View style={styles.handle} importantForAccessibility="no" />
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Ionicons name="document-text" size={24} color={colors.primary} />
+              <DocumentIcon  size={24} color={colors.primary} />
               <View style={styles.titleWrap}>
                 <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
                   {other.summary}
@@ -112,7 +112,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               accessibilityLabel={`${other.close} — ${en.close}`}
               style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
             >
-              <Ionicons name="close" size={22} color={colors.primary} />
+              <CloseIcon  size={22} color={colors.primary} />
               <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
                 {other.close} · {en.close}
               </Text>
@@ -133,7 +133,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
 
           {state.status === 'error' ? (
             <View style={styles.loading} accessibilityLiveRegion="assertive">
-              <Ionicons name="alert-circle" size={30} color={colors.dangerText} />
+              <AlertCircleIcon  size={30} color={colors.dangerText} />
               <Text style={styles.errorText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.connectionError}
               </Text>
@@ -145,7 +145,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
             <>
               {/* The self-destruct banner: this is a feature, not a bug. */}
               <View style={[styles.timerBanner, warn && styles.timerBannerWarn]} accessibilityLiveRegion="polite">
-                <Ionicons name="time-outline" size={20} color={warn ? colors.onPrimary : colors.secondary} />
+                <TimeIcon  size={20} color={warn ? colors.onPrimary : colors.secondary} />
                 <View style={styles.timerTextWrap}>
                   <Text style={[styles.timerText, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.summaryEphemeral}
@@ -180,7 +180,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                   flexFill
                   style={[styles.action, styles.actionPrimary]}
                 >
-                  <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={22} color={colors.onPrimary} />
+                  <BrandGlyph name={copied ? 'checkmark' : 'copy-outline'} size={22} color={colors.onPrimary} />
                   <View style={styles.actionLabels}>
                     <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                       {copied ? other.copied : other.copy}
@@ -195,7 +195,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                   flexFill
                   style={[styles.action, styles.actionSecondary]}
                 >
-                  <Ionicons name="share-outline" size={22} color={colors.onPrimary} />
+                  <ShareIcon  size={22} color={colors.onPrimary} />
                   <View style={styles.actionLabels}>
                     <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                       {other.share}

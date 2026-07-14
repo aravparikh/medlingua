@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronBackIcon, ChevronForwardIcon, InfoIcon, LinkIcon, LockIcon, ShieldIcon } from '../components/icons';
 
 import type { Language } from '../config/languages';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/links';
@@ -30,7 +30,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         accessibilityLabel={`${other.back} — ${en.back}`}
         style={({ pressed }) => [styles.back, pressed && styles.pressedDim]}
       >
-        <Ionicons name="chevron-back" size={24} color={colors.primary} />
+        <ChevronBackIcon  size={24} color={colors.primary} />
         <Text style={styles.backText} allowFontScaling maxFontSizeMultiplier={1.3}>
           {other.back} · {en.back}
         </Text>
@@ -52,7 +52,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         style={styles.rightsEntry}
       >
         <View style={styles.rightsIcon} importantForAccessibility="no">
-          <Ionicons name="shield-checkmark" size={28} color={colors.onPrimary} />
+          <ShieldIcon  size={28} color={colors.onPrimary} />
         </View>
         <View style={styles.rightsTextWrap}>
           <Text style={styles.rightsEntryTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
@@ -60,7 +60,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           </Text>
           <Text style={styles.rightsEntrySub} allowFontScaling maxFontSizeMultiplier={1.3}>{en.rightsShow}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={26} color={colors.onPrimary} importantForAccessibility="no" />
+        <ChevronForwardIcon  size={26} color={colors.onPrimary} importantForAccessibility="no" />
       </PressableScale>
 
       <View style={styles.card}>
@@ -78,7 +78,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
       </View>
 
       <View style={styles.disclaimerCard}>
-        <Ionicons name="information-circle" size={22} color={colors.secondary} />
+        <InfoIcon  size={22} color={colors.secondary} />
         <View style={styles.privacyBody}>
           <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
             {other.aiDisclaimer}
@@ -92,7 +92,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
       </View>
 
       <View style={styles.privacyCard}>
-        <Ionicons name="lock-closed" size={22} color={colors.primary} />
+        <LockIcon  size={22} color={colors.primary} />
         <View style={styles.privacyBody}>
           <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
             {other.privacyLine}
@@ -108,7 +108,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           accessibilityLabel={`${other.privacyPolicy} — ${en.privacyPolicy}`}
           style={({ pressed }) => [styles.legalLink, pressed && styles.pressedDim]}
         >
-          <Ionicons name="open-outline" size={18} color={colors.primary} />
+          <LinkIcon  size={18} color={colors.primary} />
           <View style={styles.legalLabels}>
             <Text style={styles.legalText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
               {other.privacyPolicy}
@@ -122,7 +122,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           accessibilityLabel={`${other.termsLabel} — ${en.termsLabel}`}
           style={({ pressed }) => [styles.legalLink, pressed && styles.pressedDim]}
         >
-          <Ionicons name="open-outline" size={18} color={colors.primary} />
+          <LinkIcon  size={18} color={colors.primary} />
           <View style={styles.legalLabels}>
             <Text style={styles.legalText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
               {other.termsLabel}
