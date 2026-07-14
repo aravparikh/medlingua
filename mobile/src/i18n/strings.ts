@@ -91,6 +91,13 @@ export interface UIStrings {
   pharmacistLine: string;
   speakAloud: string;
   cameraPermission: string;
+  // Polish pass — slow replay, interpreter rights, offline awareness, tagline
+  slowLabel: string;
+  rightsShow: string;
+  rightsTitle: string;
+  rightsBody: string;
+  offlineLine: string;
+  tagline: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -173,6 +180,13 @@ export const STRINGS: Record<string, UIStrings> = {
     pharmacistLine: 'Please confirm with your pharmacist.',
     speakAloud: 'Read aloud',
     cameraPermission: 'MedLingua needs the camera to read the label. Please allow camera access in Settings.',
+    slowLabel: 'Slowly',
+    rightsShow: 'Interpreter rights',
+    rightsTitle: 'You have the right to a free medical interpreter.',
+    rightsBody:
+      'Federal law requires this hospital or clinic to provide a qualified interpreter at no cost to you (Title VI of the Civil Rights Act and Section 1557 of the ACA). Please show this screen to the staff.',
+    offlineLine: 'No internet — quick phrases and the body map still work.',
+    tagline: 'Speak with your doctor — in your language.',
   },
   es: {
     listening: 'Escuchando…',
@@ -253,6 +267,13 @@ export const STRINGS: Record<string, UIStrings> = {
     pharmacistLine: 'Confirme con su farmacéutico, por favor.',
     speakAloud: 'Leer en voz alta',
     cameraPermission: 'MedLingua necesita la cámara para leer la etiqueta. Permita el acceso a la cámara en Ajustes.',
+    slowLabel: 'Despacio',
+    rightsShow: 'Derecho a intérprete',
+    rightsTitle: 'Usted tiene derecho a un intérprete médico gratuito.',
+    rightsBody:
+      'La ley federal exige que este hospital o clínica le proporcione un intérprete calificado sin costo alguno (Título VI de la Ley de Derechos Civiles y Sección 1557 de la ACA). Muestre esta pantalla al personal.',
+    offlineLine: 'Sin internet — las frases rápidas y el mapa del cuerpo siguen funcionando.',
+    tagline: 'Hable con su médico — en su idioma.',
   },
   zh: {
     listening: '正在聆听…',
@@ -333,6 +354,13 @@ export const STRINGS: Record<string, UIStrings> = {
     pharmacistLine: '请与药剂师确认。',
     speakAloud: '朗读',
     cameraPermission: 'MedLingua 需要使用相机来读取标签。请在“设置”中允许使用相机。',
+    slowLabel: '慢一点',
+    rightsShow: '口译员权利',
+    rightsTitle: '您有权获得免费的医疗口译员。',
+    rightsBody:
+      '联邦法律要求本医院或诊所免费为您提供合格的口译员（《民权法案》第六章和《平价医疗法案》第1557条）。请把此屏幕出示给工作人员。',
+    offlineLine: '没有网络——常用短语和身体图仍可使用。',
+    tagline: '用您的语言，与医生交流。',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -413,6 +441,13 @@ export const STRINGS: Record<string, UIStrings> = {
     pharmacistLine: 'Vui lòng xác nhận với dược sĩ.',
     speakAloud: 'Đọc to',
     cameraPermission: 'MedLingua cần máy ảnh để đọc nhãn. Vui lòng cho phép truy cập máy ảnh trong Cài đặt.',
+    slowLabel: 'Chậm lại',
+    rightsShow: 'Quyền thông dịch viên',
+    rightsTitle: 'Bạn có quyền được thông dịch viên y tế miễn phí.',
+    rightsBody:
+      'Luật liên bang yêu cầu bệnh viện hoặc phòng khám này cung cấp thông dịch viên đủ trình độ miễn phí cho bạn (Điều VI Đạo luật Dân quyền và Mục 1557 của ACA). Vui lòng đưa màn hình này cho nhân viên xem.',
+    offlineLine: 'Không có mạng — câu thường dùng và sơ đồ cơ thể vẫn hoạt động.',
+    tagline: 'Trò chuyện với bác sĩ — bằng ngôn ngữ của bạn.',
   },
   ru: {
     listening: 'Слушаю…',
@@ -493,6 +528,13 @@ export const STRINGS: Record<string, UIStrings> = {
     pharmacistLine: 'Пожалуйста, уточните у фармацевта.',
     speakAloud: 'Прочитать вслух',
     cameraPermission: 'MedLingua нужна камера, чтобы прочитать этикетку. Разрешите доступ к камере в Настройках.',
+    slowLabel: 'Медленно',
+    rightsShow: 'Право на переводчика',
+    rightsTitle: 'Вы имеете право на бесплатного медицинского переводчика.',
+    rightsBody:
+      'Федеральный закон обязывает эту больницу или клинику бесплатно предоставить вам квалифицированного переводчика (раздел VI Закона о гражданских правах и статья 1557 ACA). Пожалуйста, покажите этот экран персоналу.',
+    offlineLine: 'Нет интернета — частые фразы и схема тела по-прежнему работают.',
+    tagline: 'Говорите с врачом — на вашем языке.',
   },
 };
 

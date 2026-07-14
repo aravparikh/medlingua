@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { Language } from '../config/languages';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/links';
 import { t } from '../i18n/strings';
 import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
+import { PressableScale } from '../components/PressableScale';
+import { RightsCard } from '../components/RightsCard';
 
 interface Props {
   otherLanguage: Language;
@@ -16,6 +20,7 @@ interface Props {
 export function AboutScreen({ otherLanguage, onBack }: Props) {
   const other = t(otherLanguage.code);
   const en = t('en');
+  const [rightsOpen, setRightsOpen] = useState(false);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -34,6 +39,29 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
       <Text style={styles.title} accessibilityRole="header">
         MedLingua
       </Text>
+
+      {/* One tap to the interpreter-rights card — the screen made to be
+         handed to staff. Most patients don't know this right exists. */}
+      <PressableScale
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setRightsOpen(true);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${other.rightsShow} — ${en.rightsShow}. ${other.rightsTitle}`}
+        style={styles.rightsEntry}
+      >
+        <View style={styles.rightsIcon} importantForAccessibility="no">
+          <Ionicons name="shield-checkmark" size={28} color={colors.onPrimary} />
+        </View>
+        <View style={styles.rightsTextWrap}>
+          <Text style={styles.rightsEntryTitle} accessibilityLanguage={otherLanguage.speechTag}>
+            {other.rightsShow}
+          </Text>
+          <Text style={styles.rightsEntrySub}>{en.rightsShow}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={26} color={colors.onPrimary} importantForAccessibility="no" />
+      </PressableScale>
 
       <View style={styles.card}>
         <Text style={styles.heading} accessibilityLanguage={otherLanguage.speechTag}>
@@ -103,6 +131,8 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           </View>
         </Pressable>
       </View>
+
+      <RightsCard visible={rightsOpen} otherLanguage={otherLanguage} onClose={() => setRightsOpen(false)} />
     </ScrollView>
   );
 }
@@ -145,6 +175,39 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.sm,
     ...shadows.card,
+  },
+  rightsEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.secondary,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    minHeight: MIN_TARGET + 8,
+    ...shadows.raised,
+  },
+  rightsIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.onPrimaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightsTextWrap: {
+    flex: 1,
+    gap: spacing.hairline,
+  },
+  rightsEntryTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.body,
+    color: colors.onPrimary,
+  },
+  rightsEntrySub: {
+    fontFamily: fonts.body,
+    fontSize: type.small,
+    color: colors.onPrimary,
+    opacity: 0.9,
   },
   heading: {
     fontFamily: fonts.displayMedium,

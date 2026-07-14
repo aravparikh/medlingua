@@ -12,6 +12,7 @@ import {
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -40,6 +41,7 @@ import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { LevelMeter } from '../components/LevelMeter';
 import { PressableScale } from '../components/PressableScale';
 import { Pulse } from '../components/Pulse';
+import { RightsCard } from '../components/RightsCard';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
 import { TurnSkeleton } from '../components/Skeleton';
 import { AutoSpeakButton, SpeakButton } from '../components/SpeakButton';
@@ -154,6 +156,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     | null
   >(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
+  /** Interpreter-rights card — reachable from the teach-back dead end. */
+  const [rightsOpen, setRightsOpen] = useState(false);
+
+  // Offline awareness: quick phrases and the body map keep working (canned
+  // text + on-device voice); everything that needs the network is disabled
+  // with a calm banner instead of a surprise error.
+  const networkState = useNetworkState();
+  const offline = networkState.isInternetReachable === false;
 
   const startingRef = useRef(false);
   const finishingRef = useRef(false);
@@ -368,23 +378,31 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await processRecording(retryCtx.uri, retryCtx.who);
   };
 
-  /** Speaks a translation aloud: OpenAI TTS first, on-device voice as fallback. */
-  const speak = async (text: string, language: Language, turnId: number) => {
+  /**
+   * Speaks a translation aloud: OpenAI TTS first, on-device voice as fallback.
+   * `slow` re-synthesizes at a deliberate pace and never reuses or overwrites
+   * the turn's cached normal-pace audio. Offline skips synthesis entirely —
+   * the on-device voice answers immediately instead of waiting on a dead fetch.
+   */
+  const speak = async (text: string, language: Language, turnId: number, slow = false) => {
     const session = speakSessionRef.current;
     setPhase('speaking');
     // Re-assert playback mode: a recording may have routed audio to the quiet
     // earpiece, and the session must override the silent switch (see mount).
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
-    const uri = ttsUriRef.current ?? (await synthesize(text, language));
+    const cached = slow ? null : ttsUriRef.current;
+    const uri = cached ?? (offline ? null : await synthesize(text, language, slow));
     // Superseded while synthesizing (new recording, phrase, or screen change):
     // whoever superseded us owns the audio and the phase now — do nothing.
     if (speakSessionRef.current !== session) return;
     if (uri) {
-      ttsUriRef.current = uri;
+      if (!slow) ttsUriRef.current = uri;
       releasePlayer();
       const player = createAudioPlayer(uri);
       playerRef.current = player;
-      playerTurnIdRef.current = turnId;
+      // Slow audio is never registered for instant replay — "Play again"
+      // must always mean the normal pace.
+      playerTurnIdRef.current = slow ? null : turnId;
       player.addListener('playbackStatusUpdate', (status) => {
         if (status.didJustFinish) setPhase('idle');
       });
@@ -392,6 +410,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     } else {
       Speech.speak(text, {
         language: language.speechTag,
+        rate: slow ? 0.65 : 1,
         onDone: () => {
           if (speakSessionRef.current === session) setPhase('idle');
         },
@@ -400,6 +419,14 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         },
       });
     }
+  };
+
+  /** "Slowly": replays a turn re-synthesized word-by-word for teach-back-style listening. */
+  const playTurnSlow = async (turn: Turn) => {
+    if (phase !== 'idle') return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    stopAllAudio();
+    await speak(turn.translation, turn.listener, turn.id, true);
   };
 
   /** Replays any turn. The turn whose audio is loaded replays instantly; others re-synthesize. */
@@ -508,7 +535,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   /** F2: teach-back — re-explain the clinician's message as simply as possible. */
   const startTeachBack = async (turn: Turn) => {
-    if (phase !== 'idle' || doubleTapped()) return;
+    if (phase !== 'idle' || offline || doubleTapped()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setTeach({ stage: 'loading', source: turn.original });
     try {
@@ -573,6 +600,18 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setTeach(null);
   };
 
+  /**
+   * Teach-back failed twice → the patient needs a human interpreter, and the
+   * rights card is how they ask for one. Close the teach modal, let the
+   * dismissal settle (see the body-map handoff note), then present the card.
+   */
+  const showRightsFromTeach = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    closeTeach();
+    if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
+    modalSwapTimer.current = setTimeout(() => setRightsOpen(true), 350);
+  };
+
   /** F4: body map picked a region + intensity — say it in English, log the turn. */
   const confirmBodyPain = async (regionId: BodyRegionId, n: number) => {
     if (doubleTapped()) return;
@@ -615,7 +654,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   /** F5: photograph a medication label → plain-language bilingual explanation. */
   const openScanner = async () => {
-    if (busy) return;
+    if (busy || offline) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     let picked: ImagePicker.ImagePickerResult | null = null;
     try {
@@ -667,7 +706,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   /** F3: builds the ephemeral bilingual visit summary from the in-memory thread. */
   const openSummary = async (currentTurns: Turn[]) => {
-    if (busy || currentTurns.length < 2 || doubleTapped()) return;
+    if (busy || offline || currentTurns.length < 2 || doubleTapped()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSummary({ status: 'loading' });
     try {
@@ -699,6 +738,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   /** One tap starts recording. The whole bottom of the screen then becomes
    * the recording panel, so finishing is one giant unmissable Done tap. */
   const startTap = (who: Language | null) => {
+    if (offline) return;
     if (phase !== 'idle' && phase !== 'speaking') return;
     void startListening(who);
   };
@@ -765,6 +805,26 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         </Pressable>
       </View>
 
+      {/* Offline: a calm heads-up, not an alarm — and a pointer to what still works. */}
+      {offline ? (
+        <Appear style={styles.offlineBanner} accessibilityLiveRegion="polite">
+          <Ionicons name="cloud-offline-outline" size={22} color={colors.textMuted} />
+          <View style={styles.offlineBody}>
+            <Text
+              style={styles.offlineText}
+              accessibilityLanguage={otherLanguage.speechTag}
+              allowFontScaling
+              maxFontSizeMultiplier={1.3}
+            >
+              {other.offlineLine}
+            </Text>
+            <Text style={styles.offlineTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
+              {en.offlineLine}
+            </Text>
+          </View>
+        </Appear>
+      ) : null}
+
       {/* First-session honesty banner: AI translation has limits. */}
       {showDisclaimer ? (
         <View style={styles.disclaimer}>
@@ -811,10 +871,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         <View style={styles.summaryRow}>
           <PressableScale
             onPress={() => openSummary(turns)}
-            disabled={busy}
+            disabled={busy || offline}
             accessibilityRole="button"
             accessibilityLabel={`${other.summary} — ${en.summary}`}
-            style={[styles.summaryPill, busy && styles.dimmed]}
+            style={[styles.summaryPill, (busy || offline) && styles.dimmed]}
           >
             <Ionicons name="document-text-outline" size={18} color={colors.primary} />
             <Text style={styles.summaryPillText} allowFontScaling maxFontSizeMultiplier={1.3}>
@@ -951,30 +1011,50 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       ) : null}
                     </View>
                   </PressableScale>
-                  {!isLatest && <View style={styles.turnActionSpacer} />}
-                  {isLatest && !hasCheck && flipPill}
+                  <PressableScale
+                    onPress={() => playTurnSlow(turn)}
+                    disabled={phase !== 'idle'}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t(turn.listener.code).slowLabel} — ${en.slowLabel}`}
+                    flexFill
+                    style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
+                  >
+                    <Ionicons name="footsteps-outline" size={20} color={colors.primary} />
+                    <View style={styles.turnButtonLabels}>
+                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+                        {t(turn.listener.code).slowLabel}
+                      </Text>
+                      {turn.listener.code !== 'en' ? (
+                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                          {en.slowLabel}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </PressableScale>
                 </View>
-                {hasCheck && (
+                {isLatest && !turn.isName && (
                   <View style={styles.turnActions}>
                     {flipPill}
-                    <PressableScale
-                      onPress={() => startTeachBack(turn)}
-                      disabled={phase !== 'idle'}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${other.checkLabel} — ${en.checkLabel}`}
-                      flexFill
-                      style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
-                    >
-                      <Ionicons name="school-outline" size={20} color={colors.primary} />
-                      <View style={styles.turnButtonLabels}>
-                        <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                          {other.checkLabel}
-                        </Text>
-                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                          {en.checkLabel}
-                        </Text>
-                      </View>
-                    </PressableScale>
+                    {hasCheck ? (
+                      <PressableScale
+                        onPress={() => startTeachBack(turn)}
+                        disabled={phase !== 'idle' || offline}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${other.checkLabel} — ${en.checkLabel}`}
+                        flexFill
+                        style={[styles.turnButton, (phase !== 'idle' || offline) && styles.dimmed]}
+                      >
+                        <Ionicons name="school-outline" size={20} color={colors.primary} />
+                        <View style={styles.turnButtonLabels}>
+                          <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+                            {other.checkLabel}
+                          </Text>
+                          <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                            {en.checkLabel}
+                          </Text>
+                        </View>
+                      </PressableScale>
+                    ) : null}
                   </View>
                 )}
               </View>
@@ -1152,11 +1232,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
             setNameMode(false);
             setTypeOpen(true);
           }}
-          disabled={busy}
+          disabled={busy || offline}
           accessibilityRole="button"
           accessibilityLabel={`${other.typeLabel} — ${en.typeLabel}`}
           flexFill
-          style={[styles.toolButton, busy && styles.dimmed]}
+          style={[styles.toolButton, (busy || offline) && styles.dimmed]}
         >
           <Ionicons name="create-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
@@ -1170,11 +1250,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         </PressableScale>
         <PressableScale
           onPress={openScanner}
-          disabled={busy}
+          disabled={busy || offline}
           accessibilityRole="button"
           accessibilityLabel={`${other.scanTitle} — ${en.scanTitle}`}
           flexFill
-          style={[styles.toolButton, busy && styles.dimmed]}
+          style={[styles.toolButton, (busy || offline) && styles.dimmed]}
         >
           <Ionicons name="camera-outline" size={20} color={colors.text} />
           <View style={styles.toolButtonLabels}>
@@ -1228,21 +1308,21 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         {autoMode ? (
           <AutoSpeakButton
             otherLanguage={otherLanguage}
-            disabled={phase === 'translating'}
+            disabled={phase === 'translating' || offline}
             onStart={() => startTap(null)}
           />
         ) : (
           <>
             <SpeakButton
               language={ENGLISH}
-              disabled={phase === 'translating'}
+              disabled={phase === 'translating' || offline}
               fill={colors.primary}
               fillPressed={colors.primaryPressed}
               onStart={() => startTap(ENGLISH)}
             />
             <SpeakButton
               language={otherLanguage}
-              disabled={phase === 'translating'}
+              disabled={phase === 'translating' || offline}
               fill={colors.secondary}
               fillPressed={colors.secondaryPressed}
               onStart={() => startTap(otherLanguage)}
@@ -1640,6 +1720,20 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     {other.askInterpreter}
                   </Text>
                   <Text style={styles.teachSub}>{en.askInterpreter}</Text>
+                  <PressableScale
+                    onPress={showRightsFromTeach}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${other.rightsShow} — ${en.rightsShow}`}
+                    style={styles.rightsButton}
+                  >
+                    <Ionicons name="shield-checkmark" size={22} color={colors.onPrimary} />
+                    <View style={styles.rightsButtonLabels}>
+                      <Text style={styles.rightsButtonText} accessibilityLanguage={otherLanguage.speechTag}>
+                        {other.rightsShow}
+                      </Text>
+                      <Text style={styles.rightsButtonTextEn}>{en.rightsShow}</Text>
+                    </View>
+                  </PressableScale>
                 </View>
               ) : null}
 
@@ -1808,6 +1902,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         onClose={() => setBodyMapOpen(false)}
         onConfirm={confirmBodyPain}
       />
+
+      {/* Interpreter rights — static, offline, made to be handed to staff. */}
+      <RightsCard visible={rightsOpen} otherLanguage={otherLanguage} onClose={() => setRightsOpen(false)} />
 
       {/* F3: ephemeral visit summary — closing it wipes the text from memory. */}
       <SummaryModal state={summary} otherLanguage={otherLanguage} onClose={() => setSummary(null)} />
@@ -2142,9 +2239,6 @@ const styles = StyleSheet.create({
   turnButtonActive: {
     backgroundColor: colors.primaryTint,
   },
-  turnActionSpacer: {
-    flex: 1,
-  },
   turnButtonLabels: {
     flexShrink: 1,
     alignItems: 'center',
@@ -2280,6 +2374,33 @@ const styles = StyleSheet.create({
     fontSize: type.caption,
     color: colors.textFaint,
     textAlign: 'center',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  offlineBody: {
+    flex: 1,
+    gap: spacing.hairline,
+  },
+  offlineText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.text,
+    lineHeight: type.caption * 1.4,
+  },
+  offlineTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.micro,
+    color: colors.textMuted,
+    lineHeight: type.micro * 1.4,
   },
   sheetBackdrop: {
     flex: 1,
@@ -2619,6 +2740,32 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: type.caption,
     color: colors.primary,
+  },
+  rightsButton: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.lg,
+    backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    alignSelf: 'stretch',
+  },
+  rightsButtonLabels: {
+    alignItems: 'center',
+  },
+  rightsButtonText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.onPrimary,
+  },
+  rightsButtonTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.micro,
+    color: colors.onPrimary,
+    opacity: 0.9,
   },
   teachBanner: {
     flexDirection: 'row',

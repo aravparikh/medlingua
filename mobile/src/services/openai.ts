@@ -537,7 +537,7 @@ function ttsFile(): File {
  * Synthesizes speech for the translation and returns a local file URI to play.
  * Returns null on failure so the caller can fall back to on-device speech.
  */
-export async function synthesize(text: string, language: Language): Promise<string | null> {
+export async function synthesize(text: string, language: Language, slow = false): Promise<string | null> {
   if (!PROXY_URL && !API_KEY) return null;
 
   try {
@@ -551,7 +551,9 @@ export async function synthesize(text: string, language: Language): Promise<stri
         model: 'gpt-4o-mini-tts',
         voice: language.ttsVoice,
         input: text,
-        instructions: `Speak in ${language.englishName}, clearly and at a calm, slightly slow pace, as if speaking with an elderly patient.`,
+        instructions: slow
+          ? `Speak in ${language.englishName} extremely slowly and clearly, with a short pause between every phrase, so an elderly patient can follow word by word.`
+          : `Speak in ${language.englishName}, clearly and at a calm, slightly slow pace, as if speaking with an elderly patient.`,
         response_format: 'mp3',
       }),
     });
