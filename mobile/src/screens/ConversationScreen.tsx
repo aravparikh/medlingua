@@ -976,11 +976,16 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                   {turn.isName ? (
                     <View />
                   ) : (
-                    <Text style={styles.translationLabel} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.listener.speechTag}>
-                      {t(turn.listener.code).translationLabel}
-                    </Text>
+                    <View style={styles.translationLabelWrap}>
+                      {/* The sound arc on the live turn: this line is being
+                         spoken aloud right now — the brand motif as signal. */}
+                      {isLatest ? <SpeakIcon size={14} color={colors.accent} /> : null}
+                      <Text style={styles.translationLabel} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.listener.speechTag}>
+                        {t(turn.listener.code).translationLabel}
+                      </Text>
+                    </View>
                   )}
-                  <ExpandIcon  size={16} color={colors.textFaint} importantForAccessibility="no" />
+                  <ExpandIcon size={16} color={colors.textFaint} importantForAccessibility="no" />
                 </View>
                 <Text
                   style={isLatest ? styles.translationText : styles.translationTextOld}
@@ -2226,6 +2231,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.xs,
+  },
+  translationLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    flexShrink: 1,
   },
   flippedBlock: {
     transform: [{ rotate: '180deg' }],

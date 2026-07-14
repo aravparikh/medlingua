@@ -14,6 +14,8 @@ import { colors, radius } from '../theme';
 const BAR_COUNT = 7;
 /** Each bar peaks at a slightly different level so the meter reads as a wave. */
 const BAR_SENSITIVITY = [0.55, 0.75, 0.9, 1, 0.9, 0.75, 0.55];
+/** Center-weighted capsule widths — the brand's capsule grammar as a meter. */
+const BAR_WIDTH = [7, 9, 11, 13, 11, 9, 7];
 const MIN_H = 8;
 const MAX_H = 44;
 
@@ -32,7 +34,11 @@ export function LevelMeter({ level }: { level: number | null }) {
             key={i}
             style={[
               styles.bar,
-              { height: h, backgroundColor: active ? colors.accent : colors.borderStrong },
+              {
+                width: BAR_WIDTH[i],
+                height: Math.max(h, BAR_WIDTH[i]),
+                backgroundColor: active ? colors.accent : colors.borderStrong,
+              },
             ]}
           />
         );
@@ -50,7 +56,6 @@ const styles = StyleSheet.create({
     height: MAX_H,
   },
   bar: {
-    width: 10,
     borderRadius: radius.pill,
   },
 });
