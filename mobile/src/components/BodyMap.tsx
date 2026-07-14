@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Ellipse, G, Rect } from 'react-native-svg';
@@ -126,15 +126,16 @@ function Figure({
           const fill = isSelected ? colors.primaryTint : colors.surface;
           const stroke = colors.primary;
           const strokeWidth = isSelected ? 4 : 2.5;
+          // Native: each region is a focusable element with a bilingual label
+          // (the region-name live region below announces the selection).
+          // Web is a dev preview only — RN a11y props leak into the SVG DOM
+          // there and break rendering, so pass nothing.
+          const a11y: Partial<React.ComponentProps<typeof G>> =
+            Platform.OS === 'web'
+              ? {}
+              : { accessible: true, accessibilityLabel: labelFor(region.id) };
           return (
-            <G
-              key={region.id}
-              onPress={() => onSelect(region.id)}
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel={labelFor(region.id)}
-              accessibilityState={{ selected: isSelected }}
-            >
+            <G key={region.id} onPress={() => onSelect(region.id)} {...a11y}>
               {region.shapes.map((shape, i) => {
                 const common = { fill, stroke, strokeWidth, strokeLinejoin: 'round' as const };
                 if (shape.kind === 'circle') {
