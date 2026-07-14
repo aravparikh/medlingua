@@ -761,6 +761,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const busy = phase === 'listening' || phase === 'translating';
 
+  const recordingPanelVisible = phase === 'listening';
+
   /** Recording-panel strings: the speaker's own language, English secondary.
    * Auto mode (speaker unknown) falls back to the bilingual pair. */
   const rec = speaker ? t(speaker.code) : other;
@@ -825,8 +827,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         </Appear>
       ) : null}
 
-      {/* First-session honesty banner: AI translation has limits. */}
-      {showDisclaimer ? (
+      {/* First-session honesty banner: AI translation has limits. It yields
+         while recording — the tall banner would otherwise push the Done
+         button off a 375×812 screen on a first-run recording. */}
+      {showDisclaimer && !recordingPanelVisible ? (
         <View style={styles.disclaimer}>
           <Ionicons name="information-circle" size={22} color={colors.secondary} />
           <View style={styles.disclaimerBody}>
@@ -1135,7 +1139,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         ) : null}
       </ScrollView>
 
-      {phase === 'listening' ? (
+      {recordingPanelVisible ? (
         /* While recording, the bottom of the screen becomes one thing: the
          * phone is visibly a microphone. Elapsed time, a live level meter,
          * and a giant Done button — no tools, no clutter, no precision. */
