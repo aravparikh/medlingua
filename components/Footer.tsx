@@ -1,4 +1,4 @@
-import CrackedM from "./CrackedM";
+import BrandMark from "./BrandMark";
 
 export default function Footer() {
   return (
@@ -23,7 +23,7 @@ export default function Footer() {
       >
         {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-          <CrackedM size={28} color="#2A9D8F" crackColor="rgba(251,251,249,0.5)" />
+          <BrandMark size={28} tile={false} />
           <span
             style={{
               fontFamily: "var(--font-heading, sans-serif)",
@@ -36,11 +36,15 @@ export default function Footer() {
           </span>
         </div>
 
-        {/* Attribution */}
+        {/* Attribution + legal */}
         <p style={{ fontSize: "0.875rem", textAlign: "center" }}>
           Built by{" "}
           <strong style={{ color: "var(--paper)", fontWeight: 600 }}>Arav Parikh</strong>
           {" · "}Vista del Lago High School
+          {" · "}
+          <a href="/privacy" style={{ color: "rgba(251,251,249,0.75)" }}>Privacy</a>
+          {" · "}
+          <a href="/terms" style={{ color: "rgba(251,251,249,0.75)" }}>Terms</a>
         </p>
 
         {/* SDG Badge */}

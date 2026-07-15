@@ -1,6 +1,6 @@
 "use client";
 
-import CrackedM from "./CrackedM";
+import BrandMark from "./BrandMark";
 
 interface NavProps {
   onJoinClick: () => void;
@@ -14,9 +14,9 @@ export default function Nav({ onJoinClick }: NavProps) {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        backgroundColor: "rgba(251,251,249,0.92)",
+        backgroundColor: "rgba(247,245,241,0.92)",
         backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(42,157,143,0.12)",
+        borderBottom: "1px solid rgba(20,87,78,0.12)",
       }}
     >
       <div
@@ -41,7 +41,7 @@ export default function Nav({ onJoinClick }: NavProps) {
             textDecoration: "none",
           }}
         >
-          <CrackedM size={32} />
+          <BrandMark size={32} />
           <span
             style={{
               fontFamily: "var(--font-heading, 'Plus Jakarta Sans', sans-serif)",

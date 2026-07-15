@@ -1,28 +1,31 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Lexend, Noto_Sans } from "next/font/google";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// The same pairing the app ships: Lexend for display (drawn to improve
+// reading proficiency), Noto Sans for body (Latin, Vietnamese, Cyrillic).
+const lexend = Lexend({
+  subsets: ["latin", "vietnamese"],
+  weight: ["500", "600", "700"],
   variable: "--font-heading",
   display: "swap",
 });
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500"],
+const notoSans = Noto_Sans({
+  subsets: ["latin", "latin-ext", "cyrillic", "vietnamese"],
+  weight: ["400", "500", "600"],
   variable: "--font-body",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "MedLingua — Healthcare everyone can understand",
+  title: "MedLingua — Speak with your doctor, in your language",
   description:
-    "Real-time English–Spanish medical translation that keeps every dose and drug name exact — on a phone you already own.",
+    "Real-time medical conversation between English and Spanish, Chinese, Vietnamese, or Russian — doses and drug names kept exact, nothing saved, on a phone you already own.",
   openGraph: {
     title: "MedLingua",
-    description: "Real-time medical translation for limited-English-proficiency patients.",
+    description:
+      "Speak with your doctor — in your language. Real-time medical translation for limited-English-proficiency patients.",
     type: "website",
   },
 };
@@ -33,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} ${inter.variable}`}>
+    <html lang="en" className={`${lexend.variable} ${notoSans.variable}`}>
       <body>{children}</body>
     </html>
   );

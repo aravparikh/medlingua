@@ -1,8 +1,16 @@
-import CrackedM from "./CrackedM";
+import BrandMark from "./BrandMark";
+import TwoVoices from "./TwoVoices";
 
 interface HeroProps {
   onJoinClick: () => void;
 }
+
+const TAGLINES = [
+  { lang: "es", text: "Hable con su médico — en su idioma." },
+  { lang: "zh", text: "用您的语言，与医生交流。" },
+  { lang: "vi", text: "Trò chuyện với bác sĩ — bằng ngôn ngữ của bạn." },
+  { lang: "ru", text: "Говорите с врачом — на вашем языке." },
+];
 
 export default function Hero({ onJoinClick }: HeroProps) {
   return (
@@ -16,22 +24,9 @@ export default function Hero({ onJoinClick }: HeroProps) {
     >
       <div style={{ maxWidth: "52rem", margin: "0 auto" }}>
 
-        {/* Cracked-M mark */}
+        {/* Brand mark — the app's drawn bubble + cross */}
         <div className="fade-rise-1" style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem" }}>
-          <div
-            style={{
-              width: "72px",
-              height: "72px",
-              borderRadius: "20px",
-              backgroundColor: "var(--white)",
-              boxShadow: "0 4px 24px rgba(15,61,56,0.10)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <CrackedM size={48} />
-          </div>
+          <BrandMark size={72} />
         </div>
 
         {/* Wordmark */}
@@ -51,7 +46,7 @@ export default function Hero({ onJoinClick }: HeroProps) {
           </p>
         </div>
 
-        {/* Headline — bilingual moment */}
+        {/* Headline — the app's own promise */}
         <div className="fade-rise-2">
           <h1
             id="hero-heading"
@@ -60,23 +55,27 @@ export default function Hero({ onJoinClick }: HeroProps) {
               fontWeight: 700,
               color: "var(--deep-teal)",
               lineHeight: 1.15,
-              marginBottom: "0.5rem",
+              marginBottom: "1rem",
             }}
           >
-            Healthcare everyone can understand.
+            Speak with your doctor — in your language.
           </h1>
           <p
-            aria-label="Spanish translation: Atención médica que todos pueden entender."
+            aria-label="The same promise in Spanish, Chinese, Vietnamese, and Russian"
             style={{
-              fontFamily: "var(--font-heading, sans-serif)",
-              fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
-              color: "var(--teal)",
-              fontWeight: 500,
-              fontStyle: "italic",
-              marginBottom: "1.75rem",
+              fontSize: "clamp(0.9375rem, 2.2vw, 1.0625rem)",
+              color: "var(--grey)",
+              lineHeight: 1.9,
+              maxWidth: "44rem",
+              margin: "0 auto 1.75rem",
             }}
           >
-            Atención médica que todos pueden entender.
+            {TAGLINES.map((t, i) => (
+              <span key={t.lang} lang={t.lang}>
+                {t.text}
+                {i < TAGLINES.length - 1 ? <span aria-hidden="true">{"  ·  "}</span> : null}
+              </span>
+            ))}
           </p>
         </div>
 
@@ -91,8 +90,8 @@ export default function Hero({ onJoinClick }: HeroProps) {
               margin: "0 auto 2.5rem",
             }}
           >
-            Real-time English–Spanish medical translation that keeps every dose and drug name exact
-            — on a phone you already own.
+            Real-time medical conversation between English and Spanish, Chinese, Vietnamese, or
+            Russian — doses and drug names kept exact, nothing ever saved, on a phone you already own.
           </p>
         </div>
 
@@ -104,6 +103,7 @@ export default function Hero({ onJoinClick }: HeroProps) {
             flexWrap: "wrap",
             gap: "0.875rem",
             justifyContent: "center",
+            marginBottom: "3rem",
           }}
         >
           <button
@@ -123,7 +123,7 @@ export default function Hero({ onJoinClick }: HeroProps) {
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--teal-dark)";
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 24px rgba(42,157,143,0.28)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 24px rgba(20,87,78,0.28)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--teal)";
@@ -132,6 +132,11 @@ export default function Hero({ onJoinClick }: HeroProps) {
           >
             Join the Pilot
           </button>
+        </div>
+
+        {/* The scene the app opens with: two people, one conversation. */}
+        <div className="fade-rise-4" style={{ display: "flex", justifyContent: "center" }}>
+          <TwoVoices width={300} />
         </div>
       </div>
     </section>
