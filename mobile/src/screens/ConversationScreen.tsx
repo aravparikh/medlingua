@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, TwoVoicesScene, UnderstandIcon } from '../components/icons';
+import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, SpeakingArc, TwoVoicesScene, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -977,9 +977,11 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                     <View />
                   ) : (
                     <View style={styles.translationLabelWrap}>
-                      {/* The sound arc on the live turn: this line is being
-                         spoken aloud right now — the brand motif as signal. */}
-                      {isLatest ? <SpeakIcon size={14} color={colors.accent} /> : null}
+                      {/* The sound arc on the live turn — it ripples while
+                         this line is actually being spoken aloud. */}
+                      {isLatest ? (
+                        <SpeakingArc size={14} color={colors.accent} active={phase === 'speaking'} />
+                      ) : null}
                       <Text style={styles.translationLabel} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.listener.speechTag}>
                         {t(turn.listener.code).translationLabel}
                       </Text>
