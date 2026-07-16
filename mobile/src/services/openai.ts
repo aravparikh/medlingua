@@ -17,7 +17,16 @@ import { getDeviceId } from './storage';
  * overwritten every turn and deleted as soon as the next recording starts.
  */
 const PROXY_URL = process.env.EXPO_PUBLIC_API_PROXY_URL?.replace(/\/$/, '');
-const API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+/**
+ * The direct-key path is a development convenience ONLY. EXPO_PUBLIC_* values
+ * are inlined into the JS bundle as plain text, so a release build that used
+ * this path would hand the key to anyone who unzips the app. Release builds
+ * must go through the proxy — the key is refused outright here so a
+ * misconfigured build fails closed (the app's visible "not ready" error)
+ * instead of silently shipping a secret. Release minification also folds the
+ * dead branch away, dropping the literal from the bundle.
+ */
+const API_KEY = __DEV__ ? process.env.EXPO_PUBLIC_OPENAI_API_KEY : undefined;
 
 const BASE_URL = PROXY_URL ? `${PROXY_URL}/v1` : 'https://api.openai.com/v1';
 

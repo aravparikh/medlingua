@@ -218,6 +218,9 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     // is configured for playback. The recording flow sets this as a side
     // effect, but phrases/typed/body-map/replay speak without ever recording.
     setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
+    // A force-quit can strand the previous session's TTS file in the cache;
+    // clear it on the way in, not just on the way out.
+    clearSpokenAudio();
     return () => {
       speakSessionRef.current += 1;
       if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
@@ -247,11 +250,29 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setFlipped(false);
   };
 
+  /**
+   * Deletes a finished recording from the OS cache. The patient's voice is
+   * the most sensitive audio this app touches and the UI promises nothing is
+   * saved — so a recording is removed the moment it is no longer needed
+   * (turn completed, retry superseded, or recording cancelled). Best-effort:
+   * these are cache files the OS purges on its own schedule regardless.
+   */
+  const discardRecordingFile = (uri: string | null | undefined) => {
+    if (Platform.OS === 'web' || !uri) return;
+    try {
+      new File(uri).delete();
+    } catch {
+      // Best-effort — see above.
+    }
+  };
+
   const startListening = async (who: Language | null) => {
     if (startingRef.current) return;
     startingRef.current = true;
     setError(null);
     setSetupError(null);
+    // A new recording supersedes any kept-for-retry one — remove its file.
+    if (retryCtx) discardRecordingFile(retryCtx.uri);
     setRetryCtx(null);
     stopAllAudio();
 
@@ -345,6 +366,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       const turn: Turn = { id: Date.now(), original: text, translation, speaker: speakerLang, listener };
       addTurn(turn);
       setRetryCtx(null);
+      // The turn is safely in memory — the audio file has served its purpose.
+      discardRecordingFile(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await speak(translation, listener, turn.id);
     } catch (err) {
@@ -754,6 +777,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     } catch {
       // Discarding anyway.
     }
+    discardRecordingFile(recorder.uri);
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {});
     setPhase('idle');
     finishingRef.current = false;

@@ -75,7 +75,9 @@ Expo Go on-device testing then needs a development build instead
   > substitute for a certified interpreter.
 
 ### Privacy Nutrition Label
-- **Data collected:** Audio Data; Photos or Videos; Other User Content
+- **Data collected:** Audio Data; Photos or Videos; Other User Content;
+  Identifiers → Device ID (the random per-install id sent to the proxy for
+  rate limiting — declared to match `ios.privacyManifests`)
 - **Linked to user:** No (no accounts; random install id only)
 - **Used for tracking:** No
 - **Purpose:** App Functionality

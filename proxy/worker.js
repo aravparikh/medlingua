@@ -4,13 +4,22 @@
  *
  * What it enforces:
  *  - POST only, to exactly the three endpoints the app uses
- *  - a per-device daily request cap (KV-backed) so a leaked endpoint can't
- *    run up the bill
+ *  - a GLOBAL daily request cap — the real bill protection. The per-device
+ *    id is client-minted, so an attacker can mint a fresh one per request;
+ *    the global cap is what actually bounds a leaked endpoint.
+ *  - a per-device daily cap (KV-backed) so one runaway install can't eat
+ *    the whole global budget
  *  - a model allowlist on JSON requests
- *  - a body-size ceiling (Whisper's own limit is 25 MB)
+ *  - a body-size ceiling (client-asserted content-length; OpenAI's own
+ *    25 MB Whisper limit is the hard backstop for chunked uploads)
+ *
+ * Known-accepted softness: KV counters are read-modify-write and eventually
+ * consistent, so a burst near a cap can overshoot it by a small factor —
+ * caps here bound the bill, they are not exact quotas.
  *
  * Deploy: see proxy/README.md. Secrets: OPENAI_API_KEY (wrangler secret),
- * KV binding: USAGE. Optional var: DAILY_REQUEST_LIMIT (default 300).
+ * KV binding: USAGE. Optional vars: DAILY_REQUEST_LIMIT (default 300),
+ * GLOBAL_DAILY_REQUEST_LIMIT (default 2000).
  */
 
 const ALLOWED_PATHS = new Set([
@@ -42,14 +51,26 @@ export default {
       return json({ error: 'request too large' }, 413);
     }
 
-    // Daily cap per device. TTL 36h so the key self-cleans after the day rolls.
+    // Two daily caps, TTL 36h so keys self-clean after the day rolls:
+    // global first (the bill protection — device ids are client-minted and
+    // can't be trusted for that), then per-device (one runaway install).
+    // intOr: a mistyped limit env var must fail closed to the default, never
+    // NaN — `used >= NaN` is always false, which would silently disable the cap.
     const day = new Date().toISOString().slice(0, 10);
+    const globalKey = `global:${day}`;
+    const globalUsed = parseInt((await env.USAGE.get(globalKey)) ?? '0', 10);
+    const globalLimit = intOr(env.GLOBAL_DAILY_REQUEST_LIMIT, 2000);
+    if (globalUsed >= globalLimit) {
+      return json({ error: 'service daily limit reached' }, 429);
+    }
+
     const usageKey = `${deviceId}:${day}`;
     const used = parseInt((await env.USAGE.get(usageKey)) ?? '0', 10);
-    const limit = parseInt(env.DAILY_REQUEST_LIMIT ?? '300', 10);
+    const limit = intOr(env.DAILY_REQUEST_LIMIT, 300);
     if (used >= limit) {
       return json({ error: 'daily limit reached' }, 429);
     }
+    await env.USAGE.put(globalKey, String(globalUsed + 1), { expirationTtl: 60 * 60 * 36 });
     await env.USAGE.put(usageKey, String(used + 1), { expirationTtl: 60 * 60 * 36 });
 
     const contentType = request.headers.get('content-type') ?? '';
@@ -93,4 +114,11 @@ function json(obj, status) {
     status,
     headers: { 'content-type': 'application/json' },
   });
+}
+
+/** Parses a limit env var; anything non-numeric falls back to the default
+ * (fail-closed) instead of NaN (which would disable the comparison). */
+function intOr(value, fallback) {
+  const n = parseInt(value ?? '', 10);
+  return Number.isFinite(n) ? n : fallback;
 }
