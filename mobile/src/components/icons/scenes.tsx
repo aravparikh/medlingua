@@ -15,7 +15,7 @@ export function BrandMark({ size = 34, color, ...rest }: IconProps) {
   return (
     <IconBase size={size} color={color} {...rest}>
       <Path
-        d="M12 3.4c-5 0-9 3-9 6.8 0 2.2 1.3 4.1 3.2 5.3l-.5 4.3 4.2-1.9c.7.1 1.4.2 2.1.2 5 0 9-3 9-6.8s-4-6.9-9-6.9Z"
+        d="M12 3.4c-5 0-9 3-9 6.8 0 2.2 1.3 4.1 3.2 5.3l-.5 4.3 4.2-1.9c.7.1 1.4.2 2.1.2 5 0 9-3 9-6.8 0-3.8-4-7.9-9-7.9Z"
         fill={color}
         strokeWidth={0}
       />
