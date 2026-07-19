@@ -11,3 +11,7 @@ id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
 [vars]
 DAILY_REQUEST_LIMIT = "300"
+# Hard ceiling across ALL devices per day — the actual bill protection
+# (device ids are client-minted, so per-device limits alone can be minted
+# around). Mistyped values fall back to the in-code default, never NaN.
+GLOBAL_DAILY_REQUEST_LIMIT = "2000"

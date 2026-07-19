@@ -17,7 +17,8 @@ bottom; the account items have lead time, start them first.
 | AI/data-sharing disclosure & consent copy (first-run banner + About, ×5 languages) | this pass |
 | Privacy Policy & Terms pages, linked from inside the app | site `/privacy`, `/terms`; About screen buttons |
 | Robustness: offline, timeouts+retry, mic/camera denied, empty & low-confidence transcription, hallucination filters, grounded summaries | shipped earlier (QA’d) |
-| 1024×1024 icon, no alpha (PIL RGB) | `mobile/assets/icon.png` |
+| Full brand asset set regenerated from the drawn BrandMark: 1024² icon (no alpha), splash tile, Android adaptive fg/bg/monochrome, favicon | `mobile/assets/` |
+| Claim audit passed: recordings deleted at every exit, TTS cache swept on mount, Device ID declared in privacy manifest, dev-key path refused in release builds (`__DEV__` gate), proxy global daily cap + NaN-proof limits | commits `efe1afd`, `f1b0d00` |
 
 ## 🔑 You: accounts & deploys (start now — lead time)
 
