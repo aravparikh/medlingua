@@ -146,10 +146,10 @@ export function PersonIcon(p: IconProps) {
 export function PeopleIcon(p: IconProps) {
   return (
     <IconBase {...p}>
-      <Circle cx={8.8} cy={7.6} r={2.8} />
-      <Path d="M3.6 19.4a5.2 5.2 0 0 1 10.4 0" />
-      <Circle cx={16.6} cy={8.6} r={2.3} />
-      <Path d="M16.4 19.4a4.5 4.5 0 0 1 4-4.4" />
+      <Circle cx={8.4} cy={7.6} r={2.8} />
+      <Path d="M3.4 19.4a5 5 0 0 1 10 0" />
+      <Circle cx={17} cy={8.8} r={2.3} />
+      <Path d="M14.4 19.4a4.4 4.4 0 0 1 6.2-4" />
     </IconBase>
   );
 }
@@ -430,8 +430,8 @@ export function RepeatIcon(p: IconProps) {
 export function MealIcon(p: IconProps) {
   return (
     <IconBase {...p}>
-      <Path d="M7.2 3.6v5.2M4.6 3.6v3.2a2.6 2.6 0 0 0 5.2 0V3.6M7.2 11.4v9" />
-      <Path d="M16.8 3.6c-1.6 1.9-2.4 4.3-1.4 8.2h2.8v8.6M18.2 3.9v7.9" />
+      <Path d="M7.2 3.6v5.2M4.7 3.6v3.3a2.5 2.5 0 0 0 5 0V3.6M7.2 11.4v9" />
+      <Path d="M16.6 20.4V3.8c2.1 1.7 3 4.4 3 7 0 1.9-1.2 3.2-3 3.4" />
     </IconBase>
   );
 }
@@ -449,10 +449,10 @@ export function GaugeIcon(p: IconProps) {
 export function HandIcon(p: IconProps) {
   return (
     <IconBase {...p}>
-      <Path d="M8.2 11.2V5.6a1.3 1.3 0 0 1 2.6 0v4.6" />
-      <Path d="M10.8 10.2V4.4a1.3 1.3 0 0 1 2.6 0v5.8" />
-      <Path d="M13.4 10.2V5.6a1.3 1.3 0 0 1 2.6 0v6.8" />
-      <Path d="M8.2 11.2v3c0 3.8 2.4 6.6 5.8 6.6 2.8 0 4.4-1.5 5.2-4.2l.7-2.6a1.3 1.3 0 0 0-2.5-.7l-.4 1.3" />
+      <Path d="M7.6 11.2V6a1.4 1.4 0 0 1 2.8 0v4" />
+      <Path d="M10.4 10V4.8a1.4 1.4 0 0 1 2.8 0V10" />
+      <Path d="M13.2 10.2V6a1.4 1.4 0 0 1 2.8 0v6.6" />
+      <Path d="M7.6 11.2v2.6c0 3.9 2.5 6.8 6.1 6.8 2.9 0 4.7-1.6 5.4-4.4l.7-2.7a1.35 1.35 0 0 0-2.6-.7l-.3 1" />
     </IconBase>
   );
 }
