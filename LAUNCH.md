@@ -58,14 +58,14 @@ Expo Go on-device testing then needs a development build instead
 - **Age rating questionnaire:** answer No to everything → 4+ (content is
   user-generated conversation, unmoderated chat doesn't apply — 1-to-1 in-person
   aid, nothing is stored or shared between users).
-- **Keywords (100):** `medical,translator,interpreter,spanish,chinese,vietnamese,russian,doctor,clinic,voice`
+- **Keywords (100):** `medical,translator,interpreter,spanish,chinese,vietnamese,russian,hindi,punjabi,clinic` *(86/100)*
 - **Support URL:** your deployed site. **Privacy Policy URL:** `<site>/privacy`
 - **Description (draft):**
   > MedLingua helps an English speaker and a non-English speaker talk to each
   > other during a medical visit. Tap your button, speak, and hear the
   > translation aloud — in large, clear type built for seniors.
   >
-  > • English ↔ Español, 中文, Tiếng Việt, Русский
+  > • English ↔ Español, 中文, Tiếng Việt, Русский, हिन्दी, ਪੰਜਾਬੀ
   > • Voice, typing, and one-tap medical phrases (incl. an emergency set)
   > • “Where does it hurt?” body map and a 0–10 pain scale
   > • Teach-back check: makes sure instructions were truly understood

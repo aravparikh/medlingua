@@ -21,7 +21,7 @@ const notoSans = Noto_Sans({
 export const metadata: Metadata = {
   title: "MedLingua — Speak with your doctor, in your language",
   description:
-    "Real-time medical conversation between English and Spanish, Chinese, Vietnamese, or Russian — doses and drug names kept exact, nothing saved, on a phone you already own.",
+    "Real-time medical conversation between English and Spanish, Chinese, Vietnamese, Russian, Hindi, or Punjabi — doses and drug names kept exact, nothing saved, on a phone you already own.",
   openGraph: {
     title: "MedLingua",
     description:

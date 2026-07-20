@@ -81,6 +81,30 @@ export const LANGUAGES: Language[] = [
     speakLabel: 'Nói tiếng Việt',
   },
   {
+    code: 'hi',
+    nativeName: 'हिन्दी',
+    englishName: 'Hindi',
+    monogram: 'हि',
+    whisper: 'hi',
+    whisperPrompt:
+      'एक मेडिकल क्लिनिक की बातचीत। लक्षण, दर्द का स्तर, एलर्जी, दवाइयाँ और खुराक, रक्तचाप, मधुमेह, आइबुप्रोफेन, पैरासिटामोल, दिन में दो बार खाने के साथ। Medication names may include: lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
+    speechTag: 'hi-IN',
+    ttsVoice: 'nova',
+    speakLabel: 'हिन्दी में बोलें',
+  },
+  {
+    code: 'pa',
+    nativeName: 'ਪੰਜਾਬੀ',
+    englishName: 'Punjabi',
+    monogram: 'ਪੰ',
+    whisper: 'pa',
+    whisperPrompt:
+      'ਇੱਕ ਮੈਡੀਕਲ ਕਲੀਨਿਕ ਦੀ ਗੱਲਬਾਤ। ਲੱਛਣ, ਦਰਦ ਦਾ ਪੱਧਰ, ਐਲਰਜੀ, ਦਵਾਈਆਂ ਅਤੇ ਖ਼ੁਰਾਕ, ਬਲੱਡ ਪ੍ਰੈਸ਼ਰ, ਸ਼ੂਗਰ, ਆਈਬਿਊਪਰੋਫ਼ੈਨ, ਪੈਰਾਸੀਟਾਮੋਲ, ਦਿਨ ਵਿੱਚ ਦੋ ਵਾਰ ਖਾਣੇ ਨਾਲ। Medication names may include: lisinopril, amlodipine, metformin, atorvastatin, simvastatin, omeprazole, levothyroxine, losartan, albuterol, gabapentin, hydrochlorothiazide, metoprolol, sertraline, montelukast, furosemide, pantoprazole, escitalopram, amoxicillin, prednisone, insulin, warfarin, tramadol, aspirin, naproxen, azithromycin, ciprofloxacin, clopidogrel, tamsulosin.',
+    speechTag: 'pa-IN',
+    ttsVoice: 'nova',
+    speakLabel: 'ਪੰਜਾਬੀ ਵਿੱਚ ਬੋਲੋ',
+  },
+  {
     code: 'ru',
     nativeName: 'Русский',
     englishName: 'Russian',

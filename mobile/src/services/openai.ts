@@ -91,6 +91,9 @@ const WHISPER_NAME_TO_CODE: Record<string, string> = {
   mandarin: 'zh',
   vietnamese: 'vi',
   russian: 'ru',
+  hindi: 'hi',
+  punjabi: 'pa',
+  panjabi: 'pa',
 };
 
 export interface TranscriptionResult {

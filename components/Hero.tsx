@@ -10,6 +10,8 @@ const TAGLINES = [
   { lang: "zh", text: "用您的语言，与医生交流。" },
   { lang: "vi", text: "Trò chuyện với bác sĩ — bằng ngôn ngữ của bạn." },
   { lang: "ru", text: "Говорите с врачом — на вашем языке." },
+  { lang: "hi", text: "अपने डॉक्टर से बात करें — अपनी भाषा में।" },
+  { lang: "pa", text: "ਆਪਣੇ ਡਾਕਟਰ ਨਾਲ ਗੱਲ ਕਰੋ — ਆਪਣੀ ਭਾਸ਼ਾ ਵਿੱਚ।" },
 ];
 
 export default function Hero({ onJoinClick }: HeroProps) {
@@ -90,8 +92,9 @@ export default function Hero({ onJoinClick }: HeroProps) {
               margin: "0 auto 2.5rem",
             }}
           >
-            Real-time medical conversation between English and Spanish, Chinese, Vietnamese, or
-            Russian — doses and drug names kept exact, nothing ever saved, on a phone you already own.
+            Real-time medical conversation between English and Spanish, Chinese, Vietnamese,
+            Russian, Hindi, or Punjabi — doses and drug names kept exact, nothing ever saved,
+            on a phone you already own.
           </p>
         </div>
 

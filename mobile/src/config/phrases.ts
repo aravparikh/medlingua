@@ -26,6 +26,8 @@ export const CLINICIAN_PHRASES: Phrase[] = [
       zh: '哪里疼？',
       vi: 'Bạn đau ở đâu?',
       ru: 'Где у вас болит?',
+      hi: 'कहाँ दर्द हो रहा है?',
+      pa: 'ਕਿੱਥੇ ਦਰਦ ਹੋ ਰਿਹਾ ਹੈ?',
     },
   },
   {
@@ -37,6 +39,8 @@ export const CLINICIAN_PHRASES: Phrase[] = [
       zh: '请给您的疼痛打分，从1到10。',
       vi: 'Hãy đánh giá cơn đau của bạn từ 1 đến 10.',
       ru: 'Оцените вашу боль от 1 до 10.',
+      hi: 'अपने दर्द को 1 से 10 तक आँकें।',
+      pa: 'ਆਪਣੇ ਦਰਦ ਨੂੰ 1 ਤੋਂ 10 ਤੱਕ ਅੰਕ ਦਿਓ।',
     },
   },
   {
@@ -48,6 +52,8 @@ export const CLINICIAN_PHRASES: Phrase[] = [
       zh: '您对任何药物过敏吗？',
       vi: 'Bạn có dị ứng với thuốc nào không?',
       ru: 'У вас есть аллергия на какие-нибудь лекарства?',
+      hi: 'क्या आपको किसी दवा से एलर्जी है?',
+      pa: 'ਕੀ ਤੁਹਾਨੂੰ ਕਿਸੇ ਦਵਾਈ ਤੋਂ ਐਲਰਜੀ ਹੈ?',
     },
   },
   {
@@ -59,6 +65,8 @@ export const CLINICIAN_PHRASES: Phrase[] = [
       zh: '您正在服用什么药物？',
       vi: 'Bạn đang dùng những loại thuốc nào?',
       ru: 'Какие лекарства вы принимаете?',
+      hi: 'आप कौन-सी दवाइयाँ ले रहे हैं?',
+      pa: 'ਤੁਸੀਂ ਕਿਹੜੀਆਂ ਦਵਾਈਆਂ ਲੈ ਰਹੇ ਹੋ?',
     },
   },
   {
@@ -70,6 +78,8 @@ export const CLINICIAN_PHRASES: Phrase[] = [
       zh: '这是什么时候开始的？',
       vi: 'Tình trạng này bắt đầu từ khi nào?',
       ru: 'Когда это началось?',
+      hi: 'यह कब शुरू हुआ?',
+      pa: 'ਇਹ ਕਦੋਂ ਸ਼ੁਰੂ ਹੋਇਆ?',
     },
   },
   {
@@ -81,6 +91,8 @@ export const CLINICIAN_PHRASES: Phrase[] = [
       zh: '这种药每天服用两次，随餐服用。',
       vi: 'Uống thuốc này hai lần mỗi ngày cùng với thức ăn.',
       ru: 'Принимайте это лекарство два раза в день во время еды.',
+      hi: 'यह दवा दिन में दो बार खाने के साथ लें।',
+      pa: 'ਇਹ ਦਵਾਈ ਦਿਨ ਵਿੱਚ ਦੋ ਵਾਰ ਖਾਣੇ ਨਾਲ ਲਓ।',
     },
   },
 ];
@@ -99,6 +111,8 @@ export const EMERGENCY_PHRASES: Phrase[] = [
       zh: '我无法呼吸。',
       vi: 'Tôi không thở được.',
       ru: 'Я не могу дышать.',
+      hi: 'मुझे साँस नहीं आ रही।',
+      pa: 'ਮੈਨੂੰ ਸਾਹ ਨਹੀਂ ਆ ਰਿਹਾ।',
     },
   },
   {
@@ -110,6 +124,8 @@ export const EMERGENCY_PHRASES: Phrase[] = [
       zh: '我胸口疼。',
       vi: 'Tôi bị đau ngực.',
       ru: 'У меня болит в груди.',
+      hi: 'मेरे सीने में दर्द है।',
+      pa: 'ਮੇਰੀ ਛਾਤੀ ਵਿੱਚ ਦਰਦ ਹੈ।',
     },
   },
   {
@@ -121,6 +137,8 @@ export const EMERGENCY_PHRASES: Phrase[] = [
       zh: '我现在需要帮助。',
       vi: 'Tôi cần giúp đỡ ngay bây giờ.',
       ru: 'Мне срочно нужна помощь.',
+      hi: 'मुझे अभी मदद चाहिए।',
+      pa: 'ਮੈਨੂੰ ਹੁਣੇ ਮਦਦ ਚਾਹੀਦੀ ਹੈ।',
     },
   },
   {
@@ -132,6 +150,8 @@ export const EMERGENCY_PHRASES: Phrase[] = [
       zh: '请打电话给我的家人。',
       vi: 'Xin hãy gọi cho gia đình tôi.',
       ru: 'Пожалуйста, позвоните моей семье.',
+      hi: 'कृपया मेरे परिवार को फ़ोन करें।',
+      pa: 'ਕਿਰਪਾ ਕਰਕੇ ਮੇਰੇ ਪਰਿਵਾਰ ਨੂੰ ਫ਼ੋਨ ਕਰੋ।',
     },
   },
 ];
@@ -141,12 +161,12 @@ export const PATIENT_PHRASES: Phrase[] = [
   {
     id: 'yes',
     icon: 'checkmark-circle-outline',
-    text: { en: 'Yes.', es: 'Sí.', zh: '是。', vi: 'Vâng.', ru: 'Да.' },
+    text: { en: 'Yes.', es: 'Sí.', zh: '是。', vi: 'Vâng.', ru: 'Да.', hi: 'हाँ।', pa: 'ਹਾਂ।' },
   },
   {
     id: 'no',
     icon: 'close-circle-outline',
-    text: { en: 'No.', es: 'No.', zh: '不是。', vi: 'Không.', ru: 'Нет.' },
+    text: { en: 'No.', es: 'No.', zh: '不是。', vi: 'Không.', ru: 'Нет.', hi: 'नहीं।', pa: 'ਨਹੀਂ।' },
   },
   {
     id: 'dont-understand',
@@ -157,6 +177,8 @@ export const PATIENT_PHRASES: Phrase[] = [
       zh: '我不明白。',
       vi: 'Tôi không hiểu.',
       ru: 'Я не понимаю.',
+      hi: 'मुझे समझ नहीं आया।',
+      pa: 'ਮੈਨੂੰ ਸਮਝ ਨਹੀਂ ਆਈ।',
     },
   },
   {
@@ -168,6 +190,8 @@ export const PATIENT_PHRASES: Phrase[] = [
       zh: '请再说一遍。',
       vi: 'Xin nhắc lại.',
       ru: 'Повторите, пожалуйста.',
+      hi: 'कृपया फिर से कहें।',
+      pa: 'ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕਹੋ।',
     },
   },
 ];
