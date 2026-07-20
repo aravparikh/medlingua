@@ -19,6 +19,8 @@ const steps = [
   },
 ];
 
+import TwoVoices from "./TwoVoices";
+
 export default function HowItWorks() {
   return (
     <section
@@ -29,6 +31,10 @@ export default function HowItWorks() {
       }}
     >
       <div style={{ maxWidth: "64rem", margin: "0 auto" }}>
+
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "2rem" }}>
+          <TwoVoices width={260} />
+        </div>
 
         <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
           <p

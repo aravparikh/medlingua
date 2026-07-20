@@ -1,5 +1,5 @@
 import BrandMark from "./BrandMark";
-import TwoVoices from "./TwoVoices";
+import PhoneMockup from "./PhoneMockup";
 
 interface HeroProps {
   onJoinClick: () => void;
@@ -24,7 +24,18 @@ export default function Hero({ onJoinClick }: HeroProps) {
         textAlign: "center",
       }}
     >
-      <div style={{ maxWidth: "52rem", margin: "0 auto" }}>
+      <div
+        style={{
+          maxWidth: "68rem",
+          margin: "0 auto",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "3rem",
+        }}
+      >
+        <div style={{ flex: "1 1 26rem", maxWidth: "36rem" }}>
 
         {/* Brand mark — the app's drawn bubble + cross */}
         <div className="fade-rise-1" style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem" }}>
@@ -106,7 +117,6 @@ export default function Hero({ onJoinClick }: HeroProps) {
             flexWrap: "wrap",
             gap: "0.875rem",
             justifyContent: "center",
-            marginBottom: "3rem",
           }}
         >
           <button
@@ -137,9 +147,11 @@ export default function Hero({ onJoinClick }: HeroProps) {
           </button>
         </div>
 
-        {/* The scene the app opens with: two people, one conversation. */}
-        <div className="fade-rise-4" style={{ display: "flex", justifyContent: "center" }}>
-          <TwoVoices width={300} />
+        </div>
+
+        {/* The product, drawn from its own design system. */}
+        <div className="fade-rise-4">
+          <PhoneMockup />
         </div>
       </div>
     </section>

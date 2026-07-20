@@ -27,6 +27,7 @@ export const metadata: Metadata = {
     description:
       "Speak with your doctor — in your language. Real-time medical translation for limited-English-proficiency patients.",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "MedLingua — speak with your doctor, in your language" }],
   },
 };
 
