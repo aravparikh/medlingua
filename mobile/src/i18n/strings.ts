@@ -98,6 +98,8 @@ export interface UIStrings {
   rightsBody: string;
   offlineLine: string;
   tagline: string;
+  deleteLabel: string;
+  deleteConfirm: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -187,6 +189,8 @@ export const STRINGS: Record<string, UIStrings> = {
       'Federal law requires this hospital or clinic to provide a qualified interpreter at no cost to you (Title VI of the Civil Rights Act and Section 1557 of the ACA). Please show this screen to the staff.',
     offlineLine: 'No internet — quick phrases and the body map still work.',
     tagline: 'Speak with your doctor — in your language.',
+    deleteLabel: 'Delete',
+    deleteConfirm: 'Delete this message?',
   },
   es: {
     listening: 'Escuchando…',
@@ -274,6 +278,8 @@ export const STRINGS: Record<string, UIStrings> = {
       'La ley federal exige que este hospital o clínica le proporcione un intérprete calificado sin costo alguno (Título VI de la Ley de Derechos Civiles y Sección 1557 de la ACA). Muestre esta pantalla al personal.',
     offlineLine: 'Sin internet — las frases rápidas y el mapa del cuerpo siguen funcionando.',
     tagline: 'Hable con su médico — en su idioma.',
+    deleteLabel: 'Borrar',
+    deleteConfirm: '¿Borrar este mensaje?',
   },
   zh: {
     listening: '正在聆听…',
@@ -361,6 +367,8 @@ export const STRINGS: Record<string, UIStrings> = {
       '联邦法律要求本医院或诊所免费为您提供合格的口译员（《民权法案》第六章和《平价医疗法案》第1557条）。请把此屏幕出示给工作人员。',
     offlineLine: '没有网络——常用短语和身体图仍可使用。',
     tagline: '用您的语言，与医生交流。',
+    deleteLabel: '删除',
+    deleteConfirm: '删除这条消息？',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -448,6 +456,8 @@ export const STRINGS: Record<string, UIStrings> = {
       'Luật liên bang yêu cầu bệnh viện hoặc phòng khám này cung cấp thông dịch viên đủ trình độ miễn phí cho bạn (Điều VI Đạo luật Dân quyền và Mục 1557 của ACA). Vui lòng đưa màn hình này cho nhân viên xem.',
     offlineLine: 'Không có mạng — câu thường dùng và sơ đồ cơ thể vẫn hoạt động.',
     tagline: 'Trò chuyện với bác sĩ — bằng ngôn ngữ của bạn.',
+    deleteLabel: 'Xóa',
+    deleteConfirm: 'Xóa tin nhắn này?',
   },
   ru: {
     listening: 'Слушаю…',
@@ -535,6 +545,8 @@ export const STRINGS: Record<string, UIStrings> = {
       'Федеральный закон обязывает эту больницу или клинику бесплатно предоставить вам квалифицированного переводчика (раздел VI Закона о гражданских правах и статья 1557 ACA). Пожалуйста, покажите этот экран персоналу.',
     offlineLine: 'Нет интернета — частые фразы и схема тела по-прежнему работают.',
     tagline: 'Говорите с врачом — на вашем языке.',
+    deleteLabel: 'Удалить',
+    deleteConfirm: 'Удалить это сообщение?',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -623,6 +635,8 @@ export const STRINGS: Record<string, UIStrings> = {
       'संघीय कानून के अनुसार इस अस्पताल या क्लिनिक को आपको बिना किसी शुल्क के योग्य दुभाषिया देना होगा (नागरिक अधिकार अधिनियम का शीर्षक VI और ACA की धारा 1557)। कृपया यह स्क्रीन स्टाफ़ को दिखाएँ।',
     offlineLine: 'इंटरनेट नहीं है — तैयार वाक्य और शरीर का नक्शा फिर भी काम करते हैं।',
     tagline: 'अपने डॉक्टर से बात करें — अपनी भाषा में।',
+    deleteLabel: 'हटाएँ',
+    deleteConfirm: 'यह संदेश हटाएँ?',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -711,6 +725,8 @@ export const STRINGS: Record<string, UIStrings> = {
       'ਫੈਡਰਲ ਕਾਨੂੰਨ ਅਨੁਸਾਰ ਇਸ ਹਸਪਤਾਲ ਜਾਂ ਕਲੀਨਿਕ ਨੂੰ ਤੁਹਾਨੂੰ ਬਿਨਾਂ ਕਿਸੇ ਖ਼ਰਚੇ ਦੇ ਯੋਗ ਦੁਭਾਸ਼ੀਆ ਦੇਣਾ ਪਵੇਗਾ (ਸਿਵਲ ਰਾਈਟਸ ਐਕਟ ਦਾ ਟਾਈਟਲ VI ਅਤੇ ACA ਦੀ ਧਾਰਾ 1557)। ਕਿਰਪਾ ਕਰਕੇ ਇਹ ਸਕ੍ਰੀਨ ਸਟਾਫ਼ ਨੂੰ ਵਿਖਾਓ।',
     offlineLine: 'ਇੰਟਰਨੈੱਟ ਨਹੀਂ — ਤਿਆਰ ਵਾਕ ਅਤੇ ਸਰੀਰ ਦਾ ਨਕਸ਼ਾ ਫਿਰ ਵੀ ਕੰਮ ਕਰਦੇ ਹਨ।',
     tagline: 'ਆਪਣੇ ਡਾਕਟਰ ਨਾਲ ਗੱਲ ਕਰੋ — ਆਪਣੀ ਭਾਸ਼ਾ ਵਿੱਚ।',
+    deleteLabel: 'ਮਿਟਾਓ',
+    deleteConfirm: 'ਇਹ ਸੁਨੇਹਾ ਮਿਟਾਉਣਾ ਹੈ?',
   },
 };
 

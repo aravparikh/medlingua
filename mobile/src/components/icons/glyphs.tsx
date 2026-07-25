@@ -64,6 +64,16 @@ export function CloseIcon(p: IconProps) {
   );
 }
 
+export function TrashIcon(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <Path d="M4.4 6.8h15.2" />
+      <Path d="M9.4 6.8V5.2a1.6 1.6 0 0 1 1.6-1.6h2a1.6 1.6 0 0 1 1.6 1.6v1.6" />
+      <Path d="M6.6 6.8l.9 11.6a2.2 2.2 0 0 0 2.2 2h4.6a2.2 2.2 0 0 0 2.2-2l.9-11.6" />
+    </IconBase>
+  );
+}
+
 export function RefreshIcon(p: IconProps) {
   return (
     <IconBase {...p}>

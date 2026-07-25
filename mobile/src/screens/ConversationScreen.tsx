@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, SpeakingArc, TwoVoicesScene, UnderstandIcon } from '../components/icons';
+import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, SpeakingArc, TrashIcon, TwoVoicesScene, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -158,6 +158,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
   /** Interpreter-rights card — reachable from the teach-back dead end. */
   const [rightsOpen, setRightsOpen] = useState(false);
+  /** Turn awaiting delete confirmation; null when nothing is pending. */
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   // Offline awareness: quick phrases and the body map keep working (canned
   // text + on-device voice); everything that needs the network is disabled
@@ -248,6 +250,20 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const addTurn = (turn: Turn) => {
     onTurnsChange([...turns, turn]);
     setFlipped(false);
+  };
+
+  /**
+   * Removes one message from the visit thread — for a mis-transcription, or
+   * something the patient would rather not have on screen. Nothing was ever
+   * written to disk, so this is purely dropping it from memory. Deliberately
+   * behind a confirm step: an accidental tap must not erase what someone just
+   * said. Also stops playback when the deleted card owns the loaded audio.
+   */
+  const deleteTurn = (turn: Turn) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (playerTurnIdRef.current === turn.id) stopAllAudio();
+    setConfirmDeleteId(null);
+    onTurnsChange(turns.filter((t) => t.id !== turn.id));
   };
 
   /**
@@ -976,6 +992,20 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                 <Text style={styles.originalLabel} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.speaker.speechTag}>
                   {turn.isName ? `${t(turn.speaker.code).nameLabel} · ${en.nameLabel}` : t(turn.speaker.code).youSaid}
                 </Text>
+                <View style={styles.speakerSpacer} />
+                {/* Quiet by design: faint, small, and behind a confirm — a
+                   stray tap must never wipe what someone just said. */}
+                <PressableScale
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setConfirmDeleteId(confirmDeleteId === turn.id ? null : turn.id);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t(turn.speaker.code).deleteLabel} — ${en.deleteLabel}`}
+                  style={styles.turnDelete}
+                >
+                  <TrashIcon size={18} color={colors.textFaint} />
+                </PressableScale>
               </View>
               {turn.original ? (
                 <Text style={styles.originalText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.speaker.speechTag}>
@@ -1023,6 +1053,76 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               </Pressable>
 
               <View style={styles.turnActionsWrap}>
+                {confirmDeleteId === turn.id ? (
+                  /* Confirm in place: no modal to dismiss, and the message
+                     stays on screen while the person decides. */
+                  <Appear style={styles.deleteConfirm} accessibilityLiveRegion="polite">
+                    <Text
+                      style={styles.deleteConfirmText}
+                      accessibilityLanguage={turn.speaker.speechTag}
+                      allowFontScaling
+                      maxFontSizeMultiplier={2}
+                    >
+                      {t(turn.speaker.code).deleteConfirm}
+                    </Text>
+                    {turn.speaker.code !== 'en' ? (
+                      <Text style={styles.deleteConfirmTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                        {en.deleteConfirm}
+                      </Text>
+                    ) : null}
+                    <View style={styles.turnActions}>
+                      <PressableScale
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setConfirmDeleteId(null);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t(turn.speaker.code).cancel} — ${en.cancel}`}
+                        flexFill
+                        style={styles.turnButton}
+                      >
+                        <View style={styles.turnButtonLabels}>
+                          <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
+                            {t(turn.speaker.code).cancel}
+                          </Text>
+                          {turn.speaker.code !== 'en' ? (
+                            <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                              {en.cancel}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </PressableScale>
+                      <PressableScale
+                        onPress={() => deleteTurn(turn)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t(turn.speaker.code).deleteLabel} — ${en.deleteLabel}`}
+                        flexFill
+                        style={[styles.turnButton, styles.turnButtonDanger]}
+                      >
+                        <TrashIcon size={20} color={colors.dangerText} />
+                        <View style={styles.turnButtonLabels}>
+                          <Text
+                            style={[styles.turnButtonText, styles.turnButtonTextDanger]}
+                            allowFontScaling
+                            maxFontSizeMultiplier={2}
+                          >
+                            {t(turn.speaker.code).deleteLabel}
+                          </Text>
+                          {turn.speaker.code !== 'en' ? (
+                            <Text
+                              style={[styles.turnButtonTextEn, styles.turnButtonTextDanger]}
+                              allowFontScaling
+                              maxFontSizeMultiplier={2}
+                            >
+                              {en.deleteLabel}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </PressableScale>
+                    </View>
+                  </Appear>
+                ) : (
+                  <>
                 <View style={styles.turnActions}>
                   <PressableScale
                     onPress={() => playTurn(turn)}
@@ -1091,6 +1191,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
                       </PressableScale>
                     ) : null}
                   </View>
+                )}
+                  </>
                 )}
               </View>
             </Appear>
@@ -2328,6 +2430,37 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     flexShrink: 1,
     textAlign: 'center',
+  },
+  turnButtonDanger: {
+    backgroundColor: colors.dangerBg,
+  },
+  turnButtonTextDanger: {
+    color: colors.dangerText,
+  },
+  speakerSpacer: {
+    flex: 1,
+  },
+  turnDelete: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirm: {
+    gap: spacing.hairline,
+  },
+  deleteConfirmText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.dangerText,
+    lineHeight: type.small * 1.35,
+  },
+  deleteConfirmTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.dangerText,
+    opacity: 0.85,
+    marginBottom: spacing.xxs,
   },
   errorCard: {
     flexDirection: 'row',
