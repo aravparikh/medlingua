@@ -11,8 +11,10 @@
   --teal-tint: #ECF5F3;
   --deep-teal: #0C302B;
   --accent: #2A9D8F;
-  --indigo: #1D3A6E;
-  --indigo-tint: #EFF3FA;
+  /* The patient-language side. Plum, not a second blue — see
+     mobile/src/theme.ts for why. */
+  --plum: #5A3A5E;
+  --plum-tint: #F4EFF4;
   --ink: #1F2D2A;
   --grey: #54645F;
   --sand: #E7E4DB;

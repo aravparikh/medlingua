@@ -19,12 +19,12 @@ export default function TwoVoices({ width = 300 }: { width?: number }) {
     >
       <circle cx={40} cy={30} r={13} stroke="var(--teal)" fill="var(--white)" />
       <rect x={26} y={49} width={28} height={44} rx={14} stroke="var(--teal)" fill="var(--white)" />
-      <circle cx={220} cy={30} r={13} stroke="var(--indigo)" fill="var(--white)" />
-      <rect x={206} y={49} width={28} height={44} rx={14} stroke="var(--indigo)" fill="var(--white)" />
+      <circle cx={220} cy={30} r={13} stroke="var(--plum)" fill="var(--white)" />
+      <rect x={206} y={49} width={28} height={44} rx={14} stroke="var(--plum)" fill="var(--white)" />
       <circle cx={80} cy={58} r={4.2} fill="var(--teal)" />
       <path d="M94 46a14.5 14.5 0 0 1 0 24" stroke="var(--accent)" />
       <path d="M108 38a25 25 0 0 1 0 40" stroke="var(--accent)" />
-      <circle cx={180} cy={58} r={4.2} fill="var(--indigo)" />
+      <circle cx={180} cy={58} r={4.2} fill="var(--plum)" />
       <path d="M166 48a12.5 12.5 0 0 0 0 20" stroke="var(--accent)" strokeDasharray="0.1 7" />
     </svg>
   );

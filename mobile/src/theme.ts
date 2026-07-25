@@ -2,12 +2,14 @@
  * MedLingua design system.
  *
  * Two hues only — a deep clinical teal (brand, primary actions, English side)
- * and a muted indigo (the other language's side) — on warm paper neutrals.
+ * and a muted plum (the other language's side) — on warm paper neutrals.
+ * Plum rather than a second blue: the two sides must be separable at a
+ * glance, and green-vs-blue at the same value read as one dark mass.
  * Calm and trustworthy, never loud. Every text/fill pair in the app meets
  * WCAG AA (≥4.5:1 normal, ≥3:1 large); primary text pairs reach AAA. Measured:
  * ink/paper ≈13.2:1, inkMuted/paper ≈5.7:1, inkFaint/paper ≈5.1:1,
- * white/primary ≈8.4:1, white/secondary ≈11.2:1, white/listening ≈6:1,
- * accent (decorative only) ≈3.1:1.
+ * white/primary ≈8.4:1, white/secondary ≈9.5:1, white/listening ≈6:1,
+ * secondary/surfaceTintSecondary ≈8.4:1, accent (decorative only) ≈3.1:1.
  *
  * Type: Lexend for display/headings (designed to improve reading proficiency —
  * right for seniors), Noto Sans for body (Latin, Vietnamese, and Cyrillic
@@ -21,10 +23,10 @@ export const palette = {
   teal500: '#2A9D8F',
   teal100: '#D5EAE6',
   teal50: '#ECF5F3',
-  indigo900: '#132648',
-  indigo700: '#1D3A6E',
-  indigo100: '#DFE7F4',
-  indigo50: '#EFF3FA',
+  plum900: '#3D2741',
+  plum700: '#5A3A5E',
+  plum100: '#E8DEE9',
+  plum50: '#F4EFF4',
   paper: '#F7F5F1',
   white: '#FFFFFF',
   ink: '#1F2D2A',
@@ -42,7 +44,7 @@ export const colors = {
   background: palette.paper,
   surface: palette.white,
   surfaceTint: palette.teal50,
-  surfaceTintSecondary: palette.indigo50,
+  surfaceTintSecondary: palette.plum50,
 
   text: palette.ink,
   textMuted: palette.inkMuted,
@@ -54,9 +56,9 @@ export const colors = {
   onPrimary: palette.white,
   primaryTint: palette.teal100,
 
-  // Other-language side. White text on secondary is ~10:1.
-  secondary: palette.indigo700,
-  secondaryPressed: palette.indigo900,
+  // Other-language side. White text on secondary is ~9.5:1.
+  secondary: palette.plum700,
+  secondaryPressed: palette.plum900,
   onSecondary: palette.white,
 
   // Brand accent — decorative highlights only (fails AAA for small text on white).
