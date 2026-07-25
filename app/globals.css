@@ -28,6 +28,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* Set at the root so every surface matches, including portals. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -54,6 +57,14 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--deep-teal);
   line-height: 1.2;
   margin: 0;
+  /* Even out ragged line breaks in headlines rather than letting the last
+     line strand a single word. */
+  text-wrap: balance;
+}
+
+/* Short-to-medium copy only — never applied to long prose or code. */
+p, li, figcaption {
+  text-wrap: pretty;
 }
 
 :focus-visible {

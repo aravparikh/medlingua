@@ -33,7 +33,13 @@ function Glyph({
 // Paths verbatim from the app's glyph set.
 const ARC = ['M11.6 8.6a4.9 4.9 0 0 1 0 6.8', 'M15.2 5.8a9 9 0 0 1 0 12.4'];
 const ARC_DOT = { cx: 6.2, cy: 12, r: 2.1 };
-const MIC = ['M9.4 3v10.6a2.6 2.6 0 0 0 5.2 0V3z', 'M5.6 11.4v.6a6.4 6.4 0 0 0 12.8 0v-.6', 'M12 18.4V21'];
+// The mic element as a true capsule — a flat-topped path read as an arrow at
+// button size.
+const MIC = [
+  'M12 3a2.6 2.6 0 0 1 2.6 2.6v5.4a2.6 2.6 0 0 1-5.2 0V5.6A2.6 2.6 0 0 1 12 3Z',
+  'M5.6 11.4v.6a6.4 6.4 0 0 0 12.8 0v-.6',
+  'M12 18.4V21',
+];
 const EYE = ['M3.5 12c2.5-4.1 5.3-6.1 8.5-6.1s6 2 8.5 6.1c-2.5 4.1-5.3 6.1-8.5 6.1S6 16.1 3.5 12Z', 'M12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0'];
 const EXPAND = ['M14.4 4.6h5v5M19.2 4.8l-5.6 5.6', 'M9.6 19.4h-5v-5M4.8 19.2l5.6-5.6'];
 
@@ -68,7 +74,8 @@ export default function PhoneMockup() {
       <div
         aria-hidden="true"
         style={{
-          borderRadius: 35,
+          // Concentric with the 44 device frame minus its 10 bezel.
+          borderRadius: 34,
           backgroundColor: 'var(--paper)',
           overflow: 'hidden',
           padding: '14px 12px 12px',

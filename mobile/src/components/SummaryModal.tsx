@@ -336,6 +336,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: type.title,
     color: colors.secondary,
+    // A countdown must not reflow as digits change — 2:00 → 1:59 was
+    // shifting the banner text every second.
+    fontVariant: ['tabular-nums'],
   },
   timerTrack: {
     height: 6,

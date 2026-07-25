@@ -122,7 +122,9 @@ const styles = StyleSheet.create({
   frameInner: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.lg,
+    // Concentric with the outer frame: inner = outer radius − the gap
+    // between them, so the two rules stay optically parallel.
+    borderRadius: radius.xl - spacing.xxs,
     backgroundColor: colors.surface,
     padding: spacing.lg,
     gap: spacing.md,
