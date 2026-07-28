@@ -11,10 +11,10 @@
   --teal-tint: #ECF5F3;
   --deep-teal: #0C302B;
   --accent: #2A9D8F;
-  /* The patient-language side. Plum, not a second blue — see
-     mobile/src/theme.ts for why. */
-  --plum: #5A3A5E;
-  --plum-tint: #F4EFF4;
+  /* The patient-language side: the same teal, two steps deeper. Named for
+     its role, not its hue, so the value can change without a rename. */
+  --patient: #0C302B;
+  --patient-tint: #D5EAE6;
   --ink: #1F2D2A;
   --grey: #54645F;
   --sand: #E7E4DB;

@@ -1,15 +1,16 @@
 /**
  * MedLingua design system.
  *
- * Two hues only — a deep clinical teal (brand, primary actions, English side)
- * and a muted plum (the other language's side) — on warm paper neutrals.
- * Plum rather than a second blue: the two sides must be separable at a
- * glance, and green-vs-blue at the same value read as one dark mass.
+ * One hue, two depths — a clinical teal for the English side and a deeper
+ * teal for the other language's — on warm paper neutrals. A single family
+ * separated by value rather than a second colour: restrained, and it leaves
+ * clay as the only warm colour in the app, so it unambiguously means
+ * "recording or danger."
  * Calm and trustworthy, never loud. Every text/fill pair in the app meets
  * WCAG AA (≥4.5:1 normal, ≥3:1 large); primary text pairs reach AAA. Measured:
  * ink/paper ≈13.2:1, inkMuted/paper ≈5.7:1, inkFaint/paper ≈5.1:1,
- * white/primary ≈8.4:1, white/secondary ≈9.5:1, white/listening ≈6:1,
- * secondary/surfaceTintSecondary ≈8.4:1, accent (decorative only) ≈3.1:1.
+ * white/primary ≈8.4:1, white/secondary ≈14.3:1, white/listening ≈6:1,
+ * secondary/surfaceTintSecondary ≈11.4:1, accent (decorative only) ≈3.1:1.
  *
  * Type: Lexend for display/headings (designed to improve reading proficiency —
  * right for seniors), Noto Sans for body (Latin, Vietnamese, and Cyrillic
@@ -18,15 +19,13 @@
 
 /** Raw palette — never use these in components; use `colors` below. */
 export const palette = {
+  teal950: '#071F1B',
   teal900: '#0C302B',
+  teal800: '#0F4640',
   teal700: '#14574E',
   teal500: '#2A9D8F',
   teal100: '#D5EAE6',
   teal50: '#ECF5F3',
-  plum900: '#3D2741',
-  plum700: '#5A3A5E',
-  plum100: '#E8DEE9',
-  plum50: '#F4EFF4',
   paper: '#F7F5F1',
   white: '#FFFFFF',
   ink: '#1F2D2A',
@@ -44,7 +43,7 @@ export const colors = {
   background: palette.paper,
   surface: palette.white,
   surfaceTint: palette.teal50,
-  surfaceTintSecondary: palette.plum50,
+  surfaceTintSecondary: palette.teal100,
 
   text: palette.ink,
   textMuted: palette.inkMuted,
@@ -52,13 +51,15 @@ export const colors = {
 
   // English side / primary actions. White text on primary is ~8.6:1.
   primary: palette.teal700,
-  primaryPressed: palette.teal900,
+  // Not teal900: that is the other language's fill, and a pressed English
+  // button must never briefly wear the patient side's colour.
+  primaryPressed: palette.teal800,
   onPrimary: palette.white,
   primaryTint: palette.teal100,
 
-  // Other-language side. White text on secondary is ~9.5:1.
-  secondary: palette.plum700,
-  secondaryPressed: palette.plum900,
+  // Other-language side: the same hue, two steps deeper. White text ~14.3:1.
+  secondary: palette.teal900,
+  secondaryPressed: palette.teal950,
   onSecondary: palette.white,
 
   // Brand accent — decorative highlights only (fails AAA for small text on white).

@@ -110,8 +110,8 @@ export default function PhoneMockup() {
                 width: 15,
                 height: 15,
                 borderRadius: 8,
-                backgroundColor: 'var(--plum-tint)',
-                color: 'var(--plum)',
+                backgroundColor: 'var(--patient-tint)',
+                color: 'var(--patient)',
                 fontSize: 7,
                 fontWeight: 700,
                 display: 'inline-flex',
@@ -164,7 +164,7 @@ export default function PhoneMockup() {
         <div style={{ display: 'flex', gap: 8 }}>
           {[
             { bg: 'var(--teal)', label: 'Speak English' },
-            { bg: 'var(--plum)', label: 'Hablar español' },
+            { bg: 'var(--patient)', label: 'Hablar español' },
           ].map((b) => (
             <div
               key={b.label}
