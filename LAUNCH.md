@@ -27,10 +27,10 @@ bottom; the account items have lead time, start them first.
    Worker URL into `mobile/eas.json` (both `preview` and `production` env) and
    your `.env` for device testing. Rotate your OpenAI key after (the old one
    was used in dev bundles).
-3. **Deploy the landing site** (Vercel, free) so `/privacy` and `/terms` are
-   public. Then update `SITE_BASE_URL` in `mobile/src/config/links.ts` to the
-   real domain, and set up `hello@…` mail forwarding (or change the address in
-   the two legal pages).
+3. **Deploy the landing site** to any static/Next.js host so `/privacy` and
+   `/terms` are public. Then update `SITE_BASE_URL` in
+   `mobile/src/config/links.ts` to the real domain, and set up `hello@…` mail
+   forwarding (or change the address in the two legal pages).
 
 ## 📦 You: build & submit sequence
 

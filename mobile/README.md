@@ -2,7 +2,7 @@
 
 Real-time, two-way medical translation between English and Spanish, Mandarin
 Chinese, Vietnamese, or Russian — built for seniors and people with limited
-English. React Native + Expo (SDK 57).
+English. React Native + Expo (SDK 54).
 
 ## How it works
 
