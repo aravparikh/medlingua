@@ -1,6 +1,7 @@
 import { fetch as expoFetch } from 'expo/fetch';
 import { File, Paths } from 'expo-file-system';
 
+import { SAFEGUARD_TIMEOUT_MS } from '../config/safeguard';
 import type { Language } from '../config/languages';
 import { getDeviceId } from './storage';
 
@@ -68,9 +69,15 @@ type ApiResponse = Awaited<ReturnType<typeof expoFetch>>;
  * request) and is unreliable for arrayBuffer() (the TTS bytes). The browser
  * preview masked both — expo/fetch behaves the same everywhere.
  */
-async function fetchWithTimeout(url: string, init: FetchInit): Promise<ApiResponse> {
+async function fetchWithTimeout(
+  url: string,
+  init: FetchInit,
+  /** Override for calls that must degrade faster than the conversation flow —
+   * the confidence gate gives up in 8s rather than leaving someone waiting. */
+  timeoutMs: number = REQUEST_TIMEOUT_MS,
+): Promise<ApiResponse> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await expoFetch(url, { ...init, signal: controller.signal });
   } catch (err) {
@@ -264,6 +271,286 @@ export async function translate(text: string, from: Language, to: Language): Pro
     throw new TranslationError('Empty translation');
   }
   return translation;
+}
+
+/** A word or phrase the translating model considered risky to get wrong. */
+export interface FlaggedTerm {
+  /** The span as it appeared in the source utterance. */
+  source: string;
+  /** Why it was flagged: ambiguous, idiomatic, dosage, negation, laterality, time. */
+  reason: string;
+}
+
+export interface StructuredTranslation {
+  translation: string;
+  flaggedTerms: FlaggedTerm[];
+  /** The model's own 0–1 confidence. null when it returned nothing usable. */
+  selfConfidence: number | null;
+}
+
+/** Models sometimes wrap JSON in ``` fences despite being told not to. */
+function stripFences(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+}
+
+/**
+ * Translation for the confidence gate: same interpreting task as `translate`,
+ * but the model also reports which spans were risky and how sure it is.
+ *
+ * Deliberately a separate function rather than a change to `translate` — with
+ * the safeguard flag off, the original single-call path stays exactly as it
+ * was, including its prompt.
+ */
+export async function translateStructured(
+  text: string,
+  from: Language,
+  to: Language,
+): Promise<StructuredTranslation> {
+  const system = [
+    `You are a professional medical interpreter. Translate the user's message from ${from.englishName} into ${to.englishName}.`,
+    'Rules:',
+    '- Translate for meaning and clarity in a medical setting, not word-for-word.',
+    '- Use plain, simple language a patient would understand.',
+    '- Preserve important medical terms accurately: medications, symptoms, body parts, dosages, and yes/no answers.',
+    '- Never translate or localize proper nouns: keep people\'s names, place names, and medication brand names exactly as written (do not turn "John" into "Juan").',
+    '- Respect the natural grammar and politeness norms of the target language.',
+    '- If the input is ambiguous, translate the most likely meaning faithfully — do not invent details.',
+    '',
+    'Also report your own uncertainty honestly:',
+    '- "flagged_terms": spans of the SOURCE text that are ambiguous, idiomatic, or medically high-stakes — dosages, negations ("do not", "never"), laterality (left/right), and time frames. Empty array if none.',
+    '- "self_confidence": 0 to 1, how confident you are that your translation carries the exact clinical meaning. Be strict. An honest low score is more useful than a flattering high one.',
+  ].join('\n');
+
+  let res: ApiResponse;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/chat/completions`,
+      {
+        method: 'POST',
+        headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          temperature: 0.2,
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'gated_translation',
+              strict: true,
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['translation', 'flagged_terms', 'self_confidence'],
+                properties: {
+                  translation: { type: 'string' },
+                  flagged_terms: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      additionalProperties: false,
+                      required: ['source', 'reason'],
+                      properties: { source: { type: 'string' }, reason: { type: 'string' } },
+                    },
+                  },
+                  self_confidence: { type: 'number' },
+                },
+              },
+            },
+          },
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: text },
+          ],
+        }),
+      },
+      SAFEGUARD_TIMEOUT_MS,
+    );
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during translation');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Translation failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new TranslationError('Empty translation');
+
+  let parsed: {
+    translation?: unknown;
+    flagged_terms?: unknown;
+    self_confidence?: unknown;
+  };
+  try {
+    parsed = JSON.parse(stripFences(raw));
+  } catch {
+    throw new TranslationError('Malformed structured translation');
+  }
+
+  const translation = typeof parsed.translation === 'string' ? parsed.translation.trim() : '';
+  if (!translation) throw new TranslationError('Empty translation');
+
+  const flaggedTerms = Array.isArray(parsed.flagged_terms)
+    ? parsed.flagged_terms
+        .map((item) => {
+          const o = (item ?? {}) as { source?: unknown; reason?: unknown };
+          return {
+            source: typeof o.source === 'string' ? o.source : '',
+            reason: typeof o.reason === 'string' ? o.reason : '',
+          };
+        })
+        .filter((term) => term.source.length > 0)
+    : [];
+
+  const selfConfidence =
+    typeof parsed.self_confidence === 'number' && Number.isFinite(parsed.self_confidence)
+      ? Math.min(1, Math.max(0, parsed.self_confidence))
+      : null;
+
+  return { translation, flaggedTerms, selfConfidence };
+}
+
+/**
+ * Step 2 of the gate: translate the translation back, with no sight of the
+ * original. Any meaning that fell out on the way over shows up as a difference
+ * between this and what the person actually said.
+ */
+export async function backTranslate(translated: string, from: Language, to: Language): Promise<string> {
+  const system = [
+    `Translate the user's message from ${from.englishName} into ${to.englishName}.`,
+    'Translate literally and completely. Do not improve, correct, explain, or guess at intent.',
+    'If the message is unclear, render that unclarity rather than resolving it.',
+    'Return only the translation, with no commentary or quotation marks.',
+  ].join('\n');
+
+  let res: ApiResponse;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/chat/completions`,
+      {
+        method: 'POST',
+        headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          temperature: 0,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: translated },
+          ],
+        }),
+      },
+      SAFEGUARD_TIMEOUT_MS,
+    );
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during back-translation');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Back-translation failed (${res.status})`);
+  }
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const back = data.choices?.[0]?.message?.content?.trim();
+  if (!back) throw new TranslationError('Empty back-translation');
+  return back;
+}
+
+/**
+ * Step 3, judge variant: how much of the original survived the round trip.
+ *
+ * The judge sees ONLY the original and the back-translation — never the
+ * forward translation — so it scores what actually came back rather than being
+ * anchored by the wording it is meant to be checking.
+ */
+export async function judgeEquivalence(
+  original: string,
+  backTranslation: string,
+  language: Language,
+): Promise<{ score: number; reason: string }> {
+  const system = [
+    `You compare two sentences in ${language.englishName} from a medical appointment and score how well they mean the same thing.`,
+    'Return JSON: {"score": number 0 to 1, "reason": "one short clause"}.',
+    '1.0 = identical clinical meaning. 0.0 = unrelated or contradictory.',
+    'Weigh clinical safety above style. Treat these as serious differences even when the wording is close:',
+    'a changed or dropped negation, a different dose or number, a changed body side (left/right), a changed time frame, a changed medication, or a lost question/statement distinction.',
+    'Ignore harmless differences in politeness, word order, or phrasing.',
+  ].join('\n');
+
+  const res = await fetchWithTimeout(
+    `${BASE_URL}/chat/completions`,
+    {
+      method: 'POST',
+      headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: `A: ${original}\nB: ${backTranslation}` },
+        ],
+      }),
+    },
+    SAFEGUARD_TIMEOUT_MS,
+  );
+  if (!res.ok) throw new TranslationError(`Judge failed (${res.status})`);
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new TranslationError('Empty judge response');
+
+  const parsed = JSON.parse(stripFences(raw)) as { score?: unknown; reason?: unknown };
+  if (typeof parsed.score !== 'number' || !Number.isFinite(parsed.score)) {
+    throw new TranslationError('Judge returned no score');
+  }
+  return {
+    score: Math.min(1, Math.max(0, parsed.score)),
+    reason: typeof parsed.reason === 'string' ? parsed.reason : '',
+  };
+}
+
+/**
+ * Step 3, embeddings variant: cosine similarity of the original and the
+ * back-translation.
+ *
+ * NOTE: needs `/v1/embeddings` and `text-embedding-3-small` added to the proxy
+ * allowlist (proxy/worker.js) before it will work in production. Selected via
+ * DRIFT_SCORER in config/safeguard.ts.
+ */
+export async function embeddingSimilarity(a: string, b: string): Promise<number> {
+  const res = await fetchWithTimeout(
+    `${BASE_URL}/embeddings`,
+    {
+      method: 'POST',
+      headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: [a, b] }),
+    },
+    SAFEGUARD_TIMEOUT_MS,
+  );
+  if (!res.ok) throw new TranslationError(`Embeddings failed (${res.status})`);
+
+  const data = (await res.json()) as { data?: { embedding?: number[] }[] };
+  const [va, vb] = [data.data?.[0]?.embedding, data.data?.[1]?.embedding];
+  if (!va || !vb || va.length !== vb.length) {
+    throw new TranslationError('Malformed embeddings response');
+  }
+
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < va.length; i += 1) {
+    dot += va[i] * vb[i];
+    normA += va[i] * va[i];
+    normB += vb[i] * vb[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denom === 0) throw new TranslationError('Degenerate embedding');
+  // Cosine similarity of these embeddings runs roughly 0.3–1.0 for related
+  // text; it is used directly and calibrated by the thresholds, not rescaled.
+  return Math.min(1, Math.max(0, dot / denom));
 }
 
 /**

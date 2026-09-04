@@ -16,7 +16,7 @@ import { loadPrefs, savePrefs } from './src/services/storage';
 import { colors, fonts, spacing, type } from './src/theme';
 import { Appear } from './src/components/Appear';
 import { AboutScreen } from './src/screens/AboutScreen';
-import { ConversationScreen, type Turn } from './src/screens/ConversationScreen';
+import { ConversationScreen, type Escalation, type Turn } from './src/screens/ConversationScreen';
 import { LanguageSelectScreen } from './src/screens/LanguageSelectScreen';
 
 type Screen = 'languages' | 'conversation' | 'about';
@@ -49,10 +49,15 @@ export default function App() {
   // The visit transcript lives here (not in the conversation screen) so a trip
   // to the About screen doesn't wipe it. Memory only — never written to disk.
   const [turns, setTurns] = useState<Turn[]>([]);
+  // Utterances the confidence gate gave up on. Held next to the transcript and
+  // on the same terms: memory only, wiped with it, appended to the summary so
+  // the clinician can see what never made it across.
+  const [escalations, setEscalations] = useState<Escalation[]>([]);
 
   const selectLanguage = (language: Language) => {
     setOtherLanguage(language);
     setTurns([]);
+    setEscalations([]);
     savePrefs({ languageCode: language.code });
     setScreen('conversation');
     // Ask for the microphone now, at a calm moment — not mid-gesture during
@@ -81,6 +86,8 @@ export default function App() {
               otherLanguage={otherLanguage}
               turns={turns}
               onTurnsChange={setTurns}
+              escalations={escalations}
+              onEscalation={(escalation) => setEscalations((prev) => [...prev, escalation])}
               onChangeLanguage={() => setScreen('languages')}
               onShowAbout={() => setScreen('about')}
             />

@@ -100,6 +100,15 @@ export interface UIStrings {
   tagline: string;
   deleteLabel: string;
   deleteConfirm: string;
+  // Confidence gate (see config/safeguard.ts). Shown to whoever is reading the
+  // translation, so every one of these must exist in every language.
+  gateChecking: string;
+  gateCaution: string;
+  gateBlockTitle: string;
+  gateBlockBody: string;
+  gateEscalateTitle: string;
+  gateEscalateBody: string;
+  gateSayAgain: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -191,6 +200,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Speak with your doctor — in your language.',
     deleteLabel: 'Delete',
     deleteConfirm: 'Delete this message?',
+    gateChecking: 'Checking accuracy…',
+    gateCaution: 'May not be exact',
+    gateBlockTitle: 'Let us try that again',
+    gateBlockBody: 'That did not come through clearly. Please say it a different way.',
+    gateEscalateTitle: 'Ask for an interpreter',
+    gateEscalateBody: 'This is not translating reliably. Please ask the staff for a medical interpreter.',
+    gateSayAgain: 'Say it again',
   },
   es: {
     listening: 'Escuchando…',
@@ -280,6 +296,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Hable con su médico — en su idioma.',
     deleteLabel: 'Borrar',
     deleteConfirm: '¿Borrar este mensaje?',
+    gateChecking: 'Comprobando la exactitud…',
+    gateCaution: 'Puede no ser exacto',
+    gateBlockTitle: 'Vamos a intentarlo otra vez',
+    gateBlockBody: 'Eso no se entendió bien. Dígalo de otra manera, por favor.',
+    gateEscalateTitle: 'Pida un intérprete',
+    gateEscalateBody: 'La traducción no está saliendo confiable. Pida al personal un intérprete médico.',
+    gateSayAgain: 'Dígalo otra vez',
   },
   zh: {
     listening: '正在聆听…',
@@ -369,6 +392,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: '用您的语言，与医生交流。',
     deleteLabel: '删除',
     deleteConfirm: '删除这条消息？',
+    gateChecking: '正在核对准确性…',
+    gateCaution: '可能不够准确',
+    gateBlockTitle: '请再说一次',
+    gateBlockBody: '刚才那句没有听清楚。请换一种说法再说一次。',
+    gateEscalateTitle: '请求口译员',
+    gateEscalateBody: '翻译不够可靠。请向工作人员要一位医疗口译员。',
+    gateSayAgain: '再说一次',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -458,6 +488,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Trò chuyện với bác sĩ — bằng ngôn ngữ của bạn.',
     deleteLabel: 'Xóa',
     deleteConfirm: 'Xóa tin nhắn này?',
+    gateChecking: 'Đang kiểm tra độ chính xác…',
+    gateCaution: 'Có thể chưa chính xác',
+    gateBlockTitle: 'Xin thử lại một lần nữa',
+    gateBlockBody: 'Câu đó chưa được rõ. Xin nói lại theo cách khác.',
+    gateEscalateTitle: 'Xin một thông dịch viên',
+    gateEscalateBody: 'Bản dịch chưa đáng tin cậy. Xin hỏi nhân viên về thông dịch viên y tế.',
+    gateSayAgain: 'Nói lại',
   },
   ru: {
     listening: 'Слушаю…',
@@ -547,6 +584,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Говорите с врачом — на вашем языке.',
     deleteLabel: 'Удалить',
     deleteConfirm: 'Удалить это сообщение?',
+    gateChecking: 'Проверяем точность…',
+    gateCaution: 'Может быть неточно',
+    gateBlockTitle: 'Давайте попробуем ещё раз',
+    gateBlockBody: 'Это прозвучало неясно. Скажите, пожалуйста, другими словами.',
+    gateEscalateTitle: 'Попросите переводчика',
+    gateEscalateBody: 'Перевод получается ненадёжным. Попросите у персонала медицинского переводчика.',
+    gateSayAgain: 'Скажите ещё раз',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -637,6 +681,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'अपने डॉक्टर से बात करें — अपनी भाषा में।',
     deleteLabel: 'हटाएँ',
     deleteConfirm: 'यह संदेश हटाएँ?',
+    gateChecking: 'सटीकता जाँची जा रही है…',
+    gateCaution: 'शायद पूरी तरह सही न हो',
+    gateBlockTitle: 'एक बार फिर कोशिश करें',
+    gateBlockBody: 'यह साफ़ समझ नहीं आया। कृपया इसे दूसरे शब्दों में कहें।',
+    gateEscalateTitle: 'दुभाषिया माँगें',
+    gateEscalateBody: 'अनुवाद भरोसेमंद नहीं हो रहा। कृपया स्टाफ़ से मेडिकल दुभाषिया माँगें।',
+    gateSayAgain: 'फिर से कहें',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -727,6 +778,13 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'ਆਪਣੇ ਡਾਕਟਰ ਨਾਲ ਗੱਲ ਕਰੋ — ਆਪਣੀ ਭਾਸ਼ਾ ਵਿੱਚ।',
     deleteLabel: 'ਮਿਟਾਓ',
     deleteConfirm: 'ਇਹ ਸੁਨੇਹਾ ਮਿਟਾਉਣਾ ਹੈ?',
+    gateChecking: 'ਸਹੀਪਣ ਦੀ ਜਾਂਚ ਹੋ ਰਹੀ ਹੈ…',
+    gateCaution: 'ਸ਼ਾਇਦ ਪੂਰੀ ਤਰ੍ਹਾਂ ਸਹੀ ਨਾ ਹੋਵੇ',
+    gateBlockTitle: 'ਇੱਕ ਵਾਰ ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ',
+    gateBlockBody: 'ਇਹ ਸਾਫ਼ ਸਮਝ ਨਹੀਂ ਆਇਆ। ਕਿਰਪਾ ਕਰਕੇ ਇਸਨੂੰ ਹੋਰ ਸ਼ਬਦਾਂ ਵਿੱਚ ਕਹੋ।',
+    gateEscalateTitle: 'ਦੁਭਾਸ਼ੀਆ ਮੰਗੋ',
+    gateEscalateBody: 'ਅਨੁਵਾਦ ਭਰੋਸੇਯੋਗ ਨਹੀਂ ਹੋ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਸਟਾਫ਼ ਤੋਂ ਮੈਡੀਕਲ ਦੁਭਾਸ਼ੀਆ ਮੰਗੋ।',
+    gateSayAgain: 'ਫਿਰ ਕਹੋ',
   },
 };
 

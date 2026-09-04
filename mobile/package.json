@@ -27,13 +27,16 @@
     "@types/react": "~19.1.10",
     "react-dom": "19.1.0",
     "react-native-web": "^0.21.2",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^5.0.0"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "vitest run",
+    "tune": "npx tsx scripts/tune_safeguard.ts"
   },
   "private": true
 }

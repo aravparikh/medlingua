@@ -32,6 +32,10 @@ import {
   TranslationError,
   type MedLabelResult,
 } from '../services/openai';
+import { SAFEGUARD_ENABLED } from '../config/safeguard';
+import { gatedTranslate } from '../services/safeguard';
+import { isDisplayable, type GateVerdict } from '../services/safeguardDecision';
+import type { FlaggedTerm } from '../services/openai';
 import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { colors, displayFontFor, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
@@ -56,6 +60,21 @@ export interface Turn {
   listener: Language;
   /** A verbatim name entry (no translation): renders as a single-name card. */
   isName?: boolean;
+  /** Confidence-gate verdict. Absent on turns the gate never saw (quick
+   * phrases, the body map, names) and when the safeguard is switched off. */
+  verdict?: GateVerdict;
+  /** Spans the model considered risky; highlighted inline on a CAUTION turn. */
+  flaggedTerms?: FlaggedTerm[];
+  confidence?: number | null;
+}
+
+/** An utterance the gate gave up on — recorded so the visit summary can say so. */
+export interface Escalation {
+  /** ISO-8601 UTC. */
+  at: string;
+  original: string;
+  reason: string;
+  attempts: number;
 }
 
 interface Props {
@@ -64,6 +83,10 @@ interface Props {
    * but memory-only: cleared on language change and gone when the app closes. */
   turns: Turn[];
   onTurnsChange: (turns: Turn[]) => void;
+  /** Utterances the confidence gate escalated, held alongside the transcript
+   * so they can be appended verbatim to the visit summary. */
+  escalations: Escalation[];
+  onEscalation: (escalation: Escalation) => void;
   onChangeLanguage: () => void;
   onShowAbout: () => void;
 }
@@ -95,6 +118,47 @@ function normalizeMetering(db: number): number {
   return Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
 }
 
+/** Escapes a term so it can go inside a RegExp literal safely. */
+function escapeForRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Renders `text` with any flagged spans underlined in place, so the clinician
+ * can see exactly which words the model was unsure of rather than being told
+ * the sentence as a whole is shaky. Returns the plain string when there is
+ * nothing to mark, which keeps the common case allocation-free.
+ */
+function highlightFlagged(text: string, terms: FlaggedTerm[] | undefined): React.ReactNode {
+  const sources = (terms ?? []).map((term) => term.source.trim()).filter((s) => s.length > 0);
+  if (sources.length === 0) return text;
+
+  // Longest first, so "chest pain" wins over a nested "pain".
+  const pattern = sources
+    .sort((a, b) => b.length - a.length)
+    .map(escapeForRegExp)
+    .join('|');
+
+  let parts: string[];
+  try {
+    parts = text.split(new RegExp(`(${pattern})`, 'gi'));
+  } catch {
+    // A term that somehow still breaks the pattern must not break the card.
+    return text;
+  }
+
+  const flagged = new Set(sources.map((s) => s.toLowerCase()));
+  return parts.map((part, i) =>
+    flagged.has(part.toLowerCase()) ? (
+      <Text key={i} style={styles.flaggedTerm}>
+        {part}
+      </Text>
+    ) : (
+      part
+    ),
+  );
+}
+
 const formatElapsed = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -108,7 +172,15 @@ const formatElapsed = (ms: number) => {
  * needs precision. The running thread makes the back-and-forth visible;
  * nothing is ever written to disk.
  */
-export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChangeLanguage, onShowAbout }: Props) {
+export function ConversationScreen({
+  otherLanguage,
+  turns,
+  onTurnsChange,
+  escalations,
+  onEscalation,
+  onChangeLanguage,
+  onShowAbout,
+}: Props) {
   // Metering powers the live level meter — real "I can hear you" feedback,
   // not a decorative pulse.
   const recorder = useAudioRecorder(RECORDING_OPTIONS);
@@ -156,6 +228,17 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     | null
   >(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
+  /** Confidence gate: which stage of the two-step check is running, if any. */
+  const [gateStage, setGateStage] = useState<'translating' | 'checking' | null>(null);
+  /** A withheld translation. The text is deliberately NOT carried here — a
+   * blocked translation is never put on screen, not even greyed out. */
+  const [gateHeld, setGateHeld] = useState<{ stage: 'block' | 'escalate'; speaker: Language } | null>(null);
+  /**
+   * Consecutive blocked attempts at getting the CURRENT thing across. Reset the
+   * moment anything gets through, so a difficult sentence never escalates the
+   * next one — this is a per-utterance count, never a running total for the visit.
+   */
+  const blockStreakRef = useRef(0);
   /** Interpreter-rights card — reachable from the teach-back dead end. */
   const [rightsOpen, setRightsOpen] = useState(false);
   /** Turn awaiting delete confirmation; null when nothing is pending. */
@@ -356,6 +439,65 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     }
   };
 
+  /**
+   * Translates one utterance through the confidence gate.
+   *
+   * Returns the turn to display, or null when the gate withheld it — in which
+   * case the held-state UI is already showing and NOTHING is spoken. Speaking a
+   * translation the gate rejected would be the worst failure this app has, so
+   * TTS only ever happens on a turn this function actually returned.
+   *
+   * With SAFEGUARD_ENABLED false this is the original single-call path.
+   */
+  const translateThroughGate = async (
+    text: string,
+    from: Language,
+    to: Language,
+  ): Promise<Turn | null> => {
+    if (!SAFEGUARD_ENABLED) {
+      const translation = await translate(text, from, to);
+      return { id: Date.now(), original: text, translation, speaker: from, listener: to };
+    }
+
+    setGateHeld(null);
+    setGateStage('translating');
+    try {
+      const result = await gatedTranslate(text, from, to, blockStreakRef.current, () =>
+        setGateStage('checking'),
+      );
+
+      if (!isDisplayable(result.verdict)) {
+        blockStreakRef.current += 1;
+        if (result.verdict === 'escalate') {
+          onEscalation({
+            at: new Date().toISOString(),
+            original: text,
+            reason: result.reason ?? 'repeated-blocks',
+            attempts: blockStreakRef.current,
+          });
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setGateHeld({ stage: result.verdict === 'escalate' ? 'escalate' : 'block', speaker: from });
+        return null;
+      }
+
+      // Something got through: this utterance is no longer in trouble.
+      blockStreakRef.current = 0;
+      return {
+        id: Date.now(),
+        original: text,
+        translation: result.translation,
+        speaker: from,
+        listener: to,
+        verdict: result.verdict,
+        flaggedTerms: result.flaggedTerms,
+        confidence: result.confidence,
+      };
+    } finally {
+      setGateStage(null);
+    }
+  };
+
   /** Transcribe → translate → speak. Shared by the normal flow and "Try again". */
   const processRecording = async (uri: string, who: Language | null) => {
     setPhase('translating');
@@ -377,15 +519,19 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       // English (or unrecognized), the other language of the pair.
       const speakerLang = who ?? (detectedCode === 'en' ? ENGLISH : otherLanguage);
       const listener = speakerLang.code === 'en' ? otherLanguage : ENGLISH;
-      const translation = await translate(text, speakerLang, listener);
-
-      const turn: Turn = { id: Date.now(), original: text, translation, speaker: speakerLang, listener };
-      addTurn(turn);
+      const turn = await translateThroughGate(text, speakerLang, listener);
       setRetryCtx(null);
-      // The turn is safely in memory — the audio file has served its purpose.
+      // The audio has served its purpose either way: a withheld translation is
+      // re-attempted by speaking again, never by re-running the same recording.
       discardRecordingFile(uri);
+      if (!turn) {
+        // The gate withheld it. Nothing is shown and nothing is spoken.
+        setPhase('idle');
+        return;
+      }
+      addTurn(turn);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await speak(translation, listener, turn.id);
+      await speak(turn.translation, listener, turn.id);
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setPhase('idle');
@@ -531,11 +677,15 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setPhase('translating');
     try {
       const listener = who.code === 'en' ? otherLanguage : ENGLISH;
-      const translation = await translate(text, who, listener);
-      const turn: Turn = { id: Date.now(), original: text, translation, speaker: who, listener };
+      const turn = await translateThroughGate(text, who, listener);
+      if (!turn) {
+        // Withheld by the gate: the held-state card is showing instead.
+        setPhase('idle');
+        return;
+      }
       addTurn(turn);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await speak(translation, listener, turn.id);
+      await speak(turn.translation, listener, turn.id);
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setPhase('idle');
@@ -754,7 +904,22 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         otherLanguage,
       );
       // The disclaimer travels with the summary wherever it is copied/shared.
-      setSummary({ status: 'ready', text: `${text}\n\n${other.aiDisclaimer}\n${en.aiDisclaimer}` });
+      // Escalations are appended here, deterministically, rather than being
+      // fed to the model: summarizeVisit validates its own output against the
+      // transcript, and a note about something that never got translated has
+      // no transcript line to ground it. Assembling it in code also means the
+      // wording cannot be paraphrased away by a retry.
+      const escalationBlock =
+        escalations.length > 0
+          ? `\n\n${other.gateEscalateTitle} · ${en.gateEscalateTitle}\n` +
+            escalations
+              .map((e) => `• "${e.original}" — not translated reliably after ${e.attempts} attempts`)
+              .join('\n')
+          : '';
+      setSummary({
+        status: 'ready',
+        text: `${text}${escalationBlock}\n\n${other.aiDisclaimer}\n${en.aiDisclaimer}`,
+      });
     } catch {
       setSummary({ status: 'error' });
     }
@@ -1009,8 +1174,18 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
               </View>
               {turn.original ? (
                 <Text style={styles.originalText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.speaker.speechTag}>
-                  {turn.original}
+                  {highlightFlagged(turn.original, turn.flaggedTerms)}
                 </Text>
+              ) : null}
+
+              {/* CAUTION: the translation is shown, but never as a certainty. */}
+              {turn.verdict === 'caution' ? (
+                <View style={styles.cautionRow}>
+                  <AlertCircleIcon size={16} color={colors.dangerText} />
+                  <Text style={styles.cautionText} allowFontScaling maxFontSizeMultiplier={1.3}>
+                    {t(turn.listener.code).gateCaution} · {en.gateCaution}
+                  </Text>
+                </View>
               ) : null}
 
               <Pressable
@@ -1230,8 +1405,90 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
           <Appear style={styles.pendingWrap}>
             <TurnSkeleton alignRight={speaker != null && speaker.code !== 'en'} />
             <View style={styles.pendingCaption} accessibilityLiveRegion="polite">
-              <Text style={styles.pendingText} allowFontScaling maxFontSizeMultiplier={2}>{other.translating}</Text>
-              <Text style={styles.pendingTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.translating}</Text>
+              <Text style={styles.pendingText} allowFontScaling maxFontSizeMultiplier={2}>
+                {gateStage === 'checking' ? other.gateChecking : other.translating}
+              </Text>
+              <Text style={styles.pendingTextSmall} allowFontScaling maxFontSizeMultiplier={2}>
+                {gateStage === 'checking' ? en.gateChecking : en.translating}
+              </Text>
+            </View>
+            {/* The verification step is a named stage with its own progress
+               track, not a longer spinner — the extra seconds should read as
+               the app doing a second piece of work, which it is. */}
+            {gateStage === 'checking' ? (
+              <View style={styles.checkSteps} importantForAccessibility="no">
+                <View style={[styles.checkStep, styles.checkStepDone]} />
+                <View style={[styles.checkStep, styles.checkStepActive]} />
+              </View>
+            ) : null}
+          </Appear>
+        ) : null}
+
+        {/* The gate withheld a translation. The text itself is never rendered —
+           not greyed out, not behind a tap. Only a way forward. */}
+        {gateHeld ? (
+          <Appear style={styles.heldCard}>
+            <View style={styles.heldIcon} importantForAccessibility="no">
+              {gateHeld.stage === 'escalate' ? (
+                <PeopleIcon size={26} color={colors.dangerText} />
+              ) : (
+                <RefreshIcon size={26} color={colors.dangerText} />
+              )}
+            </View>
+            <View style={styles.heldBody} accessibilityLiveRegion="assertive">
+              <Text
+                style={styles.heldTitle}
+                accessibilityLanguage={gateHeld.speaker.speechTag}
+                allowFontScaling
+                maxFontSizeMultiplier={2}
+              >
+                {t(gateHeld.speaker.code)[
+                  gateHeld.stage === 'escalate' ? 'gateEscalateTitle' : 'gateBlockTitle'
+                ]}
+              </Text>
+              <Text style={styles.heldText} accessibilityLanguage={gateHeld.speaker.speechTag} allowFontScaling maxFontSizeMultiplier={2}>
+                {t(gateHeld.speaker.code)[
+                  gateHeld.stage === 'escalate' ? 'gateEscalateBody' : 'gateBlockBody'
+                ]}
+              </Text>
+              <Text style={styles.heldTextEn} allowFontScaling maxFontSizeMultiplier={2}>
+                {gateHeld.stage === 'escalate' ? en.gateEscalateBody : en.gateBlockBody}
+              </Text>
+
+              {gateHeld.stage === 'escalate' ? (
+                <PressableScale
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setGateHeld(null);
+                    blockStreakRef.current = 0;
+                    setRightsOpen(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${other.rightsShow} — ${en.rightsShow}`}
+                  style={styles.heldAction}
+                >
+                  <ShieldIcon size={20} color={colors.dangerText} />
+                  <Text style={styles.heldActionText} allowFontScaling maxFontSizeMultiplier={1.3}>
+                    {other.rightsShow} · {en.rightsShow}
+                  </Text>
+                </PressableScale>
+              ) : (
+                <PressableScale
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setGateHeld(null);
+                    startTap(gateHeld.speaker);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t(gateHeld.speaker.code).gateSayAgain} — ${en.gateSayAgain}`}
+                  style={styles.heldAction}
+                >
+                  <SpeakIcon size={20} color={colors.dangerText} />
+                  <Text style={styles.heldActionText} allowFontScaling maxFontSizeMultiplier={1.3}>
+                    {t(gateHeld.speaker.code).gateSayAgain} · {en.gateSayAgain}
+                  </Text>
+                </PressableScale>
+              )}
             </View>
           </Appear>
         ) : null}
@@ -2273,6 +2530,101 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: spacing.xs,
     paddingLeft: spacing.xs,
+  },
+  // Two-segment progress track: translate, then verify. Reads as a named
+  // second step rather than a spinner that is taking too long.
+  checkSteps: {
+    flexDirection: 'row',
+    gap: spacing.xxs,
+    paddingLeft: spacing.xs,
+    marginTop: spacing.xxs,
+  },
+  checkStep: {
+    height: 3,
+    width: 28,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+  },
+  checkStepDone: {
+    backgroundColor: colors.primary,
+  },
+  checkStepActive: {
+    backgroundColor: colors.accent,
+  },
+  heldCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.dangerBg,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    width: '94%',
+    alignSelf: 'center',
+  },
+  heldIcon: {
+    paddingTop: spacing.hairline,
+  },
+  heldBody: {
+    flex: 1,
+    gap: spacing.xxs,
+  },
+  heldTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: type.body,
+    color: colors.dangerText,
+    lineHeight: type.body * 1.35,
+  },
+  heldText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.dangerText,
+    lineHeight: type.small * 1.45,
+  },
+  heldTextEn: {
+    fontFamily: fonts.body,
+    fontSize: type.caption,
+    color: colors.dangerText,
+    opacity: 0.85,
+    lineHeight: type.caption * 1.45,
+  },
+  heldAction: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: colors.dangerText,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  heldActionText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.small,
+    color: colors.dangerText,
+  },
+  cautionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.dangerBg,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.hairline,
+    marginTop: spacing.xxs,
+  },
+  cautionText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: type.caption,
+    color: colors.dangerText,
+  },
+  flaggedTerm: {
+    fontFamily: fonts.bodyBold,
+    color: colors.dangerText,
+    textDecorationLine: 'underline',
   },
   pendingText: {
     fontFamily: fonts.bodyMedium,
