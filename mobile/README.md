@@ -106,3 +106,23 @@ was unclear to begin with. A vague sentence that translates faithfully still sco
 Drift is scored by embedding similarity; a GPT-4o judge is available as a fallback but
 discriminates far less well. Thresholds in `src/config/safeguard.ts` are still provisional —
 run `npm run tune` and check the distribution before relying on them.
+
+## Terminology verification
+
+The medication names primed into every language's Whisper prompt are not a list we
+made up. `src/config/medications.ts` is the single source of truth for them, and
+`npm run verify:terms` checks every name against **RxNorm**, the U.S. National Library
+of Medicine's normalized drug vocabulary and a source vocabulary of the UMLS
+Metathesaurus. The result — each name with its RxNorm concept identifier (RXCUI) — is
+written to `src/config/terminology.json` and committed, so it can be audited without
+running anything: lisinopril is RXCUI 29046, and you can check that yourself at
+rxnav.nlm.nih.gov.
+
+Two tests keep it honest (`tests/terminology.test.ts`): every roster name must appear
+in all seven Whisper prompts, and every name must have resolved to an exact RxNorm
+match. Adding a drug without verifying it fails the suite.
+
+Verification runs at build time. The app makes no terminology calls at runtime and
+gains no runtime dependency. Anatomy terms are checked against the UMLS Metathesaurus
+proper, which needs a free UTS account — set `UMLS_API_KEY` in `mobile/.env` and re-run;
+without it that step is skipped and the RxNorm half still runs.

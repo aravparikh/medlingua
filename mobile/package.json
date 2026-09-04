@@ -36,7 +36,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "vitest run",
-    "tune": "npx tsx scripts/tune_safeguard.ts"
+    "tune": "npx tsx scripts/tune_safeguard.ts",
+    "verify:terms": "npx tsx scripts/verify_terminology.ts"
   },
   "private": true
 }
