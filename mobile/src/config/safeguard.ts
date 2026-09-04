@@ -20,13 +20,22 @@ export const SAFEGUARD_ENABLED = true;
 /**
  * How the back-translation is compared to the original.
  *
- * 'judge'      — one gpt-4o call returns {score, reason}. Works through the
- *                existing proxy allowlist today. Default.
- * 'embeddings' — cosine similarity of text-embedding-3-small vectors. Cheaper
- *                and more stable, but needs /v1/embeddings and the embedding
- *                model added to the proxy allowlist first (proxy/worker.js).
+ * 'embeddings' — cosine similarity of text-embedding-3-small vectors. Default,
+ *                and measurably the better of the two: over 23 tuning phrases
+ *                it produced drift scores spanning 0.52-1.00, separating good
+ *                translations (0.89-0.95) from idioms and garbled input
+ *                (0.52-0.80). Both texts go in one batched request, so this
+ *                costs no extra round trip and runs slightly faster than the
+ *                judge. Requires /v1/embeddings and text-embedding-3-small on
+ *                the proxy allowlist (both present in proxy/worker.js).
+ * 'judge'       — one gpt-4o call returns {score, reason}. Kept as a fallback,
+ *                but it clusters: on the same 23 phrases it returned only 0.90
+ *                or 1.00 and caught none of the deliberately broken sentences.
+ *
+ * Neither scorer detects input that was ambiguous to begin with — a vague
+ * sentence translated faithfully scores high, correctly. See the README.
  */
-export const DRIFT_SCORER: 'judge' | 'embeddings' = 'judge';
+export const DRIFT_SCORER: 'judge' | 'embeddings' = 'embeddings';
 
 /**
  * Decision thresholds, applied to the combined confidence score.

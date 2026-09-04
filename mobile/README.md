@@ -103,5 +103,6 @@ imprecise rather than shown as confident — the gate never upgrades on failure.
 
 **What it does not do:** it detects meaning that *changed* in translation, not meaning that
 was unclear to begin with. A vague sentence that translates faithfully still scores well.
-Thresholds in `src/config/safeguard.ts` are unvalidated placeholders; run `npm run tune`
-before relying on them.
+Drift is scored by embedding similarity; a GPT-4o judge is available as a fallback but
+discriminates far less well. Thresholds in `src/config/safeguard.ts` are still provisional —
+run `npm run tune` and check the distribution before relying on them.
