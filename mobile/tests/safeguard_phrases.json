@@ -1,0 +1,61 @@
+{
+  "_comment": "Threshold-tuning corpus for the confidence gate. `expect` is the verdict the phrase SHOULD receive once thresholds are tuned — a target, not an assertion. scripts/tune_safeguard.ts reports agreement rather than failing on it. Categories: dosage, negation, laterality, timeframe, idiom, ambiguous, embarrassing, designed-to-fail.",
+  "phrases": [
+    { "id": 1, "lang": "en", "category": "negation", "text": "Do not take this with food.", "expect": "show" },
+    { "id": 2, "lang": "en", "category": "dosage", "text": "Take two tablets twice a day for ten days.", "expect": "show" },
+    { "id": 3, "lang": "en", "category": "laterality", "text": "The pain is in my left leg, not my right.", "expect": "show" },
+    { "id": 4, "lang": "en", "category": "timeframe", "text": "Stop the medication three days before surgery.", "expect": "show" },
+    { "id": 5, "lang": "en", "category": "negation", "text": "You should not stop taking this even if you feel better.", "expect": "show" },
+    { "id": 6, "lang": "en", "category": "dosage", "text": "Half a tablet in the morning and a whole one at night.", "expect": "show" },
+    { "id": 7, "lang": "en", "category": "idiom", "text": "I have been feeling under the weather all week.", "expect": "caution" },
+    { "id": 8, "lang": "en", "category": "ambiguous", "text": "It hurts when I do this.", "expect": "block" },
+    { "id": 9, "lang": "en", "category": "embarrassing", "text": "There has been blood in my stool.", "expect": "show" },
+    { "id": 10, "lang": "en", "category": "embarrassing", "text": "I have not been able to get an erection since starting the new pills.", "expect": "show" },
+    { "id": 11, "lang": "en", "category": "embarrassing", "text": "I wet the bed a few nights a week.", "expect": "show" },
+    { "id": 12, "lang": "en", "category": "designed-to-fail", "text": "Bite the bullet, tough it out, and a stitch in time saves nine.", "expect": "block" },
+    { "id": 13, "lang": "en", "category": "designed-to-fail", "text": "She told her that she had to take her medicine before she left.", "expect": "block" },
+
+    { "id": 14, "lang": "es", "category": "dosage", "text": "Tome una pastilla cada ocho horas con comida.", "expect": "show" },
+    { "id": 15, "lang": "es", "category": "negation", "text": "No deje de tomar el medicamento aunque se sienta mejor.", "expect": "show" },
+    { "id": 16, "lang": "es", "category": "laterality", "text": "Me duele el oído derecho desde el martes.", "expect": "show" },
+    { "id": 17, "lang": "es", "category": "negation", "text": "Nunca he sido alérgico a nada, que yo sepa.", "expect": "show" },
+    { "id": 18, "lang": "es", "category": "timeframe", "text": "Los dolores empezaron hace unas dos semanas y media.", "expect": "show" },
+    { "id": 19, "lang": "es", "category": "embarrassing", "text": "Tengo picazón en mis partes íntimas.", "expect": "show" },
+    { "id": 20, "lang": "es", "category": "embarrassing", "text": "No he podido tener relaciones desde la operación.", "expect": "show" },
+    { "id": 21, "lang": "es", "category": "embarrassing", "text": "A veces se me sale la orina cuando toso.", "expect": "show" },
+    { "id": 22, "lang": "es", "category": "idiom", "text": "Estoy hecho polvo.", "expect": "caution" },
+    { "id": 23, "lang": "es", "category": "designed-to-fail", "text": "Me late que ando malito del bicho ese que anda rondando por ahí.", "expect": "block" },
+
+    { "id": 24, "lang": "zh", "category": "dosage", "text": "每天服用两次，每次一片，饭后服用。", "expect": "show" },
+    { "id": 25, "lang": "zh", "category": "negation", "text": "我没有对任何药物过敏。", "expect": "show" },
+    { "id": 26, "lang": "zh", "category": "timeframe", "text": "这个疼痛大概持续了三个星期。", "expect": "show" },
+    { "id": 27, "lang": "zh", "category": "laterality", "text": "我左边的膝盖疼，右边没事。", "expect": "show" },
+    { "id": 28, "lang": "zh", "category": "embarrassing", "text": "我最近大便带血。", "expect": "show" },
+    { "id": 29, "lang": "zh", "category": "idiom", "text": "我这几天有点上火。", "expect": "caution" },
+    { "id": 30, "lang": "zh", "category": "designed-to-fail", "text": "反正就是那个样子，你懂的吧，说不清楚。", "expect": "block" },
+
+    { "id": 31, "lang": "vi", "category": "dosage", "text": "Uống hai viên mỗi ngày, sau khi ăn.", "expect": "show" },
+    { "id": 32, "lang": "vi", "category": "negation", "text": "Tôi chưa bao giờ bị dị ứng thuốc.", "expect": "show" },
+    { "id": 33, "lang": "vi", "category": "laterality", "text": "Chân trái của tôi bị sưng, không phải chân phải.", "expect": "show" },
+    { "id": 34, "lang": "vi", "category": "timeframe", "text": "Tôi bị như vậy từ khoảng một tháng nay.", "expect": "show" },
+    { "id": 35, "lang": "vi", "category": "embarrassing", "text": "Tôi bị đau rát khi đi tiểu.", "expect": "show" },
+    { "id": 36, "lang": "vi", "category": "designed-to-fail", "text": "Nó cứ tưng tưng sao đó, khó nói lắm bác ơi.", "expect": "block" },
+
+    { "id": 37, "lang": "ru", "category": "dosage", "text": "Принимайте по одной таблетке два раза в день во время еды.", "expect": "show" },
+    { "id": 38, "lang": "ru", "category": "negation", "text": "Не прекращайте принимать лекарство без разрешения врача.", "expect": "show" },
+    { "id": 39, "lang": "ru", "category": "laterality", "text": "Болит правое колено, левое в порядке.", "expect": "show" },
+    { "id": 40, "lang": "ru", "category": "timeframe", "text": "Это началось примерно три недели назад.", "expect": "show" },
+    { "id": 41, "lang": "ru", "category": "embarrassing", "text": "У меня недержание мочи по ночам.", "expect": "show" },
+    { "id": 42, "lang": "ru", "category": "idiom", "text": "Меня как будто выжали.", "expect": "caution" },
+
+    { "id": 43, "lang": "hi", "category": "dosage", "text": "यह दवा दिन में दो बार खाने के बाद लें।", "expect": "show" },
+    { "id": 44, "lang": "hi", "category": "negation", "text": "मुझे किसी दवा से एलर्जी नहीं है।", "expect": "show" },
+    { "id": 45, "lang": "hi", "category": "timeframe", "text": "यह दर्द करीब दो हफ़्ते से है।", "expect": "show" },
+    { "id": 46, "lang": "hi", "category": "embarrassing", "text": "मुझे पेशाब करते समय जलन होती है।", "expect": "show" },
+    { "id": 47, "lang": "hi", "category": "idiom", "text": "मेरा जी घबरा रहा है।", "expect": "caution" },
+
+    { "id": 48, "lang": "pa", "category": "dosage", "text": "ਇਹ ਦਵਾਈ ਦਿਨ ਵਿੱਚ ਦੋ ਵਾਰ ਖਾਣੇ ਤੋਂ ਬਾਅਦ ਲਓ।", "expect": "show" },
+    { "id": 49, "lang": "pa", "category": "laterality", "text": "ਮੇਰੀ ਸੱਜੀ ਬਾਂਹ ਦੁਖਦੀ ਹੈ, ਖੱਬੀ ਠੀਕ ਹੈ।", "expect": "show" },
+    { "id": 50, "lang": "pa", "category": "embarrassing", "text": "ਮੈਨੂੰ ਰਾਤ ਨੂੰ ਪਿਸ਼ਾਬ ਨਿਕਲ ਜਾਂਦਾ ਹੈ।", "expect": "show" }
+  ]
+}

@@ -87,3 +87,21 @@ src/
   components/                # SpeakButton (hold-or-tap), Pulse
   screens/                   # Onboarding, LanguageSelect, Conversation, About
 ```
+
+## The confidence gate
+
+Machine translation normally arrives with no indication of how much to trust it. The gate
+adds a second opinion before anyone reads a translation. It works in three steps: GPT-4o
+translates and also reports which words it found risky (dosages, negations, left/right,
+time frames) and how confident it is; the translation is then translated **back** to the
+original language by a second call that never sees the original; and a third call scores
+how much the round trip changed the meaning. The lower of the two scores decides what
+happens — shown normally, shown marked "may not be exact", or withheld with a request to
+say it again. Two withheld attempts on the same sentence recommends a human interpreter
+and notes it in the visit summary. If any check fails or times out, the result is marked
+imprecise rather than shown as confident — the gate never upgrades on failure.
+
+**What it does not do:** it detects meaning that *changed* in translation, not meaning that
+was unclear to begin with. A vague sentence that translates faithfully still scores well.
+Thresholds in `src/config/safeguard.ts` are unvalidated placeholders; run `npm run tune`
+before relying on them.
