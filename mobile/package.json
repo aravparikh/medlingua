@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
-    "@expo-google-fonts/lexend": "^0.4.1",
     "@expo-google-fonts/noto-sans": "^0.4.2",
+    "@expo-google-fonts/noto-sans-devanagari": "^0.4.1",
+    "@expo-google-fonts/noto-sans-gurmukhi": "^0.4.1",
+    "@expo-google-fonts/noto-sans-sc": "^0.4.3",
     "@expo/vector-icons": "^15.0.2",
     "expo": "~54.0.35",
     "expo-asset": "~12.0.13",
@@ -25,6 +27,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
     "react-dom": "19.1.0",
     "react-native-web": "^0.21.2",
     "typescript": "~5.9.2",
@@ -37,7 +41,8 @@
     "web": "expo start --web",
     "test": "vitest run",
     "tune": "npx tsx scripts/tune_safeguard.ts",
-    "verify:terms": "npx tsx scripts/verify_terminology.ts"
+    "verify:terms": "npx tsx scripts/verify_terminology.ts",
+    "lint": "expo lint"
   },
   "private": true
 }

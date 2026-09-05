@@ -264,7 +264,7 @@ export function ConversationScreen({
   const speakSessionRef = useRef(0);
   const lastPhraseAtRef = useRef(0);
   /** Rapid double-taps on API-firing buttons must not fire twice (same 600ms
-   * window usePhrase uses). */
+   * window speakPhrase uses). */
   const lastActionAtRef = useRef(0);
   /** Pending sheet→modal handoff (see the body-map hero card). */
   const modalSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -629,7 +629,7 @@ export function ConversationScreen({
   };
 
   /** Speaks a pre-translated quick phrase — instant, no network required. */
-  const usePhrase = async (phrase: Phrase, who: Language) => {
+  const speakPhrase = async (phrase: Phrase, who: Language) => {
     if (phase === 'listening' || phase === 'translating') return;
     // Rapid double-taps while the sheet closes must not add duplicate turns.
     if (Date.now() - lastPhraseAtRef.current < 600) return;
@@ -652,7 +652,7 @@ export function ConversationScreen({
   };
 
   /** Translate + speak typed text — the fallback for loud rooms or a failing mic. */
-  const useTypedText = async (who: Language) => {
+  const sendTypedText = async (who: Language) => {
     const text = typedDraft.trim();
     if (!text || phase === 'listening' || phase === 'translating' || doubleTapped()) return;
     setTypeOpen(false);
@@ -703,7 +703,7 @@ export function ConversationScreen({
   };
 
   /** Speaks "My pain is n out of 10" for the tapped number — patient side. */
-  const usePainNumber = async (n: number) => {
+  const speakPainNumber = async (n: number) => {
     const phrase: Phrase = {
       id: `pain-${n}`,
       icon: 'speedometer-outline',
@@ -711,7 +711,7 @@ export function ConversationScreen({
         ['en', otherLanguage.code].map((code) => [code, t(code).painIs.replace('{n}', String(n))]),
       ),
     };
-    await usePhrase(phrase, otherLanguage);
+    await speakPhrase(phrase, otherLanguage);
   };
 
   /** True when this tap follows another API-firing tap within 600ms. */
@@ -1831,7 +1831,7 @@ export function ConversationScreen({
               {EMERGENCY_PHRASES.map((phrase) => (
                 <PressableScale
                   key={phrase.id}
-                  onPress={() => usePhrase(phrase, otherLanguage)}
+                  onPress={() => speakPhrase(phrase, otherLanguage)}
                   accessibilityRole="button"
                   accessibilityLabel={phrase.text[otherLanguage.code]}
                   accessibilityLanguage={otherLanguage.speechTag}
@@ -1861,7 +1861,7 @@ export function ConversationScreen({
                 {Array.from({ length: 11 }, (_, n) => (
                   <PressableScale
                     key={n}
-                    onPress={() => usePainNumber(n)}
+                    onPress={() => speakPainNumber(n)}
                     accessibilityRole="button"
                     accessibilityLabel={other.painIs.replace('{n}', String(n))}
                     accessibilityLanguage={otherLanguage.speechTag}
@@ -1878,7 +1878,7 @@ export function ConversationScreen({
               {CLINICIAN_PHRASES.map((phrase) => (
                 <PressableScale
                   key={phrase.id}
-                  onPress={() => usePhrase(phrase, ENGLISH)}
+                  onPress={() => speakPhrase(phrase, ENGLISH)}
                   accessibilityRole="button"
                   accessibilityLabel={phrase.text.en}
                   style={styles.phraseRow}
@@ -1902,7 +1902,7 @@ export function ConversationScreen({
               {PATIENT_PHRASES.map((phrase) => (
                 <PressableScale
                   key={phrase.id}
-                  onPress={() => usePhrase(phrase, otherLanguage)}
+                  onPress={() => speakPhrase(phrase, otherLanguage)}
                   accessibilityRole="button"
                   accessibilityLabel={phrase.text[otherLanguage.code]}
                   accessibilityLanguage={otherLanguage.speechTag}
@@ -2010,7 +2010,7 @@ export function ConversationScreen({
               />
               <View style={styles.typeSendRow}>
                 <PressableScale
-                  onPress={() => useTypedText(ENGLISH)}
+                  onPress={() => sendTypedText(ENGLISH)}
                   disabled={!typedDraft.trim()}
                   accessibilityRole="button"
                   accessibilityLabel="English"
@@ -2021,7 +2021,7 @@ export function ConversationScreen({
                   <ArrowForwardIcon  size={20} color={colors.onPrimary} />
                 </PressableScale>
                 <PressableScale
-                  onPress={() => useTypedText(otherLanguage)}
+                  onPress={() => sendTypedText(otherLanguage)}
                   disabled={!typedDraft.trim()}
                   accessibilityRole="button"
                   accessibilityLabel={otherLanguage.nativeName}

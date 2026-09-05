@@ -4,12 +4,23 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AudioModule } from 'expo-audio';
 import { useFonts } from 'expo-font';
-import { Lexend_600SemiBold, Lexend_700Bold } from '@expo-google-fonts/lexend';
 import {
   NotoSans_400Regular,
   NotoSans_600SemiBold,
   NotoSans_700Bold,
 } from '@expo-google-fonts/noto-sans';
+import {
+  NotoSansDevanagari_400Regular,
+  NotoSansDevanagari_600SemiBold,
+  NotoSansDevanagari_700Bold,
+} from '@expo-google-fonts/noto-sans-devanagari';
+import {
+  NotoSansGurmukhi_400Regular,
+  NotoSansGurmukhi_600SemiBold,
+  NotoSansGurmukhi_700Bold,
+} from '@expo-google-fonts/noto-sans-gurmukhi';
+// Simplified Chinese deliberately uses the system CJK face (PingFang SC / Noto
+// Sans CJK): bundling Noto Sans SC costs 30 MB for three weights. See theme.ts.
 
 import { getLanguage, type Language } from './src/config/languages';
 import { loadPrefs, savePrefs } from './src/services/storage';
@@ -27,12 +38,17 @@ type Screen = 'languages' | 'conversation' | 'about';
  * `Appear` wrapper (keyed by screen) gives a gentle fade-and-rise transition.
  */
 export default function App() {
+  // Every script cut loads here, once, behind the splash — never per screen.
   const [fontsLoaded, fontError] = useFonts({
-    Lexend_600SemiBold,
-    Lexend_700Bold,
     NotoSans_400Regular,
     NotoSans_600SemiBold,
     NotoSans_700Bold,
+    NotoSansDevanagari_400Regular,
+    NotoSansDevanagari_600SemiBold,
+    NotoSansDevanagari_700Bold,
+    NotoSansGurmukhi_400Regular,
+    NotoSansGurmukhi_600SemiBold,
+    NotoSansGurmukhi_700Bold,
   });
 
   // No onboarding by design: the native-script language cards are the
