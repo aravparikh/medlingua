@@ -312,7 +312,7 @@ export const strokes = { icon: 2.5, iconSmall: 3 } as const;
  * the files listed there — that list and this one are the same list. Cross a
  * file off both when it migrates; when both are empty, delete this block.
  *
- *   [ ] App.tsx
+ *   [x] App.tsx
  *   [ ] src/components/BodyMap.tsx
  *   [ ] src/components/FullscreenTranslation.tsx
  *   [x] src/components/LevelMeter.tsx
@@ -323,7 +323,7 @@ export const strokes = { icon: 2.5, iconSmall: 3 } as const;
  *   [ ] src/components/icons/scenes.tsx
  *   [ ] src/screens/AboutScreen.tsx
  *   [x] src/screens/ConversationScreen.tsx
- *   [ ] src/screens/LanguageSelectScreen.tsx
+ *   [x] src/screens/LanguageSelectScreen.tsx
  */
 
 /** @deprecated static light tokens — use useTheme(). */

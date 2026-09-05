@@ -10,8 +10,13 @@ import { IconBase, type IconProps } from './Icon';
  * View props only (never on SVG elements — they leak into the web DOM).
  */
 
-/** The logo mark: the brand bubble carrying the medical cross, filled. */
-export function BrandMark({ size = 34, color, ...rest }: IconProps) {
+/**
+ * The logo mark: the brand bubble carrying the medical cross, filled.
+ * `cross` is the cross's colour — pass the ground the mark sits on so it reads
+ * as a knockout (the redesigned screens do). Defaults to the legacy accent for
+ * callers not yet migrated.
+ */
+export function BrandMark({ size = 34, color, cross, ...rest }: IconProps & { cross?: string }) {
   return (
     <IconBase size={size} color={color} {...rest}>
       <Path
@@ -19,7 +24,7 @@ export function BrandMark({ size = 34, color, ...rest }: IconProps) {
         fill={color}
         strokeWidth={0}
       />
-      <Path d="M12 7.6v5.2M9.4 10.2h5.2" stroke={colors.primary} />
+      <Path d="M12 7.6v5.2M9.4 10.2h5.2" stroke={cross ?? colors.primary} />
     </IconBase>
   );
 }

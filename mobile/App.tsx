@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -24,7 +24,7 @@ import {
 
 import { getLanguage, type Language } from './src/config/languages';
 import { loadPrefs, savePrefs } from './src/services/storage';
-import { colors, fonts, spacing, type } from './src/theme';
+import { spacing, text, useTheme, type ColorTokens } from './src/theme';
 import { Appear } from './src/components/Appear';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { ConversationScreen, type Escalation, type Turn } from './src/screens/ConversationScreen';
@@ -51,7 +51,10 @@ export default function App() {
     NotoSansGurmukhi_700Bold,
   });
 
-  // No onboarding by design: the native-script language cards are the
+  const { scheme, colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  // No onboarding by design: the native-script language rows are the
   // onboarding, and they need zero English to use.
   const [prefs] = useState(loadPrefs);
   const [screen, setScreen] = useState<Screen>('languages');
@@ -85,7 +88,7 @@ export default function App() {
   if (!fontsLoaded && !fontError) {
     return (
       <View style={styles.splash}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.splashText}>MedLingua</Text>
       </View>
     );
@@ -94,7 +97,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.root}>
-        <StatusBar style="dark" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Appear key={screen} style={styles.root}>
           {screen === 'languages' && <LanguageSelectScreen onSelect={selectLanguage} />}
           {screen === 'conversation' && otherLanguage && (
@@ -117,22 +120,10 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  splash: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  splashText: {
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg },
+    splash: { flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
     // Fonts aren't loaded yet on the splash — system font on purpose.
-    fontSize: type.body,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
+    splashText: { ...text.body, color: c.ink, fontWeight: '700' },
+  });

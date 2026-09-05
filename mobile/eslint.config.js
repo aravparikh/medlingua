@@ -19,7 +19,6 @@ const TRANSITIONAL_ALIASES = ['colors', 'fonts', 'type', 'shadows', 'displayFont
 
 /** Cross these off as they migrate. Empty list = delete the aliases block. */
 const UNMIGRATED = [
-  'App.tsx',
   'src/components/BodyMap.tsx',
   'src/components/FullscreenTranslation.tsx',
   'src/components/RightsCard.tsx',
@@ -27,7 +26,6 @@ const UNMIGRATED = [
   'src/components/SummaryModal.tsx',
   'src/components/icons/scenes.tsx',
   'src/screens/AboutScreen.tsx',
-  'src/screens/LanguageSelectScreen.tsx',
 ];
 
 module.exports = defineConfig([
