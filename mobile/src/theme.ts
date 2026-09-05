@@ -378,13 +378,13 @@ export const strokes = { icon: 2.5, iconSmall: 3 } as const;
  * file off both when it migrates; when both are empty, delete this block.
  *
  *   [x] App.tsx
- *   [ ] src/components/BodyMap.tsx
+ *   [x] src/components/BodyMap.tsx
  *   [ ] src/components/FullscreenTranslation.tsx
  *   [x] src/components/LevelMeter.tsx
  *   [ ] src/components/RightsCard.tsx
  *   [ ] src/components/Skeleton.tsx
  *   [x] src/components/SpeakButton.tsx
- *   [ ] src/components/SummaryModal.tsx
+ *   [x] src/components/SummaryModal.tsx
  *   [ ] src/components/icons/scenes.tsx
  *   [ ] src/screens/AboutScreen.tsx
  *   [x] src/screens/ConversationScreen.tsx

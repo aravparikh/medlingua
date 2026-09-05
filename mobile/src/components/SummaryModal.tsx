@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
@@ -6,7 +6,7 @@ import { AlertCircleIcon, BrandGlyph, CloseIcon, DocumentIcon, ShareIcon, TimeIc
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
+import { elevation, fontFor, radius, serifFor, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
 import { PressableScale } from './PressableScale';
 import { SkeletonBar } from './Skeleton';
 
@@ -33,6 +33,9 @@ interface Props {
 export function SummaryModal({ state, otherLanguage, onClose }: Props) {
   const en = t('en');
   const other = t(otherLanguage.code);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [secondsLeft, setSecondsLeft] = useState(LIFETIME_S);
   const [copied, setCopied] = useState(false);
@@ -98,9 +101,9 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
           <View style={styles.handle} importantForAccessibility="no" />
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <DocumentIcon  size={24} color={colors.primary} />
+              <DocumentIcon  size={24} color={colors.ink} />
               <View style={styles.titleWrap}>
-                <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
+                <Text style={[styles.title, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
                   {other.summary}
                 </Text>
                 <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.summary}</Text>
@@ -112,7 +115,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               accessibilityLabel={`${other.close} — ${en.close}`}
               style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
             >
-              <CloseIcon  size={22} color={colors.primary} />
+              <CloseIcon  size={22} color={colors.ink} />
               <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
                 {other.close} · {en.close}
               </Text>
@@ -133,7 +136,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
 
           {state.status === 'error' ? (
             <View style={styles.loading} accessibilityLiveRegion="assertive">
-              <AlertCircleIcon  size={30} color={colors.dangerText} />
+              <AlertCircleIcon  size={30} color={colors.danger} />
               <Text style={styles.errorText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.connectionError}
               </Text>
@@ -145,7 +148,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
             <>
               {/* The self-destruct banner: this is a feature, not a bug. */}
               <View style={[styles.timerBanner, warn && styles.timerBannerWarn]} accessibilityLiveRegion="polite">
-                <TimeIcon  size={20} color={warn ? colors.onPrimary : colors.secondary} />
+                <TimeIcon  size={20} color={warn ? colors.bg : colors.ink} />
                 <View style={styles.timerTextWrap}>
                   <Text style={[styles.timerText, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.summaryEphemeral}
@@ -167,7 +170,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
               </View>
 
               <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-                <Text style={styles.summaryText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
+                <Text style={[styles.summaryText, fontFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
                   {state.text}
                 </Text>
               </ScrollView>
@@ -180,7 +183,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                   flexFill
                   style={[styles.action, styles.actionPrimary]}
                 >
-                  <BrandGlyph name={copied ? 'checkmark' : 'copy-outline'} size={22} color={colors.onPrimary} />
+                  <BrandGlyph name={copied ? 'checkmark' : 'copy-outline'} size={22} color={colors.bg} />
                   <View style={styles.actionLabels}>
                     <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                       {copied ? other.copied : other.copy}
@@ -195,7 +198,7 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                   flexFill
                   style={[styles.action, styles.actionSecondary]}
                 >
-                  <ShareIcon  size={22} color={colors.onPrimary} />
+                  <ShareIcon  size={22} color={colors.bg} />
                   <View style={styles.actionLabels}>
                     <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
                       {other.share}
@@ -212,27 +215,28 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
   },
   dismiss: {
     flex: 1,
   },
   sheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    backgroundColor: c.bg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     maxHeight: '88%',
     paddingBottom: spacing.xl,
-    ...shadows.floating,
+    ...elevation.sheet,
   },
   handle: {
     width: 44,
     height: 5,
     borderRadius: radius.pill,
-    backgroundColor: colors.borderStrong,
+    backgroundColor: c.border,
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
@@ -253,14 +257,14 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   title: {
-    fontFamily: fonts.display,
-    fontSize: type.button,
-    color: colors.text,
+    ...serifFor('en'),
+    fontSize: 22,
+    color: c.ink,
   },
   titleEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
+    ...fontFor('en'),
+    fontSize: 15,
+    color: c.ink2,
   },
   close: {
     minHeight: 48,
@@ -271,9 +275,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   closeText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
+    ...fontFor('en', 'semibold'),
+    fontSize: 17,
+    color: c.ink,
   },
   pressedDim: {
     opacity: 0.6,
@@ -284,58 +288,58 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   loadingText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
+    ...fontFor('en', 'semibold'),
+    fontSize: 17,
+    color: c.ink,
     marginTop: spacing.xs,
   },
   loadingTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
+    ...fontFor('en'),
+    fontSize: 15,
+    color: c.ink2,
   },
   errorText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.dangerText,
+    ...fontFor('en', 'semibold'),
+    fontSize: 17,
+    color: c.danger,
     textAlign: 'center',
-    lineHeight: type.body * 1.4,
+    lineHeight: 17 * 1.4,
   },
   timerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: colors.surfaceTintSecondary,
+    backgroundColor: c.surface,
     marginHorizontal: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     padding: spacing.sm,
   },
   timerBannerWarn: {
-    backgroundColor: colors.listening,
+    backgroundColor: c.danger,
   },
   timerTextWrap: {
     flex: 1,
     gap: spacing.hairline,
   },
   timerText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.text,
-    lineHeight: type.caption * 1.35,
+    ...fontFor('en', 'semibold'),
+    fontSize: 15,
+    color: c.ink,
+    lineHeight: 15 * 1.35,
   },
   timerTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    lineHeight: type.micro * 1.35,
+    ...fontFor('en'),
+    fontSize: 11,
+    color: c.ink2,
+    lineHeight: 11 * 1.35,
   },
   timerTextWarn: {
-    color: colors.onPrimary,
+    color: c.bg,
   },
   timerClock: {
-    fontFamily: fonts.display,
-    fontSize: type.title,
-    color: colors.secondary,
+    ...serifFor('en'),
+    fontSize: 26,
+    color: c.ink,
     // A countdown must not reflow as digits change — 2:00 → 1:59 was
     // shifting the banner text every second.
     fontVariant: ['tabular-nums'],
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
   timerTrack: {
     height: 6,
     borderRadius: radius.pill,
-    backgroundColor: colors.border,
+    backgroundColor: c.rule,
     marginHorizontal: spacing.md,
     marginTop: spacing.xs,
     overflow: 'hidden',
@@ -351,10 +355,10 @@ const styles = StyleSheet.create({
   timerFill: {
     height: '100%',
     borderRadius: radius.pill,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.ink,
   },
   timerFillWarn: {
-    backgroundColor: colors.listening,
+    backgroundColor: c.danger,
   },
   body: {
     flexGrow: 0,
@@ -364,10 +368,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   summaryText: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.text,
-    lineHeight: type.small * 1.55,
+    ...fontFor('en'),
+    fontSize: 17,
+    color: c.ink,
+    lineHeight: 17 * 1.55,
   },
   actions: {
     flexDirection: 'row',
@@ -376,31 +380,31 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   action: {
-    minHeight: MIN_TARGET,
+    minHeight: tapTarget.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    borderRadius: radius.lg,
+    borderRadius: radius.sheet,
   },
   actionPrimary: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.ink,
   },
   actionSecondary: {
-    backgroundColor: colors.secondary,
+    backgroundColor: c.ink,
   },
   actionLabels: {
     alignItems: 'center',
   },
   actionText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.onPrimary,
+    ...fontFor('en', 'semibold'),
+    fontSize: 17,
+    color: c.bg,
   },
   actionTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.onPrimary,
+    ...fontFor('en'),
+    fontSize: 11,
+    color: c.bg,
     opacity: 0.9,
   },
 });

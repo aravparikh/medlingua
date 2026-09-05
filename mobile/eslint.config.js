@@ -19,11 +19,9 @@ const TRANSITIONAL_ALIASES = ['colors', 'fonts', 'type', 'shadows', 'displayFont
 
 /** Cross these off as they migrate. Empty list = delete the aliases block. */
 const UNMIGRATED = [
-  'src/components/BodyMap.tsx',
   'src/components/FullscreenTranslation.tsx',
   'src/components/RightsCard.tsx',
   'src/components/Skeleton.tsx',
-  'src/components/SummaryModal.tsx',
   'src/components/icons/scenes.tsx',
   'src/screens/AboutScreen.tsx',
 ];
