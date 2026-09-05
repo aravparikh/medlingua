@@ -70,10 +70,15 @@ type ApiResponse = Awaited<ReturnType<typeof expoFetch>>;
 
 /**
  * fetch with a hard timeout; timeouts surface as retryable TranslationErrors.
- * Uses expo/fetch explicitly: on SDK 54 the global fetch is still React
- * Native's, which can't upload expo-file-system Files as Blobs (the Whisper
- * request) and is unreliable for arrayBuffer() (the TTS bytes). The browser
- * preview masked both — expo/fetch behaves the same everywhere.
+ *
+ * Imports expo/fetch explicitly rather than calling the global. On SDK 54 that
+ * was mandatory: the global fetch was React Native's, which cannot upload an
+ * expo-file-system File as a Blob (the Whisper request) and is unreliable for
+ * arrayBuffer() (the TTS bytes) — the browser preview masked both, and it took
+ * a device to find them. Since SDK 56 expo/fetch IS globalThis.fetch, so the
+ * import is now belt and braces. It stays: it survives EXPO_PUBLIC_USE_RN_FETCH
+ * being set to opt back out, and it keeps the requirement legible at the call
+ * site instead of depending on a global we do not control.
  */
 async function fetchWithTimeout(
   url: string,

@@ -8,6 +8,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
   type AudioPlayer,
+  type AudioStatus,
 } from 'expo-audio';
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
@@ -56,6 +57,14 @@ import { LedgerRow, LiveLine } from '../components/conversation/Turns';
 import { TypeSheet } from '../components/conversation/TypeSheet';
 
 export type Phase = 'idle' | 'listening' | 'translating' | 'speaking';
+
+/** The one AudioPlayer event we use, typed from the SDK's own status shape. */
+interface PlaybackSubscriber {
+  addListener(
+    event: 'playbackStatusUpdate',
+    listener: (status: AudioStatus) => void,
+  ): { remove(): void };
+}
 
 export interface Turn {
   id: number;
@@ -542,7 +551,15 @@ export function ConversationScreen({
       // Slow audio is never registered for instant replay — "Play again"
       // must always mean the normal pace.
       playerTurnIdRef.current = slow ? null : turnId;
-      player.addListener('playbackStatusUpdate', (status) => {
+      // AudioPlayer inherits addListener from SharedObject -> EventEmitter, but
+      // under TypeScript 6 that generic chain (SharedObject<Record<never, never>>
+      // feeding EventEmitter<EventsMap>) fails to resolve, so the inherited
+      // members are missing from the published type. The API itself is correct
+      // and unchanged: the SDK 57 docs still document
+      // addListener('playbackStatusUpdate') as the way to observe an
+      // imperatively created player. Asserted narrowly, not to `any`, so the
+      // status argument stays typed.
+      (player as unknown as PlaybackSubscriber).addListener('playbackStatusUpdate', (status) => {
         if (status.didJustFinish) setPhase('idle');
       });
       player.play();

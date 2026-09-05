@@ -1,0 +1,22 @@
+{
+  "$comment": "The tuning and terminology harnesses are Node tools, not app code. Expo's base config sets customConditions:['react-native'], which stops TypeScript resolving node: builtins - so they are typechecked here instead, against @types/node. Run both configs via `npm run typecheck`.",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ESNext",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ESNext"
+    ]
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}
