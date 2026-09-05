@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Phase, Turn } from '../../screens/ConversationScreen';
-import { bilingual, fontFor, radius, ROLE_EDGE_WIDTH, roles, spacing, tapTarget, text, useTheme } from '../../theme';
+import { bilingual, fontFor, radius, ROLE_EDGE_WIDTH, roles, serifFor, spacing, tapTarget, text, useTheme } from '../../theme';
 import { AlertCircleIcon, ExpandIcon, EyeIcon, SlowIcon, SpeakIcon, SpeakingArc, TrashIcon, UnderstandIcon } from '../icons';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
@@ -113,7 +113,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
   const listener = t(turn.listener.code);
   const other = t(otherLanguage.code);
   const edge = colors[roles[roleOf(turn)].edge];
-  const size = turn.translation.length <= DISPLAY_MAX_CHARS ? 'display' : 'heading';
+  const size = turn.translation.length <= DISPLAY_MAX_CHARS ? 'focal' : 'heading';
   const busy = phase !== 'idle';
   const speaking = phase === 'speaking';
   const fromClinician = turn.speaker.code === 'en';
@@ -144,7 +144,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
           <ExpandIcon size={16} color={colors.ink2} importantForAccessibility="no" />
         </View>
         <Text
-          style={[text[size], fontFor(turn.listener.code, 'semibold'), { color: colors.ink }]}
+          style={[text[size], serifFor(turn.listener.code), { color: colors.ink }]}
           accessibilityLanguage={turn.listener.speechTag}
           accessibilityLiveRegion="polite"
           allowFontScaling

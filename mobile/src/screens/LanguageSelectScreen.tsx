@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 
 import { LANGUAGES, type Language } from '../config/languages';
 import { STRINGS } from '../i18n/strings';
-import { fontFor, spacing, tapTarget, text, useTheme, type ColorTokens } from '../theme';
+import { fontFor, serifFor, spacing, tapTarget, text, useTheme, type ColorTokens } from '../theme';
 import { BrandMark, ChevronForwardIcon } from '../components/icons';
 
 interface Props {
@@ -28,7 +28,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
     <ScrollView style={s.screen} contentContainerStyle={s.content}>
       <View style={s.brand}>
         <BrandMark size={40} color={colors.accent} cross={colors.bg} />
-        <Text style={[text.heading, fontFor('en', 'bold'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.3}>
+        <Text style={[text.heading, serifFor('en'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.3}>
           MedLingua
         </Text>
         <Text style={[text.body, fontFor('en'), s.tagline, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={2}>
@@ -36,7 +36,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
         </Text>
       </View>
 
-      <Text style={[text.caption, fontFor('en', 'semibold'), s.prompt, { color: colors.ink2 }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={2}>
+      <Text style={[text.label, fontFor('en', 'semibold'), s.prompt, { color: colors.ink2 }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={2}>
         {STRINGS.en.chooseLanguage}
       </Text>
 
@@ -54,7 +54,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
             style={({ pressed }) => [s.row, { borderBottomColor: colors.rule }, pressed && { backgroundColor: colors.surfacePressed }]}
           >
             <View style={s.rowText}>
-              <Text style={[text.title, fontFor(language.code, 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={[text.title, serifFor(language.code), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={2}>
                 {language.nativeName}
               </Text>
               <Text style={[text.caption, fontFor('en'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={2}>

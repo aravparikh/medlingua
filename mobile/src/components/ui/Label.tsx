@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
-import { fontFor, spacing, text, useTheme, type BilingualLabel, type ColorTokens, type Weight } from '../../theme';
+import { fontFor, serifFor, spacing, text, useTheme, type BilingualLabel, type ColorTokens, type Weight } from '../../theme';
 
 type Tone = 'ink' | 'ink2' | 'onAccent' | 'onInk' | 'danger' | 'caution';
 type Size = keyof typeof text;
@@ -15,6 +15,8 @@ interface Props extends BilingualLabel {
   tone?: Tone;
   align?: 'left' | 'center';
   numberOfLines?: number;
+  /** Set the primary line in the display serif. Focal text only. */
+  serif?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -50,6 +52,7 @@ export function Label({
   tone = 'ink',
   align = 'left',
   numberOfLines,
+  serif = false,
   style,
 }: Props) {
   const { colors } = useTheme();
@@ -60,11 +63,11 @@ export function Label({
   return (
     <View style={[styles.wrap, align === 'center' && styles.center, style]}>
       <Text
-        style={[text[size], fontFor(lang, weight), { color: tones.primary }, alignStyle]}
+        style={[text[size], serif ? serifFor(lang) : fontFor(lang, weight), { color: tones.primary }, alignStyle]}
         accessibilityLanguage={speechTag}
         numberOfLines={numberOfLines}
         allowFontScaling
-        maxFontSizeMultiplier={size === 'display' ? 1.4 : 2}
+        maxFontSizeMultiplier={size === 'focal' ? 1.4 : 2}
       >
         {primary}
       </Text>

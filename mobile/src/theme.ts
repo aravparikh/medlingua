@@ -1,23 +1,19 @@
 /**
- * MedLingua design system.
+ * MedLingua design system — "warm paper".
  *
  * THE IDEA, IN ONE SENTENCE
- * A bilingual clinic form set in type: white paper, black ink, one blue that
- * only ever means "tap this", hairline rules instead of boxes — and one
- * enormous live line that both people can read from across the room.
+ * A sheet of warm paper with one focal thing on it: the sentence, set large in
+ * a serif, in the reader's own script — everything else quiet, pill-shaped and
+ * out of the way, and a warm light that rises from the bottom of the screen
+ * whenever the app is listening or speaking.
  *
- * Every decision below derives from that. If something here can't be argued
- * back to "a well-run clinic's paperwork, alive", it doesn't belong.
+ * Ground is bone, not white; ink is warm near-black, not black. One accent, a
+ * dusty blue, and it only ever fills — never sets type, because at 1.57:1 on
+ * this ground it could not. The single warm hue in the app is the speaking
+ * bloom, which is decorative and carries no text.
  *
- * WHAT THIS IS NOT (each was the generic answer; each was replaced on purpose)
- *   cream paper + clay accent      → true white/black, one blue. Warm cream reads
- *                                    "wellness app"; a clinic form is white.
- *   cards with soft shadows        → hairline rules. Paper has no drop shadow.
- *   chat bubbles                   → a ledger of turns plus one live display line.
- *   "A · B" bilingual labels       → one reader-first label (see LABEL RULE).
- *   ALL-CAPS tracked eyebrows      → plain sentence-case captions.
- *   pill buttons                   → one control radius everywhere.
- *   shimmer skeletons              → a still "translating" line (see motion).
+ * Restraint is the rule: one focal element per screen, and never more than one
+ * accent-filled element visible at a time.
  *
  * RTL: not required — supported languages are es, zh, vi, hi, pa, ru. Adding
  * an RTL language would need I18nManager.forceRTL, start/end instead of
@@ -78,40 +74,54 @@ export interface ColorTokens {
 }
 
 export const lightColors: ColorTokens = {
-  bg: '#FFFFFF',
-  surface: '#F2F4F5',
-  surfacePressed: '#E4E8EA',
-  rule: '#D9DEE0',
-  border: '#6B757B',
-  ink: '#000000',
-  ink2: '#4A5257',
-  accent: '#1849C6',
-  onAccent: '#FFFFFF',
-  caution: '#9A4B00',
-  cautionBg: '#FFF1DC',
-  danger: '#B3261E',
-  dangerBg: '#FFE2DF',
-  overlay: 'rgba(0, 0, 0, 0.48)',
-  pain: ['#4A5257', '#C77700', '#B3261E', '#7A0F0A'],
+  bg: '#EFECE5',
+  surface: '#F7F5F0',
+  surfacePressed: '#E5E1D8',
+  rule: 'rgba(29, 28, 26, 0.10)',
+  border: 'rgba(29, 28, 26, 0.22)',
+  ink: '#1D1C1A',
+  // Not the mockup's #77726A: that is 4.05:1 on this ground, which is AA for
+  // large text only. Darkened until secondary text passes AA at body size.
+  ink2: '#635E56',
+  accent: '#A9C3CB',
+  onAccent: '#152227',
+  caution: '#8A4B12',
+  cautionBg: '#F6E6D5',
+  danger: '#8C2F1C',
+  dangerBg: '#F4DFD8',
+  overlay: 'rgba(29, 28, 26, 0.42)',
+  pain: ['#635E56', '#A8701E', '#8C2F1C', '#5E1A0C'],
 };
 
 export const darkColors: ColorTokens = {
-  bg: '#000000',
-  surface: '#1C1C1E',
-  surfacePressed: '#2C2C2E',
-  rule: '#3A3A3C',
-  border: '#8E8E93',
-  ink: '#FFFFFF',
-  ink2: '#A6ACB1',
-  accent: '#7FA8FF',
-  onAccent: '#000000',
-  caution: '#F2B24C',
-  cautionBg: '#2B1D06',
-  danger: '#FF7A70',
-  dangerBg: '#2E0F0D',
-  overlay: 'rgba(0, 0, 0, 0.64)',
-  pain: ['#A6ACB1', '#F2B24C', '#FF7A70', '#FF3B30'],
+  // Lamp-lit paper rather than an inversion: the warmth stays, the light goes.
+  bg: '#17150F',
+  surface: '#211E18',
+  surfacePressed: '#2C2820',
+  rule: 'rgba(242, 239, 232, 0.12)',
+  border: 'rgba(242, 239, 232, 0.28)',
+  ink: '#F2EFE8',
+  ink2: '#A8A29A',
+  accent: '#A9C3CB',
+  onAccent: '#152227',
+  caution: '#E8B57A',
+  cautionBg: '#2E2113',
+  danger: '#F0A08C',
+  dangerBg: '#2E1712',
+  overlay: 'rgba(0, 0, 0, 0.62)',
+  pain: ['#A8A29A', '#E8B57A', '#F0A08C', '#FF7A63'],
 };
+
+/**
+ * The speaking bloom — the warm light that rises while the app is listening or
+ * talking. Decorative only: it never carries text, which is why it is allowed
+ * to be the one warm hue in an otherwise cool palette. Dimmer in dark mode so
+ * the ink above it keeps its contrast against the ground.
+ */
+export const bloom = {
+  light: { inner: '#E8A288', outer: '#F2C4AD', control: '#FBE4D8', end: '#3A2019', peak: 0.95 },
+  dark: { inner: '#B4674A', outer: '#7A4230', control: '#3A2019', end: '#F2C4AD', peak: 0.55 },
+} as const;
 
 export type Scheme = 'light' | 'dark';
 
@@ -162,21 +172,51 @@ export const ROLE_EDGE_WIDTH = 3;
  * App.tsx and set `han` below to the family names.
  */
 export type Weight = 'regular' | 'semibold' | 'bold';
-type Script = 'latin' | 'devanagari' | 'gurmukhi' | 'han';
+type Script = 'latin' | 'cyrillic' | 'devanagari' | 'gurmukhi' | 'han';
 
 const SCRIPT_FOR_LANGUAGE: Record<string, Script> = {
   en: 'latin',
   es: 'latin',
   vi: 'latin',
-  ru: 'latin',
+  ru: 'cyrillic',
   hi: 'devanagari',
   pa: 'gurmukhi',
   zh: 'han',
 };
 
-/** Family names as registered by expo-font in App.tsx. `null` = system font. */
-const FAMILIES: Record<Script, Record<Weight, string> | null> = {
-  latin: { regular: 'NotoSans_400Regular', semibold: 'NotoSans_600SemiBold', bold: 'NotoSans_700Bold' },
+/**
+ * Two families, one voice.
+ *
+ * DISPLAY is a serif, used only for focal text: the live translation, screen
+ * titles, a language's own name. UI is Manrope, for everything else.
+ *
+ * Instrument Serif is the display face — but it is Latin-only, so it cannot
+ * set four of the six patient languages. Each script therefore gets the serif
+ * drawn for it, which is the closest thing to "one serif" that actually exists
+ * across these writing systems:
+ *
+ *   latin       en es vi   Instrument Serif       the reference face
+ *   cyrillic    ru         Noto Serif             Instrument Serif has no Cyrillic
+ *   devanagari  hi         Noto Serif Devanagari
+ *   gurmukhi    pa         Noto Serif Gurmukhi
+ *   han         zh         system serif           Noto Serif CJK costs ~30MB
+ *
+ * A patient never sees two of these at once — their language sets the whole
+ * screen — so the differences between them are invisible in use. `null` means
+ * the system font, selected by weight.
+ */
+const DISPLAY_FAMILIES: Record<Script, string | null> = {
+  latin: 'InstrumentSerif_400Regular',
+  cyrillic: 'NotoSerif_400Regular',
+  devanagari: 'NotoSerifDevanagari_400Regular',
+  gurmukhi: 'NotoSerifGurmukhi_400Regular',
+  han: null,
+};
+
+const UI_FAMILIES: Record<Script, Record<Weight, string> | null> = {
+  latin: { regular: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' },
+  // Manrope covers Cyrillic, so Russian keeps the reference UI face.
+  cyrillic: { regular: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' },
   devanagari: {
     regular: 'NotoSansDevanagari_400Regular',
     semibold: 'NotoSansDevanagari_600SemiBold',
@@ -191,34 +231,42 @@ const FAMILIES: Record<Script, Record<Weight, string> | null> = {
 };
 
 const SYSTEM_WEIGHT: Record<Weight, NonNullable<TextStyle['fontWeight']>> = {
-  regular: '400',
+  regular: '500',
   semibold: '600',
   bold: '700',
 };
 
-/**
- * The font for text in a given language at a given weight. Returns a style
- * fragment rather than a family name because a bundled cut encodes weight in
- * its family name while a system font takes `fontWeight` — callers spread it
- * and never need to know which they got.
- */
+function scriptOf(languageCode: string): Script {
+  return SCRIPT_FOR_LANGUAGE[languageCode] ?? 'latin';
+}
+
+/** UI face for a language: labels, buttons, body copy. */
 export function fontFor(languageCode: string, weight: Weight = 'regular'): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
-  const family = FAMILIES[SCRIPT_FOR_LANGUAGE[languageCode] ?? 'latin'];
+  const family = UI_FAMILIES[scriptOf(languageCode)];
   return family ? { fontFamily: family[weight] } : { fontWeight: SYSTEM_WEIGHT[weight] };
 }
 
 /**
- * Five sizes. Body is 17 (the brief's floor); nothing is set under 15.
- * `display` is the live translation and the only size meant to be read from
- * standing height. Line heights are fixed per size so mixed-script lines
- * (Latin next to Devanagari) don't jitter.
+ * Display face for a language — focal text only. These serifs ship one weight
+ * by design: emphasis comes from size, never from a bolder cut.
+ */
+export function serifFor(languageCode: string): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
+  const family = DISPLAY_FAMILIES[scriptOf(languageCode)];
+  return family ? { fontFamily: family } : { fontWeight: '400' };
+}
+
+/**
+ * Type scale. `focal` is the live translation and the one size meant to be
+ * read across a room. `label` is the uppercase micro-label — the only text
+ * allowed under 15pt, and never used for content a patient has to read.
  */
 export const text = {
-  caption: { fontSize: 15, lineHeight: 20 },
-  body: { fontSize: 17, lineHeight: 24 },
-  title: { fontSize: 22, lineHeight: 28 },
-  heading: { fontSize: 28, lineHeight: 34 },
-  display: { fontSize: 44, lineHeight: 50 },
+  label: { fontSize: 11, lineHeight: 14, letterSpacing: 1.1, textTransform: 'uppercase' as const },
+  caption: { fontSize: 15, lineHeight: 21 },
+  body: { fontSize: 17, lineHeight: 25 },
+  title: { fontSize: 22, lineHeight: 29 },
+  heading: { fontSize: 26, lineHeight: 32 },
+  focal: { fontSize: 34, lineHeight: 41 },
 } as const;
 
 /* ─────────────────────────── Label rule ─────────────────────────── */
@@ -259,14 +307,22 @@ export const spacing = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 48,
  * step scale and the pill shape collapse onto these two. Delete in step 3.
  */
 export const radius = {
-  control: 12,
-  sheet: 20,
-  /** @deprecated */ sm: 12,
-  /** @deprecated */ md: 12,
-  /** @deprecated */ lg: 20,
-  /** @deprecated */ xl: 20,
-  /** @deprecated */ pill: 999,
+  /** Every button and chip. The mockup's 99px, which is any large number. */
+  pill: 999,
+  /** Cards, panels, and text fields. */
+  card: 18,
+  /** Sheets that slide over the page. */
+  sheet: 22,
+  /** @deprecated transitional aliases — see the fence below. */
+  control: 999,
+  /** @deprecated */ sm: 18,
+  /** @deprecated */ md: 18,
+  /** @deprecated */ lg: 22,
+  /** @deprecated */ xl: 22,
 } as const;
+
+/** Ghost buttons: a hairline circle with a translucent fill, no shadow. */
+export const ghost = { size: 44, small: 38 } as const;
 
 /** Tap targets: 48 is the floor; patient-facing primary actions use 64. */
 export const tapTarget = { min: 48, primary: 64 } as const;
@@ -277,11 +333,20 @@ export const tapTarget = { min: 48, primary: 64 } as const;
  */
 export const elevation = {
   none: {},
+  /** The one drop shadow: the primary call to action, and nothing else. */
+  cta: {
+    shadowColor: '#1D1C1A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  /** A sheet lifted over the page reads as "above" without a visible edge. */
   sheet: {
-    shadowColor: '#000000',
+    shadowColor: '#1D1C1A',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    shadowOpacity: 0.10,
+    shadowRadius: 14,
     elevation: 8,
   },
 } as const;

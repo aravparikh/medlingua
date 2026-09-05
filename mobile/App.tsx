@@ -4,11 +4,11 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AudioModule } from 'expo-audio';
 import { useFonts } from 'expo-font';
-import {
-  NotoSans_400Regular,
-  NotoSans_600SemiBold,
-  NotoSans_700Bold,
-} from '@expo-google-fonts/noto-sans';
+import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif';
+import { Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold } from '@expo-google-fonts/manrope';
+import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
+import { NotoSerifDevanagari_400Regular } from '@expo-google-fonts/noto-serif-devanagari';
+import { NotoSerifGurmukhi_400Regular } from '@expo-google-fonts/noto-serif-gurmukhi';
 import {
   NotoSansDevanagari_400Regular,
   NotoSansDevanagari_600SemiBold,
@@ -19,8 +19,8 @@ import {
   NotoSansGurmukhi_600SemiBold,
   NotoSansGurmukhi_700Bold,
 } from '@expo-google-fonts/noto-sans-gurmukhi';
-// Simplified Chinese deliberately uses the system CJK face (PingFang SC / Noto
-// Sans CJK): bundling Noto Sans SC costs 30 MB for three weights. See theme.ts.
+// Simplified Chinese deliberately uses the system CJK faces: bundling Noto
+// Serif CJK and Noto Sans SC would cost ~60MB between them. See theme.ts.
 
 import { getLanguage, type Language } from './src/config/languages';
 import { loadPrefs, savePrefs } from './src/services/storage';
@@ -39,10 +39,15 @@ type Screen = 'languages' | 'conversation' | 'about';
  */
 export default function App() {
   // Every script cut loads here, once, behind the splash — never per screen.
+  // Every face loads here, once, behind the splash — never per screen.
   const [fontsLoaded, fontError] = useFonts({
-    NotoSans_400Regular,
-    NotoSans_600SemiBold,
-    NotoSans_700Bold,
+    InstrumentSerif_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    NotoSerif_400Regular,
+    NotoSerifDevanagari_400Regular,
+    NotoSerifGurmukhi_400Regular,
     NotoSansDevanagari_400Regular,
     NotoSansDevanagari_600SemiBold,
     NotoSansDevanagari_700Bold,

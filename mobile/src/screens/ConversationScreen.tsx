@@ -51,6 +51,7 @@ import { Label } from '../components/ui/Label';
 import { ErrorNotice, HeldNotice, Translating } from '../components/conversation/Notices';
 import { PhraseSheet } from '../components/conversation/PhraseSheet';
 import { RecordingPanel } from '../components/conversation/RecordingPanel';
+import { SpeakingBloom } from '../components/conversation/SpeakingBloom';
 import { ScanSheet } from '../components/conversation/ScanSheet';
 import { TeachBackDialog } from '../components/conversation/TeachBackDialog';
 import { LedgerRow, LiveLine } from '../components/conversation/Turns';
@@ -945,8 +946,14 @@ export function ConversationScreen({
   const pastTurns = latestTurn ? turns.filter((turn) => turn.id !== latestTurn.id) : turns;
   const pendingRole = speaker == null || speaker.code === 'en' ? 'clinician' : 'patient';
 
+  // The warm light is on whenever the app has the floor: hearing someone, or
+  // speaking a translation aloud. Not while it is merely thinking.
+  const voiceActive = phase === 'listening' || phase === 'speaking';
+
   return (
     <View style={s.screen}>
+      <SpeakingBloom active={voiceActive} level={meterLevel} />
+
       {/* Header: the patient's language, the auto-detect toggle, about. */}
       <View style={s.header}>
         <Button
