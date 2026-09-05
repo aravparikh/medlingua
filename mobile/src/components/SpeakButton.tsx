@@ -1,31 +1,33 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { MicIcon, SparkleIcon } from './icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { colors, displayFontFor, fonts, radius, shadows, spacing, type } from '../theme';
-import { PressableScale } from './PressableScale';
+import { fontFor, radius, spacing, text, useTheme } from '../theme';
+import { MicIcon } from './icons';
 
 interface Props {
   language: Language;
   disabled: boolean;
   fill: string;
   fillPressed: string;
+  /** Text/icon colour on `fill`. Defaults to the scheme's onAccent. */
+  onFill?: string;
   /** Fires on touch-down so recording starts the instant the finger lands. */
   onStart: () => void;
 }
 
 /**
- * One of the two big per-language speak buttons. A single tap starts
- * recording — the conversation screen then swaps the whole bottom area for the
- * recording panel (live level meter + a giant Done button), so there is no
- * hold gesture to maintain and no precision required to stop.
+ * One of the two big speak buttons. Labelled ONCE, in its own speaker's
+ * language — the clinician's says "Speak English", the patient's is in the
+ * patient's script. Nobody needs to read the other one's button.
  */
-export function SpeakButton({ language, disabled, fill, fillPressed, onStart }: Props) {
+export function SpeakButton({ language, disabled, fill, fillPressed, onFill, onStart }: Props) {
+  const { colors } = useTheme();
   const strings = t(language.code);
+  const ink = onFill ?? colors.onAccent;
 
   return (
-    <PressableScale
+    <Pressable
       onPressIn={onStart}
       disabled={disabled}
       accessibilityRole="button"
@@ -33,24 +35,17 @@ export function SpeakButton({ language, disabled, fill, fillPressed, onStart }: 
       accessibilityHint={strings.holdAndSpeak}
       accessibilityState={{ disabled }}
       accessibilityLanguage={language.speechTag}
-      flexFill
-      style={[styles.outer, disabled && styles.dimmed]}
+      style={({ pressed }) => [styles.button, { backgroundColor: pressed ? fillPressed : fill }, disabled && styles.disabled]}
     >
-      {({ pressed }) => (
-        <View style={[styles.inner, { backgroundColor: pressed ? fillPressed : fill }]}>
-          <View style={styles.iconCircle} importantForAccessibility="no">
-            <MicIcon  size={26} color={colors.onPrimary} />
-          </View>
-          <Text
-            style={[styles.label, { fontFamily: displayFontFor(language.code) }]}
-            allowFontScaling
-            maxFontSizeMultiplier={1.3}
-          >
-            {language.speakLabel}
-          </Text>
-        </View>
-      )}
-    </PressableScale>
+      <MicIcon size={28} color={ink} />
+      <Text
+        style={[text.title, fontFor(language.code, 'semibold'), { color: ink }, styles.label]}
+        allowFontScaling
+        maxFontSizeMultiplier={1.3}
+      >
+        {language.speakLabel}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -60,90 +55,62 @@ interface AutoProps {
   onStart: () => void;
 }
 
-/**
- * The single speak button for auto-detect mode: either person taps it and
- * Whisper works out which language was spoken, so it is labeled in both.
- */
+/** Auto-detect: either person taps it, so it carries both languages — patient first. */
 export function AutoSpeakButton({ otherLanguage, disabled, onStart }: AutoProps) {
+  const { colors } = useTheme();
   const en = t('en');
   const other = t(otherLanguage.code);
 
   return (
-    <PressableScale
+    <Pressable
       onPressIn={onStart}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={`${other.speakAuto} — ${en.speakAuto}`}
-      accessibilityHint={`${other.holdAndSpeak} — ${en.holdAndSpeak}`}
+      accessibilityLabel={`${other.speakAuto}. ${en.speakAuto}`}
+      accessibilityHint={`${other.holdAndSpeak}. ${en.holdAndSpeak}`}
       accessibilityState={{ disabled }}
-      flexFill
-      style={[styles.outer, disabled && styles.dimmed]}
+      style={({ pressed }) => [
+        styles.button,
+        { backgroundColor: colors.accent },
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+      ]}
     >
-      {({ pressed }) => (
-        <View
-          style={[styles.inner, { backgroundColor: pressed ? colors.primaryPressed : colors.primary }]}
+      <MicIcon size={28} color={colors.onAccent} />
+      <View style={styles.stack}>
+        <Text
+          style={[text.title, fontFor(otherLanguage.code, 'semibold'), { color: colors.onAccent }, styles.label]}
+          accessibilityLanguage={otherLanguage.speechTag}
+          allowFontScaling
+          maxFontSizeMultiplier={1.3}
         >
-          <View style={styles.iconCircle} importantForAccessibility="no">
-            <MicIcon  size={26} color={colors.onPrimary} />
-          </View>
-          <Text style={styles.label} allowFontScaling maxFontSizeMultiplier={1.3}>
-            {other.speakAuto} · {en.speakAuto}
-          </Text>
-          <View style={styles.autoBadge} importantForAccessibility="no">
-            <SparkleIcon  size={13} color={colors.onPrimary} />
-            <Text style={styles.autoBadgeText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {otherLanguage.nativeName} · English
-            </Text>
-          </View>
-        </View>
-      )}
-    </PressableScale>
+          {other.speakAuto}
+        </Text>
+        <Text style={[text.caption, fontFor('en'), { color: colors.onAccent }, styles.secondary]} allowFontScaling maxFontSizeMultiplier={1.3}>
+          {en.speakAuto}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  outer: {
-    borderRadius: radius.xl,
-    ...shadows.raised,
-  },
-  dimmed: {
-    opacity: 0.4,
-  },
-  inner: {
-    minHeight: 148,
-    borderRadius: radius.xl,
+  button: {
+    // NOT flex:1 — see PressableScale for the Yoga zero-height bug on device.
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    minHeight: 132,
+    borderRadius: radius.control,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
-    gap: spacing.xs,
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.onPrimaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    color: colors.onPrimary,
-    fontFamily: fonts.displayMedium,
-    fontSize: type.button,
-    textAlign: 'center',
-  },
-  autoBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    backgroundColor: colors.onPrimaryTint,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-  },
-  autoBadgeText: {
-    color: colors.onPrimary,
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-  },
+  stack: { alignItems: 'center', gap: spacing.xxs },
+  label: { textAlign: 'center' },
+  secondary: { opacity: 0.8, textAlign: 'center' },
+  pressed: { opacity: 0.85 },
+  disabled: { opacity: 0.4 },
 });
