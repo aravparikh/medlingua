@@ -21,7 +21,7 @@
  * direction.
  */
 
-import { useColorScheme, type TextStyle } from 'react-native';
+import { Platform, useColorScheme, type TextStyle } from 'react-native';
 
 /* ───────────────────────────── Colour ───────────────────────────── */
 
@@ -67,6 +67,16 @@ export interface ColorTokens {
   /** Scrim behind sheets. */
   overlay: string;
   /**
+   * Editorial layer. Rules do the structural work here instead of cards, so
+   * `hairline` is heavier than `rule` — it is a drawn line, not a separator
+   * you are meant to look past.
+   */
+  hairline: string;
+  /** The one solid bar in the app: the primary action. */
+  ctaFill: string;
+  /** Crisp warm white on the CTA. Never beige on dark. */
+  onCta: string;
+  /**
    * Pain intensity 0–10 as four stops: none → mild → moderate → severe.
    * Same "warmer is worse" rule as the safeguard, so one legend serves both.
    */
@@ -90,6 +100,9 @@ export const lightColors: ColorTokens = {
   danger: '#8C2F1C',
   dangerBg: '#F4DFD8',
   overlay: 'rgba(29, 28, 26, 0.42)',
+  hairline: 'rgba(29, 28, 26, 0.18)',
+  ctaFill: '#2B3A45',
+  onCta: '#FFFDF8',
   pain: ['#635E56', '#A8701E', '#8C2F1C', '#5E1A0C'],
 };
 
@@ -109,6 +122,10 @@ export const darkColors: ColorTokens = {
   danger: '#F0A08C',
   dangerBg: '#2E1712',
   overlay: 'rgba(0, 0, 0, 0.62)',
+  hairline: 'rgba(242, 239, 232, 0.20)',
+  // Lifted from #2B3A45 so the bar still separates from a near-black ground.
+  ctaFill: '#33454F',
+  onCta: '#FFFDF8',
   pain: ['#A8A29A', '#E8B57A', '#F0A08C', '#FF7A63'],
 };
 
@@ -362,6 +379,12 @@ export const motion = {
    */
   pulse: 1100,
 } as const;
+
+/**
+ * Row numerals in the action index. The system monospace, so no extra font
+ * download for eight glyphs.
+ */
+export const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
 /** Icon stroke geometry (components/icons): 24-grid, round caps/joins. */
 export const strokes = { icon: 2.5, iconSmall: 3 } as const;

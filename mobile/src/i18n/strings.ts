@@ -109,6 +109,10 @@ export interface UIStrings {
   gateEscalateTitle: string;
   gateEscalateBody: string;
   gateSayAgain: string;
+  // Editorial layer
+  oneLanguage: string;
+  detect: string;
+  privacyShort: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -207,6 +211,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: 'Ask for an interpreter',
     gateEscalateBody: 'This is not translating reliably. Please ask the staff for a medical interpreter.',
     gateSayAgain: 'Say it again',
+    oneLanguage: 'One language',
+    detect: 'Detect',
+    privacyShort: 'Nothing is saved',
   },
   es: {
     listening: 'Escuchando…',
@@ -303,6 +310,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: 'Pida un intérprete',
     gateEscalateBody: 'La traducción no está saliendo confiable. Pida al personal un intérprete médico.',
     gateSayAgain: 'Dígalo otra vez',
+    oneLanguage: 'Un idioma',
+    detect: 'Detectar',
+    privacyShort: 'Nada se guarda',
   },
   zh: {
     listening: '正在聆听…',
@@ -399,6 +409,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: '请求口译员',
     gateEscalateBody: '翻译不够可靠。请向工作人员要一位医疗口译员。',
     gateSayAgain: '再说一次',
+    oneLanguage: '单一语言',
+    detect: '自动识别',
+    privacyShort: '不保存任何内容',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -495,6 +508,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: 'Xin một thông dịch viên',
     gateEscalateBody: 'Bản dịch chưa đáng tin cậy. Xin hỏi nhân viên về thông dịch viên y tế.',
     gateSayAgain: 'Nói lại',
+    oneLanguage: 'Một ngôn ngữ',
+    detect: 'Tự động',
+    privacyShort: 'Không lưu gì cả',
   },
   ru: {
     listening: 'Слушаю…',
@@ -591,6 +607,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: 'Попросите переводчика',
     gateEscalateBody: 'Перевод получается ненадёжным. Попросите у персонала медицинского переводчика.',
     gateSayAgain: 'Скажите ещё раз',
+    oneLanguage: 'Один язык',
+    detect: 'Определять',
+    privacyShort: 'Ничего не сохраняется',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -688,6 +707,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: 'दुभाषिया माँगें',
     gateEscalateBody: 'अनुवाद भरोसेमंद नहीं हो रहा। कृपया स्टाफ़ से मेडिकल दुभाषिया माँगें।',
     gateSayAgain: 'फिर से कहें',
+    oneLanguage: 'एक भाषा',
+    detect: 'पहचानें',
+    privacyShort: 'कुछ भी सेव नहीं होता',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -785,6 +807,9 @@ export const STRINGS: Record<string, UIStrings> = {
     gateEscalateTitle: 'ਦੁਭਾਸ਼ੀਆ ਮੰਗੋ',
     gateEscalateBody: 'ਅਨੁਵਾਦ ਭਰੋਸੇਯੋਗ ਨਹੀਂ ਹੋ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਸਟਾਫ਼ ਤੋਂ ਮੈਡੀਕਲ ਦੁਭਾਸ਼ੀਆ ਮੰਗੋ।',
     gateSayAgain: 'ਫਿਰ ਕਹੋ',
+    oneLanguage: 'ਇੱਕ ਭਾਸ਼ਾ',
+    detect: 'ਪਛਾਣੋ',
+    privacyShort: 'ਕੁਝ ਵੀ ਸੇਵ ਨਹੀਂ ਹੁੰਦਾ',
   },
 };
 

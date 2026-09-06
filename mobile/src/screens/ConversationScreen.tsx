@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import {
   AudioModule,
   createAudioPlayer,
@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { CameraIcon, ChatIcon, CloudOffIcon, DocumentIcon, InfoIcon, LanguageIcon, PencilIcon, SparkleIcon } from '../components/icons';
+import { CloudOffIcon, DocumentIcon, InfoIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -45,7 +45,7 @@ import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { RightsCard } from '../components/RightsCard';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
-import { AutoSpeakButton, SpeakButton } from '../components/SpeakButton';
+import { ActionIndex, Masthead, ModeControl, PrivacyLine, SpeakBar } from '../components/editorial/Editorial';
 import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
 import { ErrorNotice, HeldNotice, Translating } from '../components/conversation/Notices';
@@ -955,38 +955,13 @@ export function ConversationScreen({
       <SpeakingBloom active={voiceActive} level={meterLevel} />
 
       {/* Header: the patient's language, the auto-detect toggle, about. */}
-      <View style={s.header}>
-        <Button
-          label={{ primary: otherLanguage.nativeName }}
-          lang={otherLanguage.code}
-          speechTag={otherLanguage.speechTag}
-          variant="quiet"
-          icon={<LanguageIcon size={22} color={colors.ink} />}
-          onPress={onChangeLanguage}
-          disabled={busy}
-          accessibilityLabel={`${other.changeLanguage}. ${en.changeLanguage}`}
-          style={s.headerLanguage}
-        />
-        <Pressable
-          onPress={toggleAutoMode}
-          disabled={busy}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: autoMode, disabled: busy }}
-          accessibilityLabel={`${other.auto}. ${en.auto}`}
-          style={({ pressed }) => [s.iconButton, autoMode && { backgroundColor: colors.surface }, pressed && { backgroundColor: colors.surfacePressed }, busy && s.disabled]}
-        >
-          <SparkleIcon size={22} color={autoMode ? colors.accent : colors.ink2} />
-        </Pressable>
-        <Pressable
-          onPress={onShowAbout}
-          disabled={busy}
-          accessibilityRole="button"
-          accessibilityLabel={`${other.about}. ${en.about}`}
-          style={({ pressed }) => [s.iconButton, pressed && { backgroundColor: colors.surfacePressed }, busy && s.disabled]}
-        >
-          <InfoIcon size={22} color={colors.ink2} />
-        </Pressable>
-      </View>
+      <Masthead
+        language={otherLanguage}
+        detecting={autoMode}
+        disabled={busy}
+        onChangeLanguage={onChangeLanguage}
+        onSettings={onShowAbout}
+      />
 
       {offline ? (
         <Appear style={s.banner} accessibilityLiveRegion="polite">
@@ -1142,77 +1117,86 @@ export function ConversationScreen({
         </Appear>
       ) : (
         <>
-          <View style={s.tools}>
-            <Button
-              label={bilingual(other.quickPhrasesShort, en.quickPhrasesShort)}
-              lang={otherLanguage.code}
-              speechTag={otherLanguage.speechTag}
-              variant="outline"
-              stacked
-              flex
-              icon={<ChatIcon size={22} color={colors.ink} />}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setPhrasesOpen(true);
-              }}
-              disabled={busy}
-              accessibilityLabel={`${other.quickPhrases}. ${en.quickPhrases}`}
-            />
-            <Button
-              label={bilingual(other.typeLabel, en.typeLabel)}
-              lang={otherLanguage.code}
-              speechTag={otherLanguage.speechTag}
-              variant="outline"
-              stacked
-              flex
-              icon={<PencilIcon size={22} color={colors.ink} />}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setNameMode(false);
-                setTypeOpen(true);
-              }}
-              disabled={busy || offline}
-            />
-            <Button
-              label={bilingual(other.scanLabel, en.scanLabel)}
-              lang={otherLanguage.code}
-              speechTag={otherLanguage.speechTag}
-              variant="outline"
-              stacked
-              flex
-              icon={<CameraIcon size={22} color={colors.ink} />}
-              onPress={openScanner}
-              disabled={busy || offline}
-              accessibilityLabel={`${other.scanTitle}. ${en.scanTitle}`}
-            />
-          </View>
+          <ModeControl
+            language={otherLanguage}
+            auto={autoMode}
+            disabled={busy}
+            onSelect={(next) => {
+              if (next !== autoMode) toggleAutoMode();
+            }}
+          />
 
-          <View style={s.speak}>
+          <ActionIndex
+            lang={otherLanguage.code}
+            speechTag={otherLanguage.speechTag}
+            rows={[
+              {
+                key: 'phrases',
+                name: other.quickPhrasesShort,
+                english: en.quickPhrasesShort,
+                disabled: busy,
+                onPress: () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPhrasesOpen(true);
+                },
+              },
+              {
+                key: 'type',
+                name: other.typeLabel,
+                english: en.typeLabel,
+                disabled: busy || offline,
+                onPress: () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setNameMode(false);
+                  setTypeOpen(true);
+                },
+              },
+              {
+                key: 'scan',
+                name: other.scanLabel,
+                english: en.scanLabel,
+                disabled: busy || offline,
+                onPress: openScanner,
+              },
+            ]}
+          />
+
+          {/* Auto-detect is one bar, as drawn. Two-language mode keeps a bar
+             each: the design shows a single direction, but this app has to let
+             either person speak, and dropping the clinician's button to match a
+             mockup would remove half the conversation. */}
+          <View style={s.bars}>
             {autoMode ? (
-              <AutoSpeakButton otherLanguage={otherLanguage} disabled={phase === 'translating' || offline} onStart={() => startTap(null)} />
+              <SpeakBar
+                name={other.speakAuto}
+                lang={otherLanguage.code}
+                speechTag={otherLanguage.speechTag}
+                sub="AUTO-DETECT LANGUAGE"
+                disabled={phase === 'translating' || offline}
+                onPress={() => startTap(null)}
+              />
             ) : (
               <>
-                <SpeakButton
-                  language={ENGLISH}
+                <SpeakBar
+                  name={other.speakAuto}
+                  lang={otherLanguage.code}
+                  speechTag={otherLanguage.speechTag}
+                  sub={`${otherLanguage.nativeName.toUpperCase()} → ENGLISH`}
                   disabled={phase === 'translating' || offline}
-                  fill={colors.accent}
-                  fillPressed={colors.accent}
-                  onFill={colors.onAccent}
-                  onStart={() => startTap(ENGLISH)}
+                  onPress={() => startTap(otherLanguage)}
                 />
-                <SpeakButton
-                  language={otherLanguage}
+                <SpeakBar
+                  name={en.speakAuto}
+                  lang="en"
+                  sub={`ENGLISH → ${otherLanguage.nativeName.toUpperCase()}`}
                   disabled={phase === 'translating' || offline}
-                  fill={colors.ink}
-                  fillPressed={colors.ink}
-                  onFill={colors.bg}
-                  onStart={() => startTap(otherLanguage)}
+                  onPress={() => startTap(ENGLISH)}
                 />
               </>
             )}
           </View>
 
-          <Label {...bilingual(other.privacyLine, en.privacyLine)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="caption" tone="ink2" align="center" style={s.privacy} />
+          <PrivacyLine language={otherLanguage} />
         </>
       )}
 
@@ -1304,7 +1288,7 @@ const makeStyles = (c: ColorTokens) =>
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     live: { marginTop: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
-    tools: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm },
-    speak: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+    bars: { gap: spacing.xs, marginBottom: spacing.sm },
+
     privacy: { alignSelf: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   });
