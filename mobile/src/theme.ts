@@ -130,14 +130,17 @@ export const darkColors: ColorTokens = {
 };
 
 /**
- * The speaking bloom — the warm light that rises while the app is listening or
- * talking. Decorative only: it never carries text, which is why it is allowed
- * to be the one warm hue in an otherwise cool palette. Dimmer in dark mode so
- * the ink above it keeps its contrast against the ground.
+ * The speaking bloom — the light that rises while the app is listening or
+ * talking. Decorative only: it never carries text, which is what lets it be
+ * this saturated without a contrast problem.
+ *
+ * Drawn from the mark's own blues rather than a warm hue, so the one colour
+ * that moves belongs to the same family as the one colour that fills. Dimmer
+ * in dark mode so the ink above it keeps its contrast against the ground.
  */
 export const bloom = {
-  light: { inner: '#E8A288', outer: '#F2C4AD', control: '#FBE4D8', end: '#3A2019', peak: 0.95 },
-  dark: { inner: '#B4674A', outer: '#7A4230', control: '#3A2019', end: '#F2C4AD', peak: 0.55 },
+  light: { inner: '#6E97A3', outer: '#A9C3CB', control: '#DCE8EB', end: '#1B2A31', peak: 1 },
+  dark: { inner: '#41666F', outer: '#2B4A54', control: '#22343A', end: '#A9C3CB', peak: 0.62 },
 } as const;
 
 export type Scheme = 'light' | 'dark';

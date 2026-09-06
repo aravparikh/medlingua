@@ -18,10 +18,10 @@ interface Props {
 }
 
 /** How much of the screen the light reaches, feathered to nothing at the top. */
-const BLOOM_HEIGHT_RATIO = 0.42;
-const BREATH_MS = 2200;
+const BLOOM_HEIGHT_RATIO = 0.46;
+const BREATH_MS = 1700;
 /** The second layer runs slower and out of phase so the colour drifts. */
-const DRIFT_MS = 5100;
+const DRIFT_MS = 3900;
 
 /**
  * The speaking presence: a warm light rising from the bottom of the screen
@@ -83,7 +83,7 @@ export function SpeakingBloom({ active, level }: Props) {
   useEffect(() => {
     Animated.timing(amplitude, {
       toValue: level == null ? 0 : Math.min(1, Math.max(0, level)),
-      duration: 110,
+      duration: 90,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
@@ -96,18 +96,27 @@ export function SpeakingBloom({ active, level }: Props) {
   const scale = reducedMotion
     ? 1
     : Animated.add(
-        breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }),
-        amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.26] }),
+        breath.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1.16] }),
+        amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.34] }),
       );
   const opacity = Animated.multiply(
     presence,
     reducedMotion
       ? staticPeak
       : Animated.add(
-          breath.interpolate({ inputRange: [0, 1], outputRange: [0.55 * palette.peak, 0.8 * palette.peak] }),
-          amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.4] }),
+          breath.interpolate({ inputRange: [0, 1], outputRange: [0.45 * palette.peak, 0.78 * palette.peak] }),
+          amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.45] }),
         ),
   );
+  /** Peaks lift the light instead of only widening it. */
+  const rise = reducedMotion
+    ? 0
+    : amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, -26] });
+  /** The second layer slides laterally, so the two never move as one shape. */
+  const sway = reducedMotion
+    ? 0
+    : drift.interpolate({ inputRange: [0, 1], outputRange: [-16, 16] });
+
   const driftOpacity = Animated.multiply(
     presence,
     reducedMotion
@@ -123,10 +132,10 @@ export function SpeakingBloom({ active, level }: Props) {
       importantForAccessibility="no"
       accessibilityElementsHidden
     >
-      <AnimatedView style={[styles.layer, { opacity, transform: [{ scale }] }]}>
+      <AnimatedView style={[styles.layer, { opacity, transform: [{ translateY: rise }, { scale }] }]}>
         <Gradient from={palette.inner} to={colors.bg} />
       </AnimatedView>
-      <AnimatedView style={[styles.layer, styles.drift, { opacity: driftOpacity }]}>
+      <AnimatedView style={[styles.layer, styles.drift, { opacity: driftOpacity, transform: [{ translateX: sway }, { scale: 1.08 }] }]}>
         <Gradient from={palette.outer} to={colors.bg} />
       </AnimatedView>
     </View>
@@ -144,8 +153,9 @@ function Gradient({ from, to }: { from: string; to: string }) {
     <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
       <Defs>
         <RadialGradient id={id} cx="50%" cy="100%" rx="80%" ry="100%">
-          <Stop offset="0%" stopColor={from} stopOpacity={0.95} />
-          <Stop offset="45%" stopColor={from} stopOpacity={0.45} />
+          <Stop offset="0%" stopColor={from} stopOpacity={1} />
+          <Stop offset="38%" stopColor={from} stopOpacity={0.72} />
+          <Stop offset="70%" stopColor={from} stopOpacity={0.3} />
           <Stop offset="100%" stopColor={to} stopOpacity={0} />
         </RadialGradient>
       </Defs>
