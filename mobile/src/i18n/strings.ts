@@ -113,6 +113,8 @@ export interface UIStrings {
   oneLanguage: string;
   detect: string;
   privacyShort: string;
+  /** Tag on the language already chosen, shown in that language. */
+  chosen: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -214,6 +216,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: 'One language',
     detect: 'Detect',
     privacyShort: 'Nothing is saved',
+    chosen: 'Chosen',
   },
   es: {
     listening: 'Escuchando…',
@@ -313,6 +316,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: 'Un idioma',
     detect: 'Detectar',
     privacyShort: 'Nada se guarda',
+    chosen: 'Elegido',
   },
   zh: {
     listening: '正在聆听…',
@@ -412,6 +416,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: '单一语言',
     detect: '自动识别',
     privacyShort: '不保存任何内容',
+    chosen: '已选择',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -511,6 +516,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: 'Một ngôn ngữ',
     detect: 'Tự động',
     privacyShort: 'Không lưu gì cả',
+    chosen: 'Đã chọn',
   },
   ru: {
     listening: 'Слушаю…',
@@ -610,6 +616,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: 'Один язык',
     detect: 'Определять',
     privacyShort: 'Ничего не сохраняется',
+    chosen: 'Выбрано',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -710,6 +717,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: 'एक भाषा',
     detect: 'पहचानें',
     privacyShort: 'कुछ भी सेव नहीं होता',
+    chosen: 'चुना गया',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -810,6 +818,7 @@ export const STRINGS: Record<string, UIStrings> = {
     oneLanguage: 'ਇੱਕ ਭਾਸ਼ਾ',
     detect: 'ਪਛਾਣੋ',
     privacyShort: 'ਕੁਝ ਵੀ ਸੇਵ ਨਹੀਂ ਹੁੰਦਾ',
+    chosen: 'ਚੁਣਿਆ',
   },
 };
 

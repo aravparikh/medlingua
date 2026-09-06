@@ -1,4 +1,5 @@
-import { Circle, Path } from 'react-native-svg';
+import { View, type ViewProps } from 'react-native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { useTheme } from '../../theme';
 import { IconBase, type IconProps } from './Icon';
@@ -44,5 +45,28 @@ export function SealMark({ size = 52, color, ...rest }: IconProps) {
       <Circle cx={12} cy={12} r={7.6} strokeWidth={1.6} strokeDasharray="0.1 2.9" />
       <Path d="M12 8.8v6.4M8.8 12h6.4" />
     </IconBase>
+  );
+}
+
+/**
+ * The wave mark: five bars and a crossbar that read as a waveform and a
+ * medical cross at once. Fills only, no strokes, so it stays legible at 16px.
+ *
+ * The three colours are fixed rather than themed — this is a logo, and a logo
+ * that changes hue between light and dark is two logos. It sits on the ground
+ * unboxed: no circle, badge, or bubble around it.
+ */
+export function WaveMark({ size = 40, ...rest }: { size?: number } & ViewProps) {
+  return (
+    <View style={{ width: size, height: size }} importantForAccessibility="no" accessibilityElementsHidden {...rest}>
+      <Svg width={size} height={size} viewBox="0 0 64 64">
+        <Rect x={6} y={28} width={6} height={8} rx={3} fill="#7FA3AD" />
+        <Rect x={17} y={22} width={6} height={20} rx={3} fill="#2B3A45" />
+        <Rect x={29} y={8} width={6} height={48} rx={3} fill="#2B3A45" />
+        <Rect x={41} y={22} width={6} height={20} rx={3} fill="#2B3A45" />
+        <Rect x={52} y={28} width={6} height={8} rx={3} fill="#7FA3AD" />
+        <Rect x={17} y={29} width={30} height={6} rx={3} fill="#A9C3CB" />
+      </Svg>
+    </View>
   );
 }
