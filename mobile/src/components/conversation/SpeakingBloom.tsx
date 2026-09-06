@@ -19,7 +19,7 @@ interface Props {
 
 /** How much of the screen the light reaches, feathered to nothing at the top. */
 const BLOOM_HEIGHT_RATIO = 0.42;
-const BREATH_MS = 3200;
+const BREATH_MS = 2200;
 /** The second layer runs slower and out of phase so the colour drifts. */
 const DRIFT_MS = 5100;
 
@@ -83,7 +83,7 @@ export function SpeakingBloom({ active, level }: Props) {
   useEffect(() => {
     Animated.timing(amplitude, {
       toValue: level == null ? 0 : Math.min(1, Math.max(0, level)),
-      duration: 180,
+      duration: 110,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
@@ -96,16 +96,16 @@ export function SpeakingBloom({ active, level }: Props) {
   const scale = reducedMotion
     ? 1
     : Animated.add(
-        breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }),
-        amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.08] }),
+        breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }),
+        amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.26] }),
       );
   const opacity = Animated.multiply(
     presence,
     reducedMotion
       ? staticPeak
       : Animated.add(
-          breath.interpolate({ inputRange: [0, 1], outputRange: [0.85 * palette.peak, palette.peak] }),
-          amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.12] }),
+          breath.interpolate({ inputRange: [0, 1], outputRange: [0.55 * palette.peak, 0.8 * palette.peak] }),
+          amplitude.interpolate({ inputRange: [0, 1], outputRange: [0, 0.4] }),
         ),
   );
   const driftOpacity = Animated.multiply(

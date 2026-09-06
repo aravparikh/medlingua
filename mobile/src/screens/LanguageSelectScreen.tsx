@@ -102,7 +102,14 @@ const makeStyles = (c: ColorTokens) =>
     tagline: { fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 240 },
     listLabel: { fontSize: 10, letterSpacing: 1.6, paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xs },
     list: { flex: 1, minHeight: 0, borderTopWidth: StyleSheet.hairlineWidth },
-    listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
+    // Grow to fill a tall screen and spread the rows into it; on a short one
+    // (or at large Dynamic Type) the same content simply scrolls.
+    listContent: {
+      flexGrow: 1,
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',

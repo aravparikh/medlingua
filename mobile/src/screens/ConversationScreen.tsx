@@ -59,13 +59,37 @@ import { TypeSheet } from '../components/conversation/TypeSheet';
 
 export type Phase = 'idle' | 'listening' | 'translating' | 'speaking';
 
-/** The one AudioPlayer event we use, typed from the SDK's own status shape. */
+/**
+ * The AudioPlayer surface we use, typed from the SDK's own shapes. Declared
+ * here because TypeScript 6 drops the members AudioPlayer inherits from
+ * SharedObject (see the note at the listener call site).
+ */
 interface PlaybackSubscriber {
   addListener(
     event: 'playbackStatusUpdate',
     listener: (status: AudioStatus) => void,
   ): { remove(): void };
+  addListener(
+    event: 'audioSampleUpdate',
+    listener: (sample: { channels?: { frames?: number[] }[] }) => void,
+  ): { remove(): void };
+  isAudioSamplingSupported: boolean;
+  setAudioSamplingEnabled(enabled: boolean): void;
 }
+
+/**
+ * Root-mean-square of one sample buffer, scaled into the 0..1 the bloom wants.
+ * Speech rarely fills the range, so the gain lifts it into a band you can
+ * actually see; the bloom clamps anything over 1.
+ */
+function sampleLevel(frames: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < frames.length; i += 1) sum += frames[i] * frames[i];
+  return Math.min(1, Math.sqrt(sum / frames.length) * 3.4);
+}
+
+/** Sample callbacks arrive far faster than the screen can paint. */
+const SAMPLE_INTERVAL_MS = 60;
 
 export interface Turn {
   id: number;
@@ -206,6 +230,9 @@ export function ConversationScreen({
    * next one — this is a per-utterance count, never a running total for the visit.
    */
   const blockStreakRef = useRef(0);
+  /** Live amplitude of the voice the app is playing, 0..1; null when silent. */
+  const [playbackLevel, setPlaybackLevel] = useState<number | null>(null);
+  const lastSampleAtRef = useRef(0);
   /** Interpreter-rights card — reachable from the teach-back dead end. */
   const [rightsOpen, setRightsOpen] = useState(false);
   /** Turn awaiting delete confirmation; null when nothing is pending. */
@@ -560,11 +587,30 @@ export function ConversationScreen({
       // addListener('playbackStatusUpdate') as the way to observe an
       // imperatively created player. Asserted narrowly, not to `any`, so the
       // status argument stays typed.
-      (player as unknown as PlaybackSubscriber).addListener('playbackStatusUpdate', (status) => {
-        if (status.didJustFinish) setPhase('idle');
+      const subscriber = player as unknown as PlaybackSubscriber;
+      subscriber.addListener('playbackStatusUpdate', (status) => {
+        if (status.didJustFinish) {
+          setPhase('idle');
+          setPlaybackLevel(null);
+        }
       });
+      // Drive the bloom from the voice actually coming out of the speaker, so
+      // the light moves with the words rather than on a timer. Not every
+      // platform can sample playback; where it cannot, the bloom keeps
+      // breathing and simply does not react to peaks.
+      if (subscriber.isAudioSamplingSupported) {
+        subscriber.setAudioSamplingEnabled(true);
+        subscriber.addListener('audioSampleUpdate', (sample) => {
+          const now = Date.now();
+          if (now - lastSampleAtRef.current < SAMPLE_INTERVAL_MS) return;
+          lastSampleAtRef.current = now;
+          const frames = sample.channels?.[0]?.frames;
+          if (frames?.length) setPlaybackLevel(sampleLevel(frames));
+        });
+      }
       player.play();
     } else {
+      setPlaybackLevel(null);
       Speech.speak(text, {
         language: language.speechTag,
         rate: slow ? 0.65 : 1,
@@ -949,10 +995,12 @@ export function ConversationScreen({
   // The warm light is on whenever the app has the floor: hearing someone, or
   // speaking a translation aloud. Not while it is merely thinking.
   const voiceActive = phase === 'listening' || phase === 'speaking';
+  // Listening shows the room; speaking shows the app's own voice.
+  const bloomLevel = phase === 'listening' ? meterLevel : phase === 'speaking' ? playbackLevel : null;
 
   return (
     <View style={s.screen}>
-      <SpeakingBloom active={voiceActive} level={meterLevel} />
+      <SpeakingBloom active={voiceActive} level={bloomLevel} />
 
       {/* Header: the patient's language, the auto-detect toggle, about. */}
       <Masthead
