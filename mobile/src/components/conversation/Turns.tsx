@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   rowBody: { flex: 1, gap: spacing.xxs },
-  trash: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },
+  trash: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
   confirm: { gap: spacing.xs, flex: 1 },
   live: { borderLeftWidth: ROLE_EDGE_WIDTH, paddingLeft: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
   caution: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },

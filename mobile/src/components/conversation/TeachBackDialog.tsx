@@ -104,7 +104,7 @@ export function TeachBackDialog({ teach, otherLanguage, onClose, onReplay, onAns
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   card: { borderRadius: radius.sheet, padding: spacing.lg, paddingTop: spacing.xxl, gap: spacing.md },
-  close: { position: 'absolute', top: spacing.xs, right: spacing.xs, width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control, zIndex: 1 },
+  close: { position: 'absolute', top: spacing.xs, right: spacing.xs, width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, zIndex: 1 },
   center: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
   stack: { gap: spacing.md },
   choices: { flexDirection: 'row', gap: spacing.sm },

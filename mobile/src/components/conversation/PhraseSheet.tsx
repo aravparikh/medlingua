@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     minWidth: tapTarget.min,
     minHeight: tapTarget.min,
     paddingHorizontal: spacing.sm,
-    borderRadius: radius.control,
+    borderRadius: radius.pill,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',

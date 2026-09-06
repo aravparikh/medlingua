@@ -27,5 +27,5 @@ export function LevelMeter({ level }: { level: number | null }) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, height: MAX_H },
-  bar: { width: 12, borderRadius: radius.control },
+  bar: { width: 12, borderRadius: radius.pill },
 });

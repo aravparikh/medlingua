@@ -7,10 +7,11 @@ import Svg, { Circle, Ellipse, G, Rect } from 'react-native-svg';
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { fontFor, radius, serifFor, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
+import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
 import { Appear } from './Appear';
 import { PressableScale } from './PressableScale';
 import { Pulse } from './Pulse';
+import { Label } from './ui/Label';
 
 type BodyView = 'front' | 'back';
 
@@ -229,16 +230,16 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
             </Text>
             <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.whereHurts}</Text>
           </View>
+          {/* Chrome: the label rule forbids the inline join, and a close is
+             the one control whose glyph beats either language. Both names
+             live in the accessibility label. */}
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel={`${other.close} — ${en.close}`}
-            style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
+            accessibilityLabel={`${other.close}. ${en.close}`}
+            style={({ pressed }) => [styles.close, pressed && styles.pressedFill]}
           >
-            <CloseIcon  size={24} color={colors.ink} />
-            <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {other.close} · {en.close}
-            </Text>
+            <CloseIcon size={24} color={colors.ink} />
           </Pressable>
         </View>
 
@@ -247,21 +248,30 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
           <View style={styles.segment}>
             {(['front', 'back'] as const).map((v) => {
               const active = view === v;
-              const label = v === 'front' ? other.frontLabel : other.backLabel;
-              const labelEn = v === 'front' ? en.frontLabel : en.backLabel;
+              const label = bilingual(
+                v === 'front' ? other.frontLabel : other.backLabel,
+                v === 'front' ? en.frontLabel : en.backLabel,
+              );
               return (
                 <PressableScale
                   key={v}
                   onPress={() => pickView(v)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${label} — ${labelEn}`}
+                  accessibilityLabel={label.secondary ? `${label.primary}. ${label.secondary}` : label.primary}
                   flexFill
                   style={[styles.segmentButton, active && styles.segmentButtonActive]}
                 >
-                  <Text style={[styles.segmentText, active && styles.segmentTextActive]} allowFontScaling maxFontSizeMultiplier={2}>
-                    {label === labelEn ? labelEn : `${label} · ${labelEn}`}
-                  </Text>
+                  <Label
+                    primary={label.primary}
+                    secondary={label.secondary}
+                    lang={otherLanguage.code}
+                    speechTag={otherLanguage.speechTag}
+                    size="caption"
+                    weight="semibold"
+                    align="center"
+                    tone={active ? 'onInk' : 'ink2'}
+                  />
                 </PressableScale>
               );
             })}
@@ -378,20 +388,14 @@ const makeStyles = (c: ColorTokens) =>
     color: c.ink2,
   },
   close: {
-    minHeight: 48,
-    flexDirection: 'row',
+    width: tapTarget.min,
+    height: tapTarget.min,
     alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
     borderRadius: radius.pill,
   },
-  closeText: {
-    ...fontFor('en', 'semibold'),
-    fontSize: 17,
-    color: c.ink,
-  },
-  pressedDim: {
-    opacity: 0.6,
+  pressedFill: {
+    backgroundColor: c.surfacePressed,
   },
   dimmed: {
     opacity: 0.4,
@@ -421,15 +425,6 @@ const makeStyles = (c: ColorTokens) =>
   },
   segmentButtonActive: {
     backgroundColor: c.ink,
-  },
-  segmentText: {
-    ...fontFor('en', 'semibold'),
-    fontSize: 17,
-    color: c.ink2,
-    textAlign: 'center',
-  },
-  segmentTextActive: {
-    color: c.bg,
   },
   hint: {
     ...fontFor('en', 'semibold'),

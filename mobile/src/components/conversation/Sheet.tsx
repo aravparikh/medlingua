@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   },
   icon: { width: 24, alignItems: 'center' },
   title: { flex: 1 },
-  close: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },
+  close: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
 });

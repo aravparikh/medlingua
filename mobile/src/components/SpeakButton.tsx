@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexBasis: 'auto',
     minHeight: 132,
-    borderRadius: radius.control,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,

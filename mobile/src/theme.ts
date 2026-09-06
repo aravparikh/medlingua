@@ -298,14 +298,10 @@ export function bilingual(primary: string, secondary: string): BilingualLabel {
 
 /* ─────────────────────── Space, shape, motion ───────────────────── */
 
-/** 4pt grid. (`hairline` is a transitional alias — delete with the block below.) */
-export const spacing = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 48, hairline: 4 } as const;
+/** 4pt grid. */
+export const spacing = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 
-/**
- * Two radii: controls, and the sheets that slide over the page.
- * sm/md/lg/xl/pill are transitional aliases for un-migrated files — the five-
- * step scale and the pill shape collapse onto these two. Delete in step 3.
- */
+/** Three shapes, and nothing between them. */
 export const radius = {
   /** Every button and chip. The mockup's 99px, which is any large number. */
   pill: 999,
@@ -313,12 +309,6 @@ export const radius = {
   card: 18,
   /** Sheets that slide over the page. */
   sheet: 22,
-  /** @deprecated transitional aliases — see the fence below. */
-  control: 999,
-  /** @deprecated */ sm: 18,
-  /** @deprecated */ md: 18,
-  /** @deprecated */ lg: 22,
-  /** @deprecated */ xl: 22,
 } as const;
 
 /** Ghost buttons: a hairline circle with a translucent fill, no shadow. */
@@ -352,104 +342,27 @@ export const elevation = {
 } as const;
 
 /**
- * Motion answers a tap or a state change; nothing moves on its own.
+ * Motion answers a tap or a state change; nothing moves to fill time.
  *   tap     press feedback (scale/opacity)
  *   reveal  content appearing or a sheet arriving
- * The "translating" state is a still line with a still caption — no shimmer,
- * no pulse. Waiting should look like waiting, not like loading a feed.
+ *   pulse   the one loop — see below
+ *
+ * The "translating" state is a still line with a still caption, and the
+ * skeleton bars do not shimmer: waiting should look like waiting, not like
+ * loading a feed.
  */
 export const motion = {
   tap: 120,
   reveal: 200,
-  /** @deprecated */ fast: 120,
-  /** @deprecated */ base: 200,
-  /** @deprecated ambient loop, removed in step 3 */ shimmer: 700,
-  /** @deprecated ambient loop, removed in step 3 */ pulse: 1100,
+  /**
+   * The single permitted loop. It runs only while something is genuinely live
+   * — the app speaking (SpeakingArc), a body region held selected (Pulse) —
+   * and stops the instant that state ends. It is a state indicator that
+   * happens to repeat, not decoration.
+   */
+  pulse: 1100,
 } as const;
 
 /** Icon stroke geometry (components/icons): 24-grid, round caps/joins. */
 export const strokes = { icon: 2.5, iconSmall: 3 } as const;
-
-/* ═══════════════════ TRANSITIONAL ALIASES — DELETE IN STEP 3 ═══════════════════
- * Everything below exists only so the un-migrated files still compile and
- * render while screens are redesigned one at a time. Importing any of these
- * names is a lint error (no-restricted-imports, eslint.config.js) except from
- * the files listed there — that list and this one are the same list. Cross a
- * file off both when it migrates; when both are empty, delete this block.
- *
- *   [x] App.tsx
- *   [x] src/components/BodyMap.tsx
- *   [ ] src/components/FullscreenTranslation.tsx
- *   [x] src/components/LevelMeter.tsx
- *   [ ] src/components/RightsCard.tsx
- *   [ ] src/components/Skeleton.tsx
- *   [x] src/components/SpeakButton.tsx
- *   [x] src/components/SummaryModal.tsx
- *   [ ] src/components/icons/scenes.tsx
- *   [ ] src/screens/AboutScreen.tsx
- *   [x] src/screens/ConversationScreen.tsx
- *   [x] src/screens/LanguageSelectScreen.tsx
- */
-
-/** @deprecated static light tokens — use useTheme(). */
-export const colors = {
-  background: lightColors.bg,
-  surface: lightColors.bg,
-  surfaceTint: lightColors.surface,
-  surfaceTintSecondary: lightColors.surface,
-  text: lightColors.ink,
-  textMuted: lightColors.ink2,
-  textFaint: lightColors.ink2,
-  primary: lightColors.accent,
-  primaryPressed: '#12379A',
-  onPrimary: lightColors.onAccent,
-  primaryTint: lightColors.surface,
-  secondary: lightColors.ink,
-  secondaryPressed: '#2A2A2A',
-  onSecondary: lightColors.bg,
-  accent: lightColors.accent,
-  border: lightColors.rule,
-  borderStrong: lightColors.border,
-  listening: lightColors.danger,
-  listeningPressed: '#8E1B15',
-  dangerBg: lightColors.dangerBg,
-  dangerText: lightColors.danger,
-  overlay: lightColors.overlay,
-  onPrimaryTint: 'rgba(255, 255, 255, 0.18)',
-} as const;
-
-/** @deprecated raw palette — components must use semantic tokens. */
-export const palette = { teal900: lightColors.ink } as const;
-
-/** @deprecated weight-in-name families — use fontFor(). Lexend is gone. */
-export const fonts = {
-  display: 'NotoSans_700Bold',
-  displayMedium: 'NotoSans_600SemiBold',
-  body: 'NotoSans_400Regular',
-  bodyMedium: 'NotoSans_600SemiBold',
-  bodyBold: 'NotoSans_700Bold',
-} as const;
-
-/** @deprecated — use fontFor(code, 'semibold').fontFamily. */
-export function displayFontFor(languageCode: string): string {
-  return fontFor(languageCode, 'semibold').fontFamily ?? fonts.displayMedium;
-}
-
-/** @deprecated old scale — use `text`. Values snapped to the new five sizes. */
-export const type = {
-  micro: 15,
-  caption: 15,
-  small: 17,
-  body: 17,
-  button: 22,
-  title: 28,
-  translation: 44,
-  hero: 44,
-} as const;
-
-/** @deprecated — use tapTarget. */
-export const MIN_TARGET = tapTarget.primary;
-
-/** @deprecated — cards have no shadow; only `elevation.sheet` remains. */
-export const shadows = { card: elevation.none, raised: elevation.none, floating: elevation.sheet } as const;
 

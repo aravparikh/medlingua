@@ -109,16 +109,16 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
                 <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.summary}</Text>
               </View>
             </View>
+            {/* Chrome: the label rule forbids the inline join, and a close is
+               the one control whose glyph beats either language. Both names
+               live in the accessibility label. */}
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel={`${other.close} — ${en.close}`}
-              style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
+              accessibilityLabel={`${other.close}. ${en.close}`}
+              style={({ pressed }) => [styles.close, pressed && styles.pressedFill]}
             >
-              <CloseIcon  size={22} color={colors.ink} />
-              <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
-                {other.close} · {en.close}
-              </Text>
+              <CloseIcon size={22} color={colors.ink} />
             </Pressable>
           </View>
 
@@ -267,20 +267,14 @@ const makeStyles = (c: ColorTokens) =>
     color: c.ink2,
   },
   close: {
-    minHeight: 48,
-    flexDirection: 'row',
+    width: tapTarget.min,
+    height: tapTarget.min,
     alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
     borderRadius: radius.pill,
   },
-  closeText: {
-    ...fontFor('en', 'semibold'),
-    fontSize: 17,
-    color: c.ink,
-  },
-  pressedDim: {
-    opacity: 0.6,
+  pressedFill: {
+    backgroundColor: c.surfacePressed,
   },
   loading: {
     alignItems: 'center',
@@ -319,7 +313,7 @@ const makeStyles = (c: ColorTokens) =>
   },
   timerTextWrap: {
     flex: 1,
-    gap: spacing.hairline,
+    gap: spacing.xxs,
   },
   timerText: {
     ...fontFor('en', 'semibold'),

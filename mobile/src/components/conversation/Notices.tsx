@@ -15,7 +15,7 @@ function Edged({ role, tint, children }: { role: Role | 'danger'; tint?: string;
   const { colors } = useTheme();
   const edge = role === 'danger' ? colors.danger : colors[roles[role].edge];
   return (
-    <View style={[styles.edged, { borderLeftColor: edge }, tint ? { backgroundColor: tint, borderRadius: radius.control } : null]}>
+    <View style={[styles.edged, { borderLeftColor: edge }, tint ? { backgroundColor: tint, borderRadius: radius.pill } : null]}>
       {children}
     </View>
   );

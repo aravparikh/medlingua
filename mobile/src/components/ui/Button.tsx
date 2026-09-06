@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.control,
+    borderRadius: radius.pill,
   },
   stacked: { flexDirection: 'column', gap: spacing.xxs, paddingHorizontal: spacing.xs },
   // NOT flex:1 — see PressableScale for the Yoga zero-height bug on device.
