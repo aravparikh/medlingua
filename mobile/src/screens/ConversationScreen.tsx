@@ -1056,7 +1056,10 @@ export function ConversationScreen({
       {/* The live line and anything transient beneath it. */}
       <ScrollView
         ref={scrollRef}
-        style={s.thread}
+        // The block takes the screen's slack once it exists; before that there
+        // is no block, so the thread has to take it or the whole column
+        // collapses to the top and leaves dead space under the footer.
+        style={[s.thread, pastTurns.length === 0 && s.threadFill]}
         contentContainerStyle={[s.threadContent, turns.length === 0 && s.threadEmpty]}
         // Jump, don't glide: the live line must be fully in view the moment it
         // exists, and a smooth scroll can finish before a taller row has laid out.
@@ -1433,6 +1436,7 @@ const makeStyles = (c: ColorTokens) =>
     // Transient only now (errors, the translating line, the empty tagline).
     // It no longer competes with the block for the screen's slack.
     thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
+    threadFill: { flexGrow: 1 },
     threadContent: { paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     // A sibling laid over the screen rather than a modal, so the conversation
