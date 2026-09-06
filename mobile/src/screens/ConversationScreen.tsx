@@ -55,6 +55,7 @@ import { SpeakingBloom } from '../components/conversation/SpeakingBloom';
 import { ScanSheet } from '../components/conversation/ScanSheet';
 import { TeachBackDialog } from '../components/conversation/TeachBackDialog';
 import { LedgerRow, LiveLine } from '../components/conversation/Turns';
+import { ConversationBlock, TranscriptScreen } from '../components/conversation/Transcript';
 import { TypeSheet } from '../components/conversation/TypeSheet';
 
 export type Phase = 'idle' | 'listening' | 'translating' | 'speaking';
@@ -232,6 +233,9 @@ export function ConversationScreen({
   const blockStreakRef = useRef(0);
   /** Live amplitude of the voice the app is playing, 0..1; null when silent. */
   const [playbackLevel, setPlaybackLevel] = useState<number | null>(null);
+  /** The pushed transcript screen. */
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const lastSampleAtRef = useRef(0);
   /** Interpreter-rights card — reachable from the teach-back dead end. */
   const [rightsOpen, setRightsOpen] = useState(false);
@@ -1046,7 +1050,21 @@ export function ConversationScreen({
         />
       ) : null}
 
-      {/* The thread: a quiet ledger of past turns, then the live line. */}
+      {/* The visit so far: the last two exchanges, fixed rather than scrolling,
+         so it cannot slide out from under the live line. The whole ledger is
+         one tap away. */}
+      {pastTurns.length > 0 ? (
+        <ConversationBlock
+          turns={turns}
+          otherLanguage={otherLanguage}
+          onOpen={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setTranscriptOpen(true);
+          }}
+        />
+      ) : null}
+
+      {/* The live line and anything transient beneath it. */}
       <ScrollView
         ref={scrollRef}
         style={s.thread}
@@ -1055,24 +1073,6 @@ export function ConversationScreen({
         // exists, and a smooth scroll can finish before a taller row has laid out.
         onContentSizeChange={() => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }))}
       >
-        {pastTurns.map((turn) => (
-          <LedgerRow
-            key={turn.id}
-            turn={turn}
-            confirming={confirmDeleteId === turn.id}
-            onRequest={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setConfirmDeleteId(confirmDeleteId === turn.id ? null : turn.id);
-            }}
-            onCancel={() => setConfirmDeleteId(null)}
-            onConfirm={() => deleteTurn(turn)}
-            onFullscreen={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setFullscreenTurn(turn);
-            }}
-          />
-        ))}
-
         {latestTurn ? (
           <Appear key={latestTurn.id} style={s.live}>
             <LiveLine
@@ -1302,6 +1302,37 @@ export function ConversationScreen({
       <BodyMapModal visible={bodyMapOpen} otherLanguage={otherLanguage} onClose={() => setBodyMapOpen(false)} onConfirm={confirmBodyPain} />
       <RightsCard visible={rightsOpen} otherLanguage={otherLanguage} onClose={() => setRightsOpen(false)} />
       <SummaryModal state={summary} otherLanguage={otherLanguage} onClose={() => setSummary(null)} />
+      {transcriptOpen ? (
+        <View style={s.pushed}>
+          <TranscriptScreen
+            turns={turns}
+            otherLanguage={otherLanguage}
+            summaryDisabled={busy || offline || turns.length < 2}
+            confirmingClear={confirmingClear}
+            onBack={() => {
+              setTranscriptOpen(false);
+              setConfirmingClear(false);
+            }}
+            onSummary={() => {
+              setTranscriptOpen(false);
+              setConfirmingClear(false);
+              void openSummary(turns);
+            }}
+            onRequestClear={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setConfirmingClear(true);
+            }}
+            onConfirmClear={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              stopAllAudio();
+              onTurnsChange([]);
+              setConfirmingClear(false);
+              setTranscriptOpen(false);
+            }}
+          />
+        </View>
+      ) : null}
+
       <FullscreenTranslation
         text={fullscreenTurn?.translation ?? null}
         language={fullscreenTurn?.listener ?? null}
@@ -1331,9 +1362,12 @@ const makeStyles = (c: ColorTokens) =>
     disclaimer: { gap: spacing.xs, marginTop: spacing.xs },
     disclaimerOk: { alignSelf: 'stretch' },
     summary: { marginTop: spacing.sm, alignSelf: 'stretch' },
-    thread: { flex: 1 },
+    thread: { flex: 1, minHeight: 0 },
     threadContent: { paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
+    // A sibling laid over the screen rather than a modal, so the conversation
+    // underneath keeps its state and nothing reflows on the way back.
+    pushed: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
     live: { marginTop: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
     bars: { gap: spacing.xs, marginBottom: spacing.sm },

@@ -115,6 +115,16 @@ export interface UIStrings {
   privacyShort: string;
   /** Tag on the language already chosen, shown in that language. */
   chosen: string;
+  // Transcript
+  conversationLabel: string;
+  exchanges: string;
+  viewTranscript: string;
+  transcriptTitle: string;
+  clearAll: string;
+  clearAllConfirm: string;
+  /** Short speaker tags in the transcript margin. */
+  patientTag: string;
+  clinicianTag: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -217,6 +227,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: 'Detect',
     privacyShort: 'Nothing is saved',
     chosen: 'Chosen',
+    conversationLabel: 'Conversation',
+    exchanges: 'exchanges',
+    viewTranscript: 'View full transcript',
+    transcriptTitle: 'Transcript',
+    clearAll: 'Clear',
+    clearAllConfirm: 'Delete the whole conversation?',
+    patientTag: 'PT',
+    clinicianTag: 'DR',
   },
   es: {
     listening: 'Escuchando…',
@@ -317,6 +335,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: 'Detectar',
     privacyShort: 'Nada se guarda',
     chosen: 'Elegido',
+    conversationLabel: 'Conversación',
+    exchanges: 'intercambios',
+    viewTranscript: 'Ver transcripción completa',
+    transcriptTitle: 'Transcripción',
+    clearAll: 'Borrar',
+    clearAllConfirm: '¿Borrar toda la conversación?',
+    patientTag: 'PAC',
+    clinicianTag: 'DR',
   },
   zh: {
     listening: '正在聆听…',
@@ -417,6 +443,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: '自动识别',
     privacyShort: '不保存任何内容',
     chosen: '已选择',
+    conversationLabel: '对话',
+    exchanges: '次交流',
+    viewTranscript: '查看完整记录',
+    transcriptTitle: '完整记录',
+    clearAll: '清除',
+    clearAllConfirm: '要删除整段对话吗？',
+    patientTag: '患者',
+    clinicianTag: '医生',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -517,6 +551,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: 'Tự động',
     privacyShort: 'Không lưu gì cả',
     chosen: 'Đã chọn',
+    conversationLabel: 'Cuộc trò chuyện',
+    exchanges: 'lượt trao đổi',
+    viewTranscript: 'Xem toàn bộ bản ghi',
+    transcriptTitle: 'Bản ghi',
+    clearAll: 'Xóa',
+    clearAllConfirm: 'Xóa toàn bộ cuộc trò chuyện?',
+    patientTag: 'BN',
+    clinicianTag: 'BS',
   },
   ru: {
     listening: 'Слушаю…',
@@ -617,6 +659,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: 'Определять',
     privacyShort: 'Ничего не сохраняется',
     chosen: 'Выбрано',
+    conversationLabel: 'Разговор',
+    exchanges: 'реплик',
+    viewTranscript: 'Посмотреть всю расшифровку',
+    transcriptTitle: 'Расшифровка',
+    clearAll: 'Очистить',
+    clearAllConfirm: 'Удалить весь разговор?',
+    patientTag: 'ПАЦ',
+    clinicianTag: 'ВРАЧ',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -718,6 +768,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: 'पहचानें',
     privacyShort: 'कुछ भी सेव नहीं होता',
     chosen: 'चुना गया',
+    conversationLabel: 'बातचीत',
+    exchanges: 'बार बातचीत',
+    viewTranscript: 'पूरा रिकॉर्ड देखें',
+    transcriptTitle: 'पूरा रिकॉर्ड',
+    clearAll: 'हटाएँ',
+    clearAllConfirm: 'पूरी बातचीत हटाएँ?',
+    patientTag: 'रोगी',
+    clinicianTag: 'डॉ',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -819,6 +877,14 @@ export const STRINGS: Record<string, UIStrings> = {
     detect: 'ਪਛਾਣੋ',
     privacyShort: 'ਕੁਝ ਵੀ ਸੇਵ ਨਹੀਂ ਹੁੰਦਾ',
     chosen: 'ਚੁਣਿਆ',
+    conversationLabel: 'ਗੱਲਬਾਤ',
+    exchanges: 'ਵਾਰ ਗੱਲਬਾਤ',
+    viewTranscript: 'ਪੂਰਾ ਰਿਕਾਰਡ ਵੇਖੋ',
+    transcriptTitle: 'ਪੂਰਾ ਰਿਕਾਰਡ',
+    clearAll: 'ਮਿਟਾਓ',
+    clearAllConfirm: 'ਪੂਰੀ ਗੱਲਬਾਤ ਮਿਟਾਉਣੀ ਹੈ?',
+    patientTag: 'ਮਰੀਜ਼',
+    clinicianTag: 'ਡਾ',
   },
 };
 
