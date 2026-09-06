@@ -93,6 +93,8 @@ export interface UIStrings {
   cameraPermission: string;
   // Polish pass — slow replay, interpreter rights, offline awareness, tagline
   slowLabel: string;
+  /** Opens the live line's options sheet. */
+  moreOptions: string;
   rightsShow: string;
   rightsTitle: string;
   rightsBody: string;
@@ -208,6 +210,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Read aloud',
     cameraPermission: 'MedLingua needs the camera to read the label. Please allow camera access in Settings.',
     slowLabel: 'Slowly',
+    moreOptions: 'More options',
     rightsShow: 'Interpreter rights',
     rightsTitle: 'You have the right to a free medical interpreter.',
     rightsBody:
@@ -316,6 +319,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Leer en voz alta',
     cameraPermission: 'MedLingua necesita la cámara para leer la etiqueta. Permita el acceso a la cámara en Ajustes.',
     slowLabel: 'Despacio',
+    moreOptions: 'Más opciones',
     rightsShow: 'Derecho a intérprete',
     rightsTitle: 'Usted tiene derecho a un intérprete médico gratuito.',
     rightsBody:
@@ -424,6 +428,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: '朗读',
     cameraPermission: 'MedLingua 需要使用相机来读取标签。请在“设置”中允许使用相机。',
     slowLabel: '慢一点',
+    moreOptions: '更多选项',
     rightsShow: '口译员权利',
     rightsTitle: '您有权获得免费的医疗口译员。',
     rightsBody:
@@ -532,6 +537,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Đọc to',
     cameraPermission: 'MedLingua cần máy ảnh để đọc nhãn. Vui lòng cho phép truy cập máy ảnh trong Cài đặt.',
     slowLabel: 'Chậm lại',
+    moreOptions: 'Thêm tùy chọn',
     rightsShow: 'Quyền thông dịch viên',
     rightsTitle: 'Bạn có quyền được thông dịch viên y tế miễn phí.',
     rightsBody:
@@ -640,6 +646,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Прочитать вслух',
     cameraPermission: 'MedLingua нужна камера, чтобы прочитать этикетку. Разрешите доступ к камере в Настройках.',
     slowLabel: 'Медленно',
+    moreOptions: 'Ещё',
     rightsShow: 'Право на переводчика',
     rightsTitle: 'Вы имеете право на бесплатного медицинского переводчика.',
     rightsBody:
@@ -749,6 +756,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'पढ़कर सुनाएँ',
     cameraPermission: 'लेबल पढ़ने के लिए MedLingua को कैमरा चाहिए। कृपया सेटिंग्स में कैमरे की अनुमति दें।',
     slowLabel: 'धीरे-धीरे',
+    moreOptions: 'और विकल्प',
     rightsShow: 'दुभाषिया अधिकार',
     rightsTitle: 'आपको मुफ़्त चिकित्सा दुभाषिया पाने का अधिकार है।',
     rightsBody:
@@ -858,6 +866,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'ਪੜ੍ਹ ਕੇ ਸੁਣਾਓ',
     cameraPermission: 'ਲੇਬਲ ਪੜ੍ਹਨ ਲਈ MedLingua ਨੂੰ ਕੈਮਰਾ ਚਾਹੀਦਾ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਕੈਮਰੇ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ।',
     slowLabel: 'ਹੌਲੀ-ਹੌਲੀ',
+    moreOptions: 'ਹੋਰ ਵਿਕਲਪ',
     rightsShow: 'ਦੁਭਾਸ਼ੀਆ ਹੱਕ',
     rightsTitle: 'ਤੁਹਾਨੂੰ ਮੁਫ਼ਤ ਡਾਕਟਰੀ ਦੁਭਾਸ਼ੀਏ ਦਾ ਹੱਕ ਹੈ।',
     rightsBody:

@@ -32,17 +32,36 @@ interface ExchangeProps {
   wide?: boolean;
   dimmed?: boolean;
   tinted?: boolean;
+  /** Transcript only: opens this turn's options (replay, slow, show, check). */
+  onPress?: () => void;
 }
 
 /** One exchange: timestamp margin, speaker rule, source over translation. */
-function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = false }: ExchangeProps) {
+function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = false, onPress }: ExchangeProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const clinician = isClinician(turn);
   const tag = clinician ? t(otherLanguage.code).clinicianTag : t(otherLanguage.code).patientTag;
 
+  const en = t('en');
+  const other = t(otherLanguage.code);
+  // On the transcript every row is a control: tapping it opens that turn's
+  // options, which is where the four actions live now that the home screen
+  // has no room for them.
+  const Row = onPress ? Pressable : View;
+
   return (
-    <View style={[s.exchange, tinted && s.tinted, dimmed && s.dimmed]}>
+    <Row
+      style={({ pressed }: { pressed?: boolean } = {}) => [
+        s.exchange,
+        tinted && s.tinted,
+        dimmed && s.dimmed,
+        pressed && s.pressed,
+      ]}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `${other.moreOptions}. ${en.moreOptions}` : undefined}
+    >
       <View style={[s.margin, wide && s.marginWide]}>
         <Text style={[s.clock, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {clockOf(turn)}
@@ -77,7 +96,7 @@ function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = 
           {turn.translation}
         </Text>
       </View>
-    </View>
+    </Row>
   );
 }
 
@@ -148,6 +167,8 @@ interface ScreenProps {
   onSummary: () => void;
   onRequestClear: () => void;
   onConfirmClear: () => void;
+  /** Tapping a row opens that turn's options. */
+  onTurnOptions: (turn: Turn) => void;
 }
 
 /** The full transcript, pushed over the home screen. */
@@ -160,6 +181,7 @@ export function TranscriptScreen({
   onSummary,
   onRequestClear,
   onConfirmClear,
+  onTurnOptions,
 }: ScreenProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
@@ -204,6 +226,7 @@ export function TranscriptScreen({
             otherLanguage={otherLanguage}
             wide
             tinted={i === turns.length - 1}
+            onPress={() => onTurnOptions(turn)}
           />
         ))}
       </ScrollView>
@@ -262,12 +285,16 @@ const makeStyles = (c: ColorTokens) =>
     dimmed: { opacity: 0.58 },
     margin: { width: 38 },
     marginWide: { width: 58, gap: 2 },
-    clock: { fontFamily: mono, fontSize: 10.5, letterSpacing: 0.3 },
+    clock: { flex: 1, textAlign: 'right', fontFamily: mono, fontSize: 10.5, letterSpacing: 0.3 },
     body: { flex: 1, borderLeftWidth: 2, paddingLeft: spacing.sm, gap: 3 },
     source: { fontSize: 17, lineHeight: 24 },
     gloss: { fontSize: 12.5, lineHeight: 18 },
 
-    block: { height: 186, paddingBottom: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+    // Stretches rather than sitting at a fixed 186: the block is the flexible
+    // element on the home screen, so it takes the slack and the mode control
+    // sits directly under it, as drawn. The exchange column inside is still
+    // clipped and bottom-aligned, so new speech pushes old speech out of view.
+    block: { flex: 1, minHeight: 150, paddingBottom: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
     blockLabel: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
     // flex:1 + minHeight:0 + hidden — all three, or the bottom-aligned column
     // grows upward through the label instead of clipping.
@@ -292,9 +319,12 @@ const makeStyles = (c: ColorTokens) =>
       paddingBottom: spacing.sm,
       borderBottomWidth: StyleSheet.hairlineWidth,
     },
-    back: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, minHeight: tapTarget.min, minWidth: 72 },
+    // Equal flex on both sides, so the title sits on the screen's centre
+    // rather than on the centre of whatever is left over. The back label and
+    // the count are different widths, which is what pushed it off before.
+    back: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, minHeight: tapTarget.min },
     backChevron: { transform: [{ rotate: '180deg' }] },
-    title: { fontSize: 18, lineHeight: 24 },
+    title: { fontSize: 18, lineHeight: 24, textAlign: 'center' },
     ledger: { flex: 1, minHeight: 0 },
     ledgerContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
     footer: { flexDirection: 'row', gap: spacing.xs, padding: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },

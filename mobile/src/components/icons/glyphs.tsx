@@ -390,6 +390,17 @@ export function CallIcon(p: IconProps) {
   );
 }
 
+/** Three dots: the universal "there is more behind this" mark. */
+export function MoreIcon(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <Circle cx={5} cy={12} r={1.4} fill={p.color} strokeWidth={0} />
+      <Circle cx={12} cy={12} r={1.4} fill={p.color} strokeWidth={0} />
+      <Circle cx={19} cy={12} r={1.4} fill={p.color} strokeWidth={0} />
+    </IconBase>
+  );
+}
+
 export function PulseIcon(p: IconProps) {
   return (
     <IconBase {...p}>

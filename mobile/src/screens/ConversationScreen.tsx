@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { CloudOffIcon, DocumentIcon, InfoIcon } from '../components/icons';
+import { CloudOffIcon, EyeIcon, InfoIcon, SlowIcon, SpeakIcon, TrashIcon, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -50,11 +50,11 @@ import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
 import { ErrorNotice, HeldNotice, Translating } from '../components/conversation/Notices';
 import { PhraseSheet } from '../components/conversation/PhraseSheet';
+import { Sheet } from '../components/conversation/Sheet';
 import { RecordingPanel } from '../components/conversation/RecordingPanel';
 import { SpeakingBloom } from '../components/conversation/SpeakingBloom';
 import { ScanSheet } from '../components/conversation/ScanSheet';
 import { TeachBackDialog } from '../components/conversation/TeachBackDialog';
-import { LedgerRow, LiveLine } from '../components/conversation/Turns';
 import { ConversationBlock, TranscriptScreen } from '../components/conversation/Transcript';
 import { TypeSheet } from '../components/conversation/TypeSheet';
 
@@ -199,6 +199,8 @@ export function ConversationScreen({
   const [nameMode, setNameMode] = useState(false);
   /** Turn whose translation is blown up fullscreen; null when closed. */
   const [fullscreenTurn, setFullscreenTurn] = useState<Turn | null>(null);
+  // Replay, slow replay, show and check moved off the live line into a sheet.
+  const [optionsTurn, setOptionsTurn] = useState<Turn | null>(null);
   /** Teach-back flow. ask → (no) → loading2 → ask2 → (no) → failed. */
   const [teach, setTeach] = useState<{
     stage: 'loading' | 'ask' | 'loading2' | 'ask2' | 'failed' | 'error';
@@ -1060,35 +1062,10 @@ export function ConversationScreen({
         // exists, and a smooth scroll can finish before a taller row has laid out.
         onContentSizeChange={() => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }))}
       >
-        {latestTurn ? (
-          <Appear key={latestTurn.id} style={s.live}>
-            <LiveLine
-              turn={latestTurn}
-              otherLanguage={otherLanguage}
-              phase={phase}
-              flipped={flipped}
-              offline={offline}
-              confirming={confirmDeleteId === latestTurn.id}
-              onRequest={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setConfirmDeleteId(confirmDeleteId === latestTurn.id ? null : latestTurn.id);
-              }}
-              onCancel={() => setConfirmDeleteId(null)}
-              onConfirm={() => deleteTurn(latestTurn)}
-              onPlay={() => playTurn(latestTurn)}
-              onPlaySlow={() => playTurnSlow(latestTurn)}
-              onFlip={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setFlipped(!flipped);
-              }}
-              onCheck={() => startTeachBack(latestTurn)}
-              onFullscreen={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setFullscreenTurn(latestTurn);
-              }}
-            />
-          </Appear>
-        ) : null}
+        {/* No live line here. The home screen is the block, the mode
+           control, the index and the two bars — the newest turn shows as the
+           last exchange in the block, and its actions live on the transcript,
+           one tap behind VER TRANSCRIPCIÓN COMPLETA. */}
 
         {error ? (
           <Appear>
@@ -1324,6 +1301,10 @@ export function ConversationScreen({
               setConfirmingClear(false);
               void openSummary(turns);
             }}
+            onTurnOptions={(turn) => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setOptionsTurn(turn);
+            }}
             onRequestClear={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setConfirmingClear(true);
@@ -1338,6 +1319,87 @@ export function ConversationScreen({
           />
         </View>
       ) : null}
+
+      {/* The live line's four actions. Off the line itself, because the
+         line is meant to be the sentence and the screen has no room for a
+         control panel under it. */}
+      <Sheet
+        visible={optionsTurn != null}
+        onClose={() => setOptionsTurn(null)}
+        title={bilingual(other.moreOptions, en.moreOptions)}
+        otherLanguage={otherLanguage}
+      >
+        {optionsTurn ? (
+          <View style={s.options}>
+            <Button
+              label={bilingual(t(optionsTurn.listener.code).playAgain, en.playAgain)}
+              lang={optionsTurn.listener.code}
+              speechTag={optionsTurn.listener.speechTag}
+              variant="outline"
+              disabled={busy}
+              icon={<SpeakIcon size={22} color={colors.ink} />}
+              onPress={() => {
+                setOptionsTurn(null);
+                void playTurn(optionsTurn);
+              }}
+            />
+            <Button
+              label={bilingual(t(optionsTurn.listener.code).slowLabel, en.slowLabel)}
+              lang={optionsTurn.listener.code}
+              speechTag={optionsTurn.listener.speechTag}
+              variant="outline"
+              disabled={busy}
+              icon={<SlowIcon size={22} color={colors.ink} />}
+              onPress={() => {
+                setOptionsTurn(null);
+                void playTurnSlow(optionsTurn);
+              }}
+            />
+            {!optionsTurn.isName ? (
+              <Button
+                label={bilingual(t(optionsTurn.listener.code).flip, en.flip)}
+                lang={optionsTurn.listener.code}
+                speechTag={optionsTurn.listener.speechTag}
+                variant="outline"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: flipped }}
+                icon={<EyeIcon size={22} color={colors.ink} />}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setFlipped(!flipped);
+                  setOptionsTurn(null);
+                }}
+              />
+            ) : null}
+            {!optionsTurn.isName && optionsTurn.speaker.code === 'en' ? (
+              <Button
+                label={bilingual(other.checkLabel, en.checkLabel)}
+                lang={otherLanguage.code}
+                speechTag={otherLanguage.speechTag}
+                variant="outline"
+                disabled={busy || offline}
+                icon={<UnderstandIcon size={22} color={colors.ink} />}
+                onPress={() => {
+                  setOptionsTurn(null);
+                  startTeachBack(optionsTurn);
+                }}
+              />
+            ) : null}
+            <Button
+              label={bilingual(other.deleteLabel, en.deleteLabel)}
+              lang={otherLanguage.code}
+              speechTag={otherLanguage.speechTag}
+              variant="danger"
+              icon={<TrashIcon size={22} color={colors.danger} />}
+              onPress={() => {
+                const turn = optionsTurn;
+                setOptionsTurn(null);
+                deleteTurn(turn);
+              }}
+            />
+          </View>
+        ) : null}
+      </Sheet>
 
       <FullscreenTranslation
         text={fullscreenTurn?.translation ?? null}
@@ -1368,7 +1430,9 @@ const makeStyles = (c: ColorTokens) =>
     disclaimer: { gap: spacing.xs, marginTop: spacing.xs },
     disclaimerOk: { alignSelf: 'stretch' },
     summary: { marginTop: spacing.sm, alignSelf: 'stretch' },
-    thread: { flex: 1, minHeight: 0 },
+    // Transient only now (errors, the translating line, the empty tagline).
+    // It no longer competes with the block for the screen's slack.
+    thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
     threadContent: { paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     // A sibling laid over the screen rather than a modal, so the conversation
@@ -1378,6 +1442,7 @@ const makeStyles = (c: ColorTokens) =>
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
     bars: { gap: spacing.xs, marginBottom: spacing.sm },
     barsRow: { flexDirection: 'row' },
+    options: { gap: spacing.xs, padding: spacing.md },
 
     privacy: { alignSelf: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   });

@@ -4,7 +4,7 @@ import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Phase, Turn } from '../../screens/ConversationScreen';
 import { bilingual, fontFor, radius, ROLE_EDGE_WIDTH, roles, serifFor, spacing, tapTarget, text, useTheme } from '../../theme';
-import { AlertCircleIcon, ExpandIcon, EyeIcon, SlowIcon, SpeakIcon, SpeakingArc, TrashIcon, UnderstandIcon } from '../icons';
+import { AlertCircleIcon, ExpandIcon, MoreIcon, SpeakingArc, TrashIcon } from '../icons';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
 import { highlightFlagged } from './flagged';
@@ -95,10 +95,8 @@ interface LiveProps extends DeleteProps {
   phase: Phase;
   flipped: boolean;
   offline: boolean;
-  onPlay: () => void;
-  onPlaySlow: () => void;
-  onFlip: () => void;
-  onCheck: () => void;
+  /** Opens the options sheet holding replay, slow replay, show and check. */
+  onMore: () => void;
   onFullscreen: () => void;
 }
 
@@ -107,7 +105,7 @@ interface LiveProps extends DeleteProps {
  * the reader's own script, with what was said above it in the speaker's.
  * Whose turn it is, is whose script is in the big type.
  */
-export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirming, onRequest, onCancel, onConfirm, onPlay, onPlaySlow, onFlip, onCheck, onFullscreen }: LiveProps) {
+export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirming, onRequest, onCancel, onConfirm, onMore, onFullscreen }: LiveProps) {
   const { colors } = useTheme();
   const en = t('en');
   const listener = t(turn.listener.code);
@@ -157,62 +155,22 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
       {confirming ? (
         <DeleteControl turn={turn} confirming onRequest={onRequest} onCancel={onCancel} onConfirm={onConfirm} />
       ) : (
-        <View style={styles.actionStack}>
-          <View style={styles.actions}>
-            <Button
-              label={bilingual(speaking ? listener.playing : listener.playAgain, speaking ? en.playing : en.playAgain)}
-              lang={turn.listener.code}
-              speechTag={turn.listener.speechTag}
-              variant="outline"
-                            dense
-              flex
-              disabled={busy && !speaking}
-              icon={<SpeakIcon size={20} color={colors.ink} />}
-              onPress={onPlay}
-            />
-            <Button
-              label={bilingual(listener.slowLabel, en.slowLabel)}
-              lang={turn.listener.code}
-              speechTag={turn.listener.speechTag}
-              variant="outline"
-                            dense
-              flex
-              disabled={busy}
-              icon={<SlowIcon size={20} color={colors.ink} />}
-              onPress={onPlaySlow}
-            />
-            <DeleteControl turn={turn} confirming={false} onRequest={onRequest} onCancel={onCancel} onConfirm={onConfirm} />
-          </View>
-          {!turn.isName ? (
-            <View style={styles.actions}>
-              <Button
-                label={bilingual(listener.flip, en.flip)}
-                lang={turn.listener.code}
-                speechTag={turn.listener.speechTag}
-                variant="outline"
-                                dense
-                flex
-                accessibilityRole="switch"
-                accessibilityState={{ checked: flipped }}
-                icon={<EyeIcon size={20} color={colors.ink} />}
-                onPress={onFlip}
-                style={flipped ? { backgroundColor: colors.surface } : undefined}
-              />
-              {fromClinician ? (
-                <Button
-                  label={bilingual(other.checkLabel, en.checkLabel)}
-                  lang={otherLanguage.code}
-                  speechTag={otherLanguage.speechTag}
-                  variant="outline"
-                                    dense
-                  flex
-                  disabled={busy || offline}
-                  icon={<UnderstandIcon size={20} color={colors.ink} />}
-                  onPress={onCheck}
-                />
-              ) : null}
-            </View>
-          ) : null}
+        <View style={styles.actions}>
+          {/* One button, not five. Replay, slow replay, show and check all
+             live behind it: at four index rows plus the history block there
+             is no vertical room left to spend on a control panel, and the
+             live line is meant to be the sentence. */}
+          <Button
+            label={bilingual(other.moreOptions, en.moreOptions)}
+            lang={otherLanguage.code}
+            speechTag={otherLanguage.speechTag}
+            variant="outline"
+            dense
+            flex
+            icon={<MoreIcon size={20} color={colors.ink} />}
+            onPress={onMore}
+          />
+          <DeleteControl turn={turn} confirming={false} onRequest={onRequest} onCancel={onCancel} onConfirm={onConfirm} />
         </View>
       )}
     </View>
