@@ -1037,19 +1037,6 @@ export function ConversationScreen({
         </View>
       ) : null}
 
-      {turns.length >= 2 ? (
-        <Button
-          label={bilingual(other.summary, en.summary)}
-          lang={otherLanguage.code}
-          speechTag={otherLanguage.speechTag}
-          variant="outline"
-          icon={<DocumentIcon size={20} color={colors.ink} />}
-          onPress={() => openSummary(turns)}
-          disabled={busy || offline}
-          style={s.summary}
-        />
-      ) : null}
-
       {/* The visit so far: the last two exchanges, fixed rather than scrolling,
          so it cannot slide out from under the live line. The whole ledger is
          one tap away. */}
@@ -1178,6 +1165,23 @@ export function ConversationScreen({
             lang={otherLanguage.code}
             speechTag={otherLanguage.speechTag}
             rows={[
+              // The summary leads the index once there is a visit to summarise.
+              // It used to be an outlined button above the ledger, which made
+              // it the one action living outside the index it belongs to.
+              ...(turns.length >= 2
+                ? [
+                    {
+                      key: 'summary',
+                      name: other.summary,
+                      english: en.summary,
+                      disabled: busy || offline,
+                      onPress: () => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        openSummary(turns);
+                      },
+                    },
+                  ]
+                : []),
               {
                 key: 'phrases',
                 name: other.quickPhrasesShort,
@@ -1213,7 +1217,7 @@ export function ConversationScreen({
              each: the design shows a single direction, but this app has to let
              either person speak, and dropping the clinician's button to match a
              mockup would remove half the conversation. */}
-          <View style={s.bars}>
+          <View style={[s.bars, !autoMode && s.barsRow]}>
             {autoMode ? (
               <SpeakBar
                 name={other.speakAuto}
@@ -1226,17 +1230,19 @@ export function ConversationScreen({
             ) : (
               <>
                 <SpeakBar
+                  compact
                   name={other.speakAuto}
                   lang={otherLanguage.code}
                   speechTag={otherLanguage.speechTag}
-                  sub={`${otherLanguage.nativeName.toUpperCase()} → ENGLISH`}
+                  sub={`${otherLanguage.nativeName.toUpperCase()} → EN`}
                   disabled={phase === 'translating' || offline}
                   onPress={() => startTap(otherLanguage)}
                 />
                 <SpeakBar
+                  compact
                   name={en.speakAuto}
                   lang="en"
-                  sub={`ENGLISH → ${otherLanguage.nativeName.toUpperCase()}`}
+                  sub={`EN → ${otherLanguage.nativeName.toUpperCase()}`}
                   disabled={phase === 'translating' || offline}
                   onPress={() => startTap(ENGLISH)}
                 />
@@ -1371,6 +1377,7 @@ const makeStyles = (c: ColorTokens) =>
     live: { marginTop: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
     bars: { gap: spacing.xs, marginBottom: spacing.sm },
+    barsRow: { flexDirection: 'row' },
 
     privacy: { alignSelf: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   });

@@ -152,9 +152,11 @@ export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
     <View>
       <Caption style={s.captionGap}>MODO DE ENTRADA</Caption>
       <View style={[s.modeBox, { borderColor: colors.hairline }]} accessibilityRole="radiogroup">
-        {half(false, other.oneLanguage, `${language.nativeName.toUpperCase()} → ENGLISH`)}
+        {/* Subs stay short enough to hold one line. "AUTO-DETECT LANGUAGE"
+           wrapped and left the two halves visibly uneven. */}
+        {half(false, other.oneLanguage, `${language.nativeName.toUpperCase()} → EN`)}
         <View style={[s.modeDivider, { backgroundColor: colors.hairline }]} />
-        {half(true, other.detect, 'AUTO-DETECT LANGUAGE')}
+        {half(true, other.detect, 'AUTO')}
       </View>
     </View>
   );
@@ -223,11 +225,17 @@ interface SpeakBarProps {
   /** Uppercase line beneath. */
   sub: string;
   disabled?: boolean;
+  /**
+   * Half-width form, for the two bars that share a row in two-language mode.
+   * The mic loses its ruled cell and sits inline: a 62pt cell inside a ~170pt
+   * bar leaves no room for the word itself.
+   */
+  compact?: boolean;
   onPress: () => void;
 }
 
 /** The one solid bar: an accent spine, the action, and the mic in its own cell. */
-export function SpeakBar({ name, lang, speechTag, sub, disabled, onPress }: SpeakBarProps) {
+export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false, onPress }: SpeakBarProps) {
   const { colors } = useTheme();
   const s = styles(colors);
   return (
@@ -237,20 +245,42 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, onPress }: Spea
       accessibilityRole="button"
       accessibilityLabel={`${name}. ${sub}`}
       accessibilityLanguage={speechTag}
-      style={({ pressed }) => [s.cta, { backgroundColor: colors.ctaFill }, pressed && s.ctaPressed, disabled && s.disabled]}
+      style={({ pressed }) => [
+        s.cta,
+        compact && s.ctaCompact,
+        { backgroundColor: colors.ctaFill },
+        pressed && s.ctaPressed,
+        disabled && s.disabled,
+      ]}
     >
-      <View style={[s.spine, { backgroundColor: colors.accent }]} importantForAccessibility="no" />
-      <View style={s.ctaText}>
-        <Text style={[s.ctaName, serifFor(lang), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={1.5}>
+      <View style={[s.spine, compact && s.spineCompact, { backgroundColor: colors.accent }]} importantForAccessibility="no" />
+      <View style={[s.ctaText, compact && s.ctaTextCompact]}>
+        <Text
+          style={[s.ctaName, compact && s.ctaNameCompact, serifFor(lang), { color: colors.onCta }]}
+          numberOfLines={1}
+          allowFontScaling
+          maxFontSizeMultiplier={1.5}
+        >
           {name}
         </Text>
-        <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text
+          style={[text.label, fontFor('en', 'semibold'), { color: colors.onCta }]}
+          numberOfLines={1}
+          allowFontScaling
+          maxFontSizeMultiplier={1.4}
+        >
           {sub}
         </Text>
       </View>
-      <View style={[s.micCell, { borderLeftColor: colors.hairline }]} importantForAccessibility="no">
-        <MicIcon size={22} color={colors.onCta} />
-      </View>
+      {compact ? (
+        <View style={s.micInline} importantForAccessibility="no">
+          <MicIcon size={18} color={colors.onCta} />
+        </View>
+      ) : (
+        <View style={[s.micCell, { borderLeftColor: colors.hairline }]} importantForAccessibility="no">
+          <MicIcon size={22} color={colors.onCta} />
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -327,10 +357,16 @@ const styles = (c: ColorTokens) =>
       overflow: 'hidden',
     },
     ctaPressed: { opacity: 0.9 },
+    // Half-width, so it stays a comfortable target without a 78pt bar's bulk.
+    ctaCompact: { flex: 1, minHeight: tapTarget.primary },
     spine: { width: 6 },
+    spineCompact: { width: 4 },
     ctaText: { flex: 1, justifyContent: 'center', gap: 2, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+    ctaTextCompact: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
     ctaName: { fontSize: 24, lineHeight: 30 },
+    ctaNameCompact: { fontSize: 19, lineHeight: 25 },
     micCell: { width: 62, alignItems: 'center', justifyContent: 'center', borderLeftWidth: StyleSheet.hairlineWidth },
+    micInline: { justifyContent: 'center', paddingRight: spacing.sm },
     pressed: { backgroundColor: 'rgba(29, 28, 26, 0.04)' },
     disabled: { opacity: 0.4 },
   });
