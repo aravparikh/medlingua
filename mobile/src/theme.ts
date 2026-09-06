@@ -76,6 +76,8 @@ export interface ColorTokens {
   ctaFill: string;
   /** Crisp warm white on the CTA. Never beige on dark. */
   onCta: string;
+  /** Summary ledger ground: lighter than every other screen in light mode. */
+  summaryBg: string;
   /**
    * Pain intensity 0–10 as four stops: none → mild → moderate → severe.
    * Same "warmer is worse" rule as the safeguard, so one legend serves both.
@@ -85,14 +87,12 @@ export interface ColorTokens {
 
 export const lightColors: ColorTokens = {
   bg: '#EFECE5',
-  surface: '#F7F5F0',
+  surface: 'rgba(255,255,255,0.5)',
   surfacePressed: '#E5E1D8',
-  rule: 'rgba(29, 28, 26, 0.10)',
-  border: 'rgba(29, 28, 26, 0.22)',
+  rule: 'rgba(29,28,26,0.10)',
+  border: 'rgba(29,28,26,0.22)',
   ink: '#1D1C1A',
-  // Not the mockup's #77726A: that is 4.05:1 on this ground, which is AA for
-  // large text only. Darkened until secondary text passes AA at body size.
-  ink2: '#635E56',
+  ink2: '#77726A',
   accent: '#A9C3CB',
   onAccent: '#152227',
   caution: '#8A4B12',
@@ -100,9 +100,10 @@ export const lightColors: ColorTokens = {
   danger: '#8C2F1C',
   dangerBg: '#F4DFD8',
   overlay: 'rgba(29, 28, 26, 0.42)',
-  hairline: 'rgba(29, 28, 26, 0.18)',
+  hairline: 'rgba(29,28,26,0.18)',
   ctaFill: '#2B3A45',
   onCta: '#FFFDF8',
+  summaryBg: '#FDFCFA',
   pain: ['#635E56', '#A8701E', '#8C2F1C', '#5E1A0C'],
 };
 
@@ -126,6 +127,7 @@ export const darkColors: ColorTokens = {
   // Lifted from #2B3A45 so the bar still separates from a near-black ground.
   ctaFill: '#33454F',
   onCta: '#FFFDF8',
+  summaryBg: '#201D17',
   pain: ['#A8A29A', '#E8B57A', '#F0A08C', '#FF7A63'],
 };
 
@@ -169,7 +171,7 @@ export const roles = {
   clinician: { edge: 'accent', glyph: 'stethoscope' },
 } as const satisfies Record<'patient' | 'clinician', { edge: keyof ColorTokens; glyph: string }>;
 
-export const ROLE_EDGE_WIDTH = 3;
+export const ROLE_EDGE_WIDTH = 2;
 
 /* ─────────────────────────── Typography ─────────────────────────── */
 
@@ -276,17 +278,17 @@ export function serifFor(languageCode: string): Pick<TextStyle, 'fontFamily' | '
 }
 
 /**
- * Type scale. `focal` is the live translation and the one size meant to be
- * read across a room. `label` is the uppercase micro-label — the only text
- * allowed under 15pt, and never used for content a patient has to read.
+ * Type scale. Reference paper scale: nothing exceeds 18, nothing below 8.5.
+ * Uppercase lives in the string itself, never in textTransform, so screen
+ * readers read words rather than letters.
  */
 export const text = {
-  label: { fontSize: 11, lineHeight: 14, letterSpacing: 1.1, textTransform: 'uppercase' as const },
-  caption: { fontSize: 15, lineHeight: 21 },
-  body: { fontSize: 17, lineHeight: 25 },
-  title: { fontSize: 22, lineHeight: 29 },
-  heading: { fontSize: 26, lineHeight: 32 },
-  focal: { fontSize: 34, lineHeight: 41 },
+  label: { fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 },
+  caption: { fontSize: 12.5, lineHeight: 18 },
+  body: { fontSize: 13, lineHeight: 19 },
+  title: { fontSize: 18, lineHeight: 24 },
+  heading: { fontSize: 18, lineHeight: 24 },
+  focal: { fontSize: 18, lineHeight: 24 },
 } as const;
 
 /* ─────────────────────────── Label rule ─────────────────────────── */
@@ -389,6 +391,6 @@ export const motion = {
  */
 export const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
-/** Icon stroke geometry (components/icons): 24-grid, round caps/joins. */
-export const strokes = { icon: 2.5, iconSmall: 3 } as const;
+/** Icon stroke geometry (components/icons): 16px stroked mic, 12px chevrons, all 1.6. */
+export const strokes = { icon: 1.6, iconSmall: 1.6 } as const;
 

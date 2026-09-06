@@ -130,5 +130,5 @@ const makeStyles = (c: ColorTokens) =>
     root: { flex: 1, backgroundColor: c.bg },
     splash: { flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
     // Fonts aren't loaded yet on the splash — system font on purpose.
-    splashText: { ...text.body, color: c.ink, fontWeight: '700' },
+    splashText: { ...text.body, color: c.ink, fontWeight: '600' },
   });

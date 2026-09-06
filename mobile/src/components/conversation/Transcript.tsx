@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Turn } from '../../screens/ConversationScreen';
-import { fontFor, mono, radius, serifFor, spacing, tapTarget, text, useTheme, type ColorTokens } from '../../theme';
+import { fontFor, mono, serifFor, useTheme, type ColorTokens } from '../../theme';
 import { ChevronForwardIcon } from '../icons';
 
 /**
@@ -54,6 +54,7 @@ function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = 
     <Row
       style={({ pressed }: { pressed?: boolean } = {}) => [
         s.exchange,
+        wide && s.exchangeWide,
         tinted && s.tinted,
         dimmed && s.dimmed,
         pressed && s.pressed,
@@ -68,7 +69,11 @@ function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = 
         </Text>
         {wide ? (
           <Text
-            style={[text.label, fontFor('en', 'semibold'), { color: clinician ? colors.accent : colors.ink2 }]}
+            style={[
+              { fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 },
+              fontFor('en', 'semibold'),
+              { color: clinician ? colors.ctaFill : colors.ink },
+            ]}
             allowFontScaling
             maxFontSizeMultiplier={1.4}
           >
@@ -76,10 +81,15 @@ function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = 
           </Text>
         ) : null}
       </View>
-      <View style={[s.body, { borderLeftColor: clinician ? colors.accent : colors.border }]}>
+      <View
+        style={[
+          s.body,
+          { borderLeftColor: clinician ? colors.accent : colors.border },
+        ]}
+      >
         {turn.original ? (
           <Text
-            style={[s.source, serifFor(turn.speaker.code), { color: colors.ink }]}
+            style={[wide ? s.sourceWide : s.source, serifFor(turn.speaker.code), { color: colors.ink }]}
             accessibilityLanguage={turn.speaker.speechTag}
             allowFontScaling
             maxFontSizeMultiplier={1.8}
@@ -88,7 +98,7 @@ function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = 
           </Text>
         ) : null}
         <Text
-          style={[s.gloss, fontFor(turn.listener.code), { color: colors.ink2 }]}
+          style={[wide ? s.glossWide : s.gloss, fontFor(turn.listener.code), { color: colors.ink2 }]}
           accessibilityLanguage={turn.listener.speechTag}
           allowFontScaling
           maxFontSizeMultiplier={1.8}
@@ -123,13 +133,13 @@ export function ConversationBlock({ turns, otherLanguage, onOpen }: BlockProps) 
       onPress={onOpen}
       accessibilityRole="button"
       accessibilityLabel={`${other.viewTranscript}. ${en.viewTranscript}`}
-      style={({ pressed }) => [s.block, { borderBottomColor: colors.hairline }, pressed && s.pressed]}
+      style={({ pressed }) => [s.block, { backgroundColor: colors.surface, borderBottomColor: colors.hairline }, pressed && s.pressed]}
     >
       <View style={s.blockLabel}>
-        <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.5 }, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {other.conversationLabel.toUpperCase()}
         </Text>
-        <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ctaFill }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {`${turns.length} ${other.exchanges}`.toUpperCase()}
         </Text>
       </View>
@@ -148,10 +158,10 @@ export function ConversationBlock({ turns, otherLanguage, onOpen }: BlockProps) 
       </View>
 
       <View style={[s.blockFooter, { borderTopColor: colors.rule }]}>
-        <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {other.viewTranscript.toUpperCase()}
         </Text>
-        <ChevronForwardIcon size={14} color={colors.ink} />
+        <ChevronForwardIcon size={12} color={colors.ink} />
       </View>
     </Pressable>
   );
@@ -198,9 +208,9 @@ export function TranscriptScreen({
           style={({ pressed }) => [s.back, pressed && s.pressed]}
         >
           <View style={s.backChevron}>
-            <ChevronForwardIcon size={16} color={colors.ink} />
+            <ChevronForwardIcon size={12} color={colors.ink} />
           </View>
-          <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
             {other.back.toUpperCase()}
           </Text>
         </Pressable>
@@ -213,7 +223,7 @@ export function TranscriptScreen({
         >
           {other.transcriptTitle}
         </Text>
-        <Text style={[s.clock, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[s.count, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {turns.length}
         </Text>
       </View>
@@ -239,7 +249,7 @@ export function TranscriptScreen({
             accessibilityLabel={`${other.clearAllConfirm} ${other.clearAll}`}
             style={({ pressed }) => [s.footerButton, { borderColor: colors.danger }, pressed && s.pressed]}
           >
-            <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
               {other.clearAllConfirm.toUpperCase()}
             </Text>
           </Pressable>
@@ -257,7 +267,7 @@ export function TranscriptScreen({
                 summaryDisabled && s.disabled,
               ]}
             >
-              <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
                 {other.summary.toUpperCase()}
               </Text>
             </Pressable>
@@ -267,7 +277,7 @@ export function TranscriptScreen({
               accessibilityLabel={`${other.clearAll}. ${en.clearAll}`}
               style={({ pressed }) => [s.footerButton, { borderColor: colors.border }, pressed && s.pressed]}
             >
-              <Text style={[text.label, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
                 {other.clearAll.toUpperCase()}
               </Text>
             </Pressable>
@@ -280,63 +290,74 @@ export function TranscriptScreen({
 
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
-    exchange: { flexDirection: 'row', gap: spacing.xs, paddingVertical: spacing.xs },
+    exchange: { flexDirection: 'row', gap: 8 },
+    exchangeWide: { paddingHorizontal: 22, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.rule },
     tinted: { backgroundColor: c.surface },
     dimmed: { opacity: 0.58 },
-    margin: { width: 38 },
-    marginWide: { width: 58, gap: 2 },
-    clock: { flex: 1, textAlign: 'right', fontFamily: mono, fontSize: 10.5, letterSpacing: 0.3 },
-    body: { flex: 1, borderLeftWidth: 2, paddingLeft: spacing.sm, gap: 3 },
-    source: { fontSize: 17, lineHeight: 24 },
-    gloss: { fontSize: 12.5, lineHeight: 18 },
+    margin: { width: 34 },
+    marginWide: { width: 62, gap: 3 },
+    clock: { textAlign: 'left', fontFamily: mono, fontWeight: '500', fontSize: 10, letterSpacing: 0.3, paddingTop: 4 },
+    body: { flex: 1, minWidth: 0, borderLeftWidth: 2, paddingLeft: 12, gap: 3 },
+    source: { fontSize: 16, lineHeight: 22.4 },
+    gloss: { fontSize: 12, lineHeight: 17.4 },
+    sourceWide: { fontSize: 17, lineHeight: 23.8 },
+    glossWide: { fontSize: 12.5, lineHeight: 18.1 },
 
-    // Stretches rather than sitting at a fixed 186: the block is the flexible
-    // element on the home screen, so it takes the slack and the mode control
-    // sits directly under it, as drawn. The exchange column inside is still
-    // clipped and bottom-aligned, so new speech pushes old speech out of view.
-    block: { flex: 1, minHeight: 150, paddingBottom: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
-    blockLabel: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
+    // The flexible element on the home screen: full-bleed surface that takes
+    // the slack. Never a fixed-height scroller here.
+    block: {
+      flex: 1,
+      minHeight: 0,
+      overflow: 'hidden',
+      width: '100%',
+      paddingTop: 5,
+      paddingHorizontal: 22,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+    },
+    blockLabel: { flexGrow: 0, flexShrink: 0, flexDirection: 'row', justifyContent: 'space-between', marginTop: 9, marginBottom: 10 },
     // flex:1 + minHeight:0 + hidden — all three, or the bottom-aligned column
     // grows upward through the label instead of clipping.
-    exchanges: { flex: 1, minHeight: 0, overflow: 'hidden', justifyContent: 'flex-end', gap: spacing.sm },
+    exchanges: { flex: 1, minHeight: 0, overflow: 'hidden', justifyContent: 'flex-end', gap: 12 },
     blockFooter: {
+      flexGrow: 0,
+      flexShrink: 0,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
-      gap: spacing.xxs,
-      marginTop: spacing.xs,
-      paddingTop: spacing.xs,
-      borderTopWidth: StyleSheet.hairlineWidth,
+      gap: 6,
+      marginTop: 12,
+      paddingTop: 10,
+      borderTopWidth: 1,
     },
 
     screen: { flex: 1 },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.md,
-      paddingTop: spacing.sm,
-      paddingBottom: spacing.sm,
-      borderBottomWidth: StyleSheet.hairlineWidth,
+      paddingHorizontal: 22,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
     },
     // Equal flex on both sides, so the title sits on the screen's centre
-    // rather than on the centre of whatever is left over. The back label and
-    // the count are different widths, which is what pushed it off before.
-    back: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, minHeight: tapTarget.min },
+    // rather than on the centre of whatever is left over.
+    back: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 48 },
     backChevron: { transform: [{ rotate: '180deg' }] },
-    title: { fontSize: 18, lineHeight: 24, textAlign: 'center' },
+    title: { flex: 1, fontSize: 17, lineHeight: 22, textAlign: 'center' },
+    count: { flex: 1, textAlign: 'right', fontFamily: mono, fontWeight: '500', fontSize: 10 },
     ledger: { flex: 1, minHeight: 0 },
-    ledgerContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
-    footer: { flexDirection: 'row', gap: spacing.xs, padding: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
+    ledgerContent: { paddingBottom: 16 },
+    footer: { flexDirection: 'row', gap: 9, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 16, borderTopWidth: 1 },
     footerButton: {
       flexGrow: 1,
       flexShrink: 1,
-      flexBasis: 'auto',
-      minHeight: tapTarget.min,
+      flexBasis: 0,
+      minHeight: 48,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderRadius: 4,
+      padding: 12,
     },
     pressed: { backgroundColor: 'rgba(29, 28, 26, 0.04)' },
     disabled: { opacity: 0.4 },

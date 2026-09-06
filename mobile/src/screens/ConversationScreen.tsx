@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import {
   AudioModule,
   createAudioPlayer,
@@ -40,6 +40,7 @@ import { isDisplayable, type GateVerdict } from '../services/safeguardDecision';
 import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
 import { bilingual, radius, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Appear } from '../components/Appear';
 import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
@@ -237,6 +238,43 @@ export function ConversationScreen({
   const [playbackLevel, setPlaybackLevel] = useState<number | null>(null);
   /** The pushed transcript screen. */
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptEver, setTranscriptEver] = useState(false);
+  /** Where the summary was opened from, so ATRÁS returns there. */
+  const [summaryFrom, setSummaryFrom] = useState<'home' | 'transcript'>('home');
+  const reduceMotion = useReducedMotion();
+  const { width: winWidth } = useWindowDimensions();
+  /**
+   * Push position: 0 home, 1 transcript, 2 summary. The incoming screen
+   * slides from translateX 100% to 0 over 320ms with Easing.bezier(.32,.72,0,1)
+   * while the outgoing screen moves to −16% and fades to 0. Nothing unmounts:
+   * the transcript stays mounted once opened and the summary stays mounted
+   * once it has content.
+   */
+  const [pushAnim] = useState(() => new Animated.Value(0));
+  const route: 'home' | 'transcript' | 'summary' =
+    summary !== null ? 'summary' : transcriptOpen ? 'transcript' : 'home';
+  const routeIndex = route === 'home' ? 0 : route === 'transcript' ? 1 : 2;
+
+  useEffect(() => {
+    Animated.timing(pushAnim, {
+      toValue: routeIndex,
+      duration: reduceMotion ? 0 : 320,
+      easing: Easing.bezier(0.32, 0.72, 0, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [routeIndex, reduceMotion, pushAnim]);
+
+  const goHome = () => {
+    setTranscriptOpen(false);
+    setConfirmingClear(false);
+    setSummary(null);
+  };
+  const goTranscript = () => {
+    setSummary(null);
+    setTranscriptEver(true);
+    setTranscriptOpen(true);
+    setConfirmingClear(false);
+  };
   const [confirmingClear, setConfirmingClear] = useState(false);
   const lastSampleAtRef = useRef(0);
   /** Interpreter-rights card — reachable from the teach-back dead end. */
@@ -1004,8 +1042,17 @@ export function ConversationScreen({
   // Listening shows the room; speaking shows the app's own voice.
   const bloomLevel = phase === 'listening' ? meterLevel : phase === 'speaking' ? playbackLevel : null;
 
+  // Push interpolations: incoming slides from 100% to 0 while the outgoing
+  // screen retreats to −16% and fades. Parked screens sit at +100%.
+  const homeX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, -0.16 * winWidth, -0.16 * winWidth] });
+  const homeOpacity = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0, 0] });
+  const transcriptX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [winWidth, 0, -0.16 * winWidth] });
+  const transcriptOpacity = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 1, 0] });
+  const summaryX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [winWidth, winWidth, 0] });
+
   return (
     <View style={s.screen}>
+      <Animated.View style={[s.homeLayer, { transform: [{ translateX: homeX }], opacity: homeOpacity }]}>
       <SpeakingBloom active={voiceActive} level={bloomLevel} />
 
       {/* Header: the patient's language, the auto-detect toggle, about. */}
@@ -1048,6 +1095,7 @@ export function ConversationScreen({
           otherLanguage={otherLanguage}
           onOpen={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setTranscriptEver(true);
             setTranscriptOpen(true);
           }}
         />
@@ -1157,6 +1205,7 @@ export function ConversationScreen({
                       disabled: busy || offline,
                       onPress: () => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSummaryFrom('home');
                         openSummary(turns);
                       },
                     },
@@ -1194,16 +1243,14 @@ export function ConversationScreen({
           />
 
           {/* Auto-detect is one bar, as drawn. Two-language mode keeps a bar
-             each: the design shows a single direction, but this app has to let
-             either person speak, and dropping the clinician's button to match a
-             mockup would remove half the conversation. */}
-          <View style={[s.bars, !autoMode && s.barsRow]}>
+             each: either person has to be able to speak. */}
+          <View style={autoMode ? s.barsSingle : s.bars}>
             {autoMode ? (
               <SpeakBar
                 name={other.speakAuto}
                 lang={otherLanguage.code}
                 speechTag={otherLanguage.speechTag}
-                sub="AUTO-DETECT LANGUAGE"
+                sub={other.auto.toUpperCase()}
                 disabled={phase === 'translating' || offline}
                 onPress={() => startTap(null)}
               />
@@ -1230,7 +1277,9 @@ export function ConversationScreen({
             )}
           </View>
 
-          <PrivacyLine language={otherLanguage} />
+          <View style={s.privacy}>
+            <PrivacyLine language={otherLanguage} />
+          </View>
         </>
       )}
 
@@ -1287,20 +1336,20 @@ export function ConversationScreen({
 
       <BodyMapModal visible={bodyMapOpen} otherLanguage={otherLanguage} onClose={() => setBodyMapOpen(false)} onConfirm={confirmBodyPain} />
       <RightsCard visible={rightsOpen} otherLanguage={otherLanguage} onClose={() => setRightsOpen(false)} />
-      <SummaryModal state={summary} otherLanguage={otherLanguage} onClose={() => setSummary(null)} />
-      {transcriptOpen ? (
-        <View style={s.pushed}>
+      </Animated.View>
+      {transcriptEver ? (
+        <Animated.View
+          style={[s.pushed, { transform: [{ translateX: transcriptX }], opacity: transcriptOpacity }]}
+          pointerEvents={route === 'transcript' ? 'auto' : 'none'}
+        >
           <TranscriptScreen
             turns={turns}
             otherLanguage={otherLanguage}
             summaryDisabled={busy || offline || turns.length < 2}
             confirmingClear={confirmingClear}
-            onBack={() => {
-              setTranscriptOpen(false);
-              setConfirmingClear(false);
-            }}
+            onBack={goHome}
             onSummary={() => {
-              setTranscriptOpen(false);
+              setSummaryFrom('transcript');
               setConfirmingClear(false);
               void openSummary(turns);
             }}
@@ -1317,10 +1366,32 @@ export function ConversationScreen({
               stopAllAudio();
               onTurnsChange([]);
               setConfirmingClear(false);
-              setTranscriptOpen(false);
+              goHome();
             }}
           />
-        </View>
+        </Animated.View>
+      ) : null}
+      {summary !== null ? (
+        <Animated.View
+          style={[s.pushed, { transform: [{ translateX: summaryX }] }]}
+          pointerEvents={route === 'summary' ? 'auto' : 'none'}
+        >
+          <SummaryModal
+            state={summary}
+            otherLanguage={otherLanguage}
+            turns={turns}
+            onBack={() => {
+              if (summaryFrom === 'transcript') {
+                setSummary(null);
+                setTranscriptOpen(true);
+              } else {
+                goHome();
+              }
+            }}
+            onTranscript={goTranscript}
+            onClose={() => setSummary(null)}
+          />
+        </Animated.View>
       ) : null}
 
       {/* The live line's four actions. Off the line itself, because the
@@ -1416,7 +1487,9 @@ export function ConversationScreen({
 
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.bg, paddingHorizontal: spacing.md },
+    screen: { flex: 1, backgroundColor: c.bg },
+    homeLayer: { flex: 1 },
+    pushed: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
     header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
     headerLanguage: { flex: 1, justifyContent: 'flex-start', paddingHorizontal: spacing.xs },
     iconButton: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
@@ -1426,27 +1499,26 @@ const makeStyles = (c: ColorTokens) =>
       alignItems: 'flex-start',
       gap: spacing.sm,
       backgroundColor: c.surface,
-      borderRadius: radius.pill,
+      borderRadius: 4,
       padding: spacing.sm,
+      marginHorizontal: 22,
+      marginTop: 12,
     },
     bannerText: { flex: 1, gap: spacing.xs },
-    disclaimer: { gap: spacing.xs, marginTop: spacing.xs },
+    disclaimer: { gap: spacing.xs, marginTop: spacing.xs, paddingHorizontal: 22 },
     disclaimerOk: { alignSelf: 'stretch' },
     summary: { marginTop: spacing.sm, alignSelf: 'stretch' },
     // Transient only now (errors, the translating line, the empty tagline).
     // It no longer competes with the block for the screen's slack.
     thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
     threadFill: { flexGrow: 1 },
-    threadContent: { paddingVertical: spacing.md, gap: spacing.md },
+    threadContent: { paddingHorizontal: 22, paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
-    // A sibling laid over the screen rather than a modal, so the conversation
-    // underneath keeps its state and nothing reflows on the way back.
-    pushed: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
     live: { marginTop: spacing.sm },
-    empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
-    bars: { gap: spacing.xs, marginBottom: spacing.sm },
-    barsRow: { flexDirection: 'row' },
+    empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 22, paddingBottom: spacing.lg },
+    bars: { flexDirection: 'row', gap: 9, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12 },
+    barsSingle: { flexDirection: 'column', gap: 9, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12 },
     options: { gap: spacing.xs, padding: spacing.md },
 
-    privacy: { alignSelf: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+    privacy: { paddingHorizontal: 22, paddingBottom: 14 },
   });

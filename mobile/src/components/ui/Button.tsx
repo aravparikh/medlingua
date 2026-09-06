@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type AccessibilityRole, type AccessibilityState, type StyleProp, type ViewStyle } from 'react-native';
 
-import { radius, spacing, tapTarget, useTheme, type BilingualLabel, type ColorTokens } from '../../theme';
+import { spacing, tapTarget, useTheme, type BilingualLabel, type ColorTokens } from '../../theme';
 import { Label } from './Label';
 
 export type ButtonVariant =
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
+    borderRadius: 4,
   },
   stacked: { flexDirection: 'column', gap: spacing.xxs, paddingHorizontal: spacing.xs },
   // NOT flex:1 — see PressableScale for the Yoga zero-height bug on device.

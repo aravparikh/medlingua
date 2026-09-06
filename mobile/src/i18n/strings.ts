@@ -127,6 +127,18 @@ export interface UIStrings {
   /** Short speaker tags in the transcript margin. */
   patientTag: string;
   clinicianTag: string;
+  // Masthead + mode + meta (reference paper chrome; uppercase lives here)
+  idiomaLabel: string;
+  changeShort: string;
+  settingsLabel: string;
+  inputModeLabel: string;
+  appointmentLabel: string;
+  timeLabel: string;
+  turnsLabel: string;
+  reasonLabel: string;
+  symptomsLabel: string;
+  nextStepsLabel: string;
+  summaryDisclaimer: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -238,6 +250,18 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Delete the whole conversation?',
     patientTag: 'PT',
     clinicianTag: 'DR',
+    idiomaLabel: 'LANGUAGE',
+    changeShort: 'change',
+    settingsLabel: 'SETTINGS',
+    inputModeLabel: 'INPUT MODE',
+    appointmentLabel: 'VISIT',
+    timeLabel: 'TIME',
+    turnsLabel: 'TURNS',
+    reasonLabel: 'Reason',
+    symptomsLabel: 'Symptoms',
+    nextStepsLabel: 'Next steps',
+    summaryDisclaimer:
+      "Generated from this visit's transcript. Review it with your clinician.",
   },
   es: {
     listening: 'Escuchando…',
@@ -347,6 +371,18 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: '¿Borrar toda la conversación?',
     patientTag: 'PAC',
     clinicianTag: 'DR',
+    idiomaLabel: 'IDIOMA',
+    changeShort: 'cambiar',
+    settingsLabel: 'AJUSTES',
+    inputModeLabel: 'MODO DE ENTRADA',
+    appointmentLabel: 'CITA',
+    timeLabel: 'HORA',
+    turnsLabel: 'TURNOS',
+    reasonLabel: 'Motivo',
+    symptomsLabel: 'Síntomas',
+    nextStepsLabel: 'Próximos pasos',
+    summaryDisclaimer:
+      'Generado a partir de la transcripción de esta visita. Revíselo con su médico.',
   },
   zh: {
     listening: '正在聆听…',
@@ -456,6 +492,17 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: '要删除整段对话吗？',
     patientTag: '患者',
     clinicianTag: '医生',
+    idiomaLabel: '语言',
+    changeShort: '更换',
+    settingsLabel: '设置',
+    inputModeLabel: '输入模式',
+    appointmentLabel: '就诊',
+    timeLabel: '时间',
+    turnsLabel: '轮次',
+    reasonLabel: '原因',
+    symptomsLabel: '症状',
+    nextStepsLabel: '后续步骤',
+    summaryDisclaimer: '根据本次就诊记录生成。请与您的医生一起查看。',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -565,6 +612,17 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Xóa toàn bộ cuộc trò chuyện?',
     patientTag: 'BN',
     clinicianTag: 'BS',
+    idiomaLabel: 'NGÔN NGỮ',
+    changeShort: 'đổi',
+    settingsLabel: 'CÀI ĐẶT',
+    inputModeLabel: 'CHẾ ĐỘ NHẬP',
+    appointmentLabel: 'CUỘC HẸN',
+    timeLabel: 'GIỜ',
+    turnsLabel: 'LƯỢT',
+    reasonLabel: 'Lý do',
+    symptomsLabel: 'Triệu chứng',
+    nextStepsLabel: 'Bước tiếp theo',
+    summaryDisclaimer: 'Được tạo từ bản ghi của buổi khám này. Hãy xem lại với bác sĩ của bạn.',
   },
   ru: {
     listening: 'Слушаю…',
@@ -674,6 +732,17 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Удалить весь разговор?',
     patientTag: 'ПАЦ',
     clinicianTag: 'ВРАЧ',
+    idiomaLabel: 'ЯЗЫК',
+    changeShort: 'сменить',
+    settingsLabel: 'НАСТРОЙКИ',
+    inputModeLabel: 'РЕЖИМ ВВОДА',
+    appointmentLabel: 'ВИЗИТ',
+    timeLabel: 'ВРЕМЯ',
+    turnsLabel: 'РЕПЛИКИ',
+    reasonLabel: 'Причина',
+    symptomsLabel: 'Симптомы',
+    nextStepsLabel: 'Дальнейшие шаги',
+    summaryDisclaimer: 'Составлено на основе записи этого визита. Проверьте с вашим врачом.',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -784,6 +853,17 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'पूरी बातचीत हटाएँ?',
     patientTag: 'रोगी',
     clinicianTag: 'डॉ',
+    idiomaLabel: 'भाषा',
+    changeShort: 'बदलें',
+    settingsLabel: 'सेटिंग',
+    inputModeLabel: 'इनपुट मोड',
+    appointmentLabel: 'अपॉइंटमेंट',
+    timeLabel: 'समय',
+    turnsLabel: 'बारी',
+    reasonLabel: 'कारण',
+    symptomsLabel: 'लक्षण',
+    nextStepsLabel: 'अगले कदम',
+    summaryDisclaimer: 'इस मुलाकात के रिकॉर्ड से तैयार किया गया। अपने डॉक्टर के साथ इसकी समीक्षा करें।',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -894,6 +974,17 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'ਪੂਰੀ ਗੱਲਬਾਤ ਮਿਟਾਉਣੀ ਹੈ?',
     patientTag: 'ਮਰੀਜ਼',
     clinicianTag: 'ਡਾ',
+    idiomaLabel: 'ਭਾਸ਼ਾ',
+    changeShort: 'ਬਦਲੋ',
+    settingsLabel: 'ਸੈਟਿੰਗ',
+    inputModeLabel: 'ਇਨਪੁੱਟ ਮੋਡ',
+    appointmentLabel: 'ਮੁਲਾਕਾਤ',
+    timeLabel: 'ਸਮਾਂ',
+    turnsLabel: 'ਵਾਰੀ',
+    reasonLabel: 'ਕਾਰਨ',
+    symptomsLabel: 'ਲੱਛਣ',
+    nextStepsLabel: 'ਅਗਲੇ ਕਦਮ',
+    summaryDisclaimer: 'ਇਸ ਮੁਲਾਕਾਤ ਦੇ ਰਿਕਾਰਡ ਤੋਂ ਤਿਆਰ ਕੀਤਾ ਗਿਆ। ਆਪਣੇ ਡਾਕਟਰ ਨਾਲ ਇਸ ਦੀ ਸਮੀਖਿਆ ਕਰੋ।',
   },
 };
 
