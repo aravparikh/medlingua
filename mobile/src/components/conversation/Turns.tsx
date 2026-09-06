@@ -164,8 +164,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
               lang={turn.listener.code}
               speechTag={turn.listener.speechTag}
               variant="outline"
-              stacked
-              dense
+                            dense
               flex
               disabled={busy && !speaking}
               icon={<SpeakIcon size={20} color={colors.ink} />}
@@ -176,8 +175,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
               lang={turn.listener.code}
               speechTag={turn.listener.speechTag}
               variant="outline"
-              stacked
-              dense
+                            dense
               flex
               disabled={busy}
               icon={<SlowIcon size={20} color={colors.ink} />}
@@ -192,8 +190,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
                 lang={turn.listener.code}
                 speechTag={turn.listener.speechTag}
                 variant="outline"
-                stacked
-                dense
+                                dense
                 flex
                 accessibilityRole="switch"
                 accessibilityState={{ checked: flipped }}
@@ -207,8 +204,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
                   lang={otherLanguage.code}
                   speechTag={otherLanguage.speechTag}
                   variant="outline"
-                  stacked
-                  dense
+                                    dense
                   flex
                   disabled={busy || offline}
                   icon={<UnderstandIcon size={20} color={colors.ink} />}

@@ -343,7 +343,10 @@ const styles = (c: ColorTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      minHeight: tapTarget.primary,
+      // 56, not the 64 primary target: with the summary row the index is four
+      // rows deep, and 4 × 64 left the live line nothing to occupy. Still well
+      // clear of the 48 floor.
+      minHeight: 56,
       borderBottomWidth: StyleSheet.hairlineWidth,
     },
     numeral: { fontFamily: mono, fontSize: 12, letterSpacing: 0.5 },
