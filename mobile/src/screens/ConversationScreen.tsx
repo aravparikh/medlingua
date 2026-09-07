@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import type { ReactNode } from 'react';
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import {
   AudioModule,
   createAudioPlayer,
@@ -15,7 +16,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { CloudOffIcon, EyeIcon, InfoIcon, SlowIcon, SpeakIcon, SparkleIcon, TrashIcon, UnderstandIcon } from '../components/icons';
+import { ChevronForwardIcon, CloudOffIcon, EyeIcon, GaugeIcon, InfoIcon, SpeakIcon, SparkleIcon, TrashIcon, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
@@ -40,7 +41,7 @@ import { gatedTranslate } from '../services/safeguard';
 import { isDisplayable, type GateVerdict } from '../services/safeguardDecision';
 import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
-import { bilingual, radius, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
+import { bilingual, fontFor, radius, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Appear } from '../components/Appear';
 import { BodyMapModal } from '../components/BodyMap';
@@ -160,6 +161,91 @@ const DB_CEIL = -8;
 function normalizeMetering(db: number): number {
   return Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
 }
+
+/**
+ * One sage option row for the more-options sheet: mint icon circle, semibold
+ * title over a muted English echo, trailing chevron — or the destructive
+ * rose treatment with no chevron.
+ */
+function OptionRow({
+  icon,
+  title,
+  sub,
+  lang,
+  speechTag,
+  destructive = false,
+  disabled = false,
+  onPress,
+}: {
+  icon: ReactNode;
+  title: string;
+  sub?: string;
+  lang: string;
+  speechTag?: string;
+  destructive?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={sub ? `${title}. ${sub}` : title}
+      accessibilityLanguage={speechTag}
+      style={({ pressed }) => [
+        optionStyles.row,
+        destructive
+          ? { backgroundColor: colors.dangerBg, borderColor: colors.dangerBorder }
+          : { backgroundColor: colors.white },
+        pressed && optionStyles.pressed,
+        disabled && optionStyles.disabled,
+      ]}
+    >
+      <View style={[optionStyles.icon, { backgroundColor: destructive ? colors.white : colors.mintLight }]}>
+        {icon}
+      </View>
+      <View style={optionStyles.text}>
+        <Text
+          style={[{ fontSize: 16, lineHeight: 22 }, fontFor(lang, 'semibold'), { color: destructive ? colors.danger : colors.ink }]}
+          allowFontScaling
+          maxFontSizeMultiplier={1.4}
+        >
+          {title}
+        </Text>
+        {sub ? (
+          <Text
+            style={[{ fontSize: 12, lineHeight: 17 }, fontFor('en'), { color: destructive ? colors.danger : colors.muted, opacity: destructive ? 0.8 : 1 }]}
+            allowFontScaling
+            maxFontSizeMultiplier={1.4}
+          >
+            {sub}
+          </Text>
+        ) : null}
+      </View>
+      {destructive ? null : <ChevronForwardIcon size={14} color={colors.inkSoft} />}
+    </Pressable>
+  );
+}
+
+const optionStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 60,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  icon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  text: { flex: 1, minWidth: 0 },
+  pressed: { opacity: 0.94 },
+  disabled: { opacity: 0.4 },
+});
 
 
 /**
@@ -1475,37 +1561,37 @@ export function ConversationScreen({
       >
         {optionsTurn ? (
           <View style={s.options}>
-            <Button
-              label={bilingual(t(optionsTurn.listener.code).playAgain, en.playAgain)}
+            <OptionRow
+              icon={<SpeakIcon size={15} color={colors.accent} />}
+              title={t(optionsTurn.listener.code).playAgain}
+              sub={en.playAgain}
               lang={optionsTurn.listener.code}
               speechTag={optionsTurn.listener.speechTag}
-              variant="outline"
               disabled={busy}
-              icon={<SpeakIcon size={22} color={colors.ink} />}
               onPress={() => {
                 setOptionsTurn(null);
                 void playTurn(optionsTurn);
               }}
             />
-            <Button
-              label={bilingual(t(optionsTurn.listener.code).slowLabel, en.slowLabel)}
+            <OptionRow
+              icon={<GaugeIcon size={15} color={colors.accent} />}
+              title={t(optionsTurn.listener.code).slowLabel}
+              sub={en.slowLabel}
               lang={optionsTurn.listener.code}
               speechTag={optionsTurn.listener.speechTag}
-              variant="outline"
               disabled={busy}
-              icon={<SlowIcon size={22} color={colors.ink} />}
               onPress={() => {
                 setOptionsTurn(null);
                 void playTurnSlow(optionsTurn);
               }}
             />
             {!optionsTurn.isName ? (
-              <Button
-                label={bilingual(t(optionsTurn.listener.code).flip, en.flip)}
+              <OptionRow
+                icon={<EyeIcon size={15} color={colors.accent} />}
+                title={t(optionsTurn.listener.code).flip}
+                sub={en.flip}
                 lang={optionsTurn.listener.code}
                 speechTag={optionsTurn.listener.speechTag}
-                variant="outline"
-                icon={<EyeIcon size={22} color={colors.ink} />}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   const turn = optionsTurn;
@@ -1515,13 +1601,13 @@ export function ConversationScreen({
               />
             ) : null}
             {!optionsTurn.isName ? (
-              <Button
-                label={bilingual(t(optionsTurn.listener.code).rephraseLabel, en.rephraseLabel)}
+              <OptionRow
+                icon={<SparkleIcon size={15} color={colors.accent} />}
+                title={t(optionsTurn.listener.code).rephraseLabel}
+                sub={en.rephraseLabel}
                 lang={optionsTurn.listener.code}
                 speechTag={optionsTurn.listener.speechTag}
-                variant="outline"
                 disabled={busy || offline}
-                icon={<SparkleIcon size={22} color={colors.ink} />}
                 onPress={() => {
                   const turn = optionsTurn;
                   setOptionsTurn(null);
@@ -1530,25 +1616,26 @@ export function ConversationScreen({
               />
             ) : null}
             {!optionsTurn.isName && optionsTurn.speaker.code === 'en' ? (
-              <Button
-                label={bilingual(other.checkLabel, en.checkLabel)}
+              <OptionRow
+                icon={<UnderstandIcon size={15} color={colors.accent} />}
+                title={other.checkLabel}
+                sub={en.checkLabel}
                 lang={otherLanguage.code}
                 speechTag={otherLanguage.speechTag}
-                variant="outline"
                 disabled={busy || offline}
-                icon={<UnderstandIcon size={22} color={colors.ink} />}
                 onPress={() => {
                   setOptionsTurn(null);
                   startTeachBack(optionsTurn);
                 }}
               />
             ) : null}
-            <Button
-              label={bilingual(other.deleteLabel, en.deleteLabel)}
+            <OptionRow
+              icon={<TrashIcon size={15} color={colors.danger} />}
+              title={other.deleteLabel}
+              sub={en.deleteLabel}
               lang={otherLanguage.code}
               speechTag={otherLanguage.speechTag}
-              variant="danger"
-              icon={<TrashIcon size={22} color={colors.danger} />}
+              destructive
               onPress={() => {
                 const turn = optionsTurn;
                 setOptionsTurn(null);
@@ -1602,7 +1689,7 @@ const makeStyles = (c: ColorTokens) =>
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 16, paddingBottom: spacing.lg },
     bars: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 14 },
     barsSingle: { flexDirection: 'column', gap: 10, paddingHorizontal: 16, paddingTop: 14 },
-    options: { gap: spacing.xs, padding: spacing.md },
+    options: { gap: 8 },
 
     privacy: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 },
   });

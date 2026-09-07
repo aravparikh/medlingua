@@ -74,6 +74,8 @@ export interface ColorTokens {
   mintLight: string;
   /** Pale top-right blob on the transcript ground. */
   blobPale: string;
+  /** Bottom-sheet grabber. */
+  grabber: string;
   cream: string;
   white: string;
   dangerBorder: string;
@@ -98,6 +100,7 @@ export const lightColors: ColorTokens = {
   mint: '#A9C9B0',
   mintLight: '#E6EFE4',
   blobPale: '#CFE0D2',
+  grabber: '#CFD6CF',
   cream: '#F7F3EA',
   white: '#FFFFFF',
   onAccent: '#FFFFFF',
@@ -130,6 +133,7 @@ export const darkColors: ColorTokens = {
   mint: '#3F7A55',
   mintLight: '#2A3A2F',
   blobPale: '#24352B',
+  grabber: '#3A443D',
   cream: '#141B17',
   white: '#1E2721',
   onAccent: '#141B17',

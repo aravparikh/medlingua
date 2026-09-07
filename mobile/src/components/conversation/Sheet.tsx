@@ -1,11 +1,10 @@
-import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useRef, type ReactNode } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
-import { bilingual, elevation, radius, spacing, tapTarget, useTheme, type BilingualLabel } from '../../theme';
+import { bilingual, fontFor, radius, serifFor, useTheme, type BilingualLabel } from '../../theme';
 import { CloseIcon } from '../icons';
-import { Label } from '../ui/Label';
 
 interface Props {
   visible: boolean;
@@ -19,34 +18,64 @@ interface Props {
 }
 
 /**
- * The one sheet. Slides up over a scrim, sits on `bg` with the sheet radius
- * and the app's single shadow. Header: optional icon, the title on the
- * bilingual rule, a 48pt close.
+ * The one sage sheet: cream, 32pt top radius, grabber, Newsreader title with
+ * its English echo, and a white-circle close. Dismisses on scrim tap, X, or a
+ * downward swipe starting on the header.
  */
 export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard = false, children }: Props) {
   const { colors } = useTheme();
   const en = t('en');
   const other = t(otherLanguage.code);
   const Wrapper = keyboard ? KeyboardAvoidingView : View;
+  const swipeFrom = useRef(0);
+
+  const onHeaderTouchStart = (e: GestureResponderEvent) => {
+    swipeFrom.current = e.nativeEvent.pageY;
+  };
+  const onHeaderTouchEnd = (e: GestureResponderEvent) => {
+    if (e.nativeEvent.pageY - swipeFrom.current > 60) onClose();
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Wrapper style={[styles.backdrop, { backgroundColor: colors.overlay }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={styles.dismiss} onPress={onClose} accessibilityRole="button" accessibilityLabel={`${other.close}. ${en.close}`} />
-        <View style={[styles.sheet, { backgroundColor: colors.bg }, elevation.sheet]}>
-          <View style={[styles.header, { borderBottomColor: colors.rule }]}>
+        <View style={[styles.sheet, { backgroundColor: colors.cream }]}>
+          <View style={styles.grabberRow} importantForAccessibility="no">
+            <View style={[styles.grabber, { backgroundColor: colors.grabber }]} />
+          </View>
+          <View
+            style={styles.header}
+            onTouchStart={onHeaderTouchStart}
+            onTouchEnd={onHeaderTouchEnd}
+          >
             {icon ? <View style={styles.icon}>{icon}</View> : null}
-            <Label primary={title.primary} secondary={title.secondary} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="title" weight="semibold" style={styles.title} />
+            <View style={styles.titleWrap}>
+              <Text
+                style={[styles.title, serifFor(otherLanguage.code, 'medium'), { color: colors.ink }]}
+                accessibilityRole="header"
+                accessibilityLanguage={otherLanguage.speechTag}
+                allowFontScaling
+                maxFontSizeMultiplier={1.4}
+              >
+                {title.primary}
+              </Text>
+              {title.secondary ? (
+                <Text style={[styles.subtitle, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                  {title.secondary}
+                </Text>
+              ) : null}
+            </View>
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
               accessibilityLabel={bilingual(other.close, en.close).primary}
-              style={({ pressed }) => [styles.close, pressed && { backgroundColor: colors.surfacePressed }]}
+              style={({ pressed }) => [styles.close, { backgroundColor: colors.white }, pressed && styles.pressed]}
             >
-              <CloseIcon size={24} color={colors.ink} />
+              <CloseIcon size={18} color={colors.ink} />
             </Pressable>
           </View>
-          {children}
+          <View style={styles.content}>{children}</View>
         </View>
       </Wrapper>
     </Modal>
@@ -54,18 +83,29 @@ export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard =
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1 },
+  backdrop: { flex: 1, justifyContent: 'flex-end' },
   dismiss: { flex: 1 },
-  sheet: { maxHeight: '86%', borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, paddingBottom: spacing.xl },
+  sheet: {
+    maxHeight: '86%',
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    paddingTop: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+    gap: 14,
+  },
+  grabberRow: { alignItems: 'center' },
+  grabber: { width: 40, height: 4, borderRadius: 2 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 12,
   },
   icon: { width: 24, alignItems: 'center' },
-  title: { flex: 1 },
-  close: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
+  titleWrap: { flex: 1, minWidth: 0 },
+  title: { fontSize: 30, lineHeight: 34 },
+  subtitle: { fontSize: 14, lineHeight: 20, marginTop: 2 },
+  close: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  content: { gap: 8 },
+  pressed: { opacity: 0.9 },
 });
