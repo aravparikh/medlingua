@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -58,7 +58,7 @@ export function RecordingPanel({
   const rec = speaker ? t(speaker.code) : other;
   const pair = !speaker || speaker.code !== 'en' ? `${otherLanguage.nativeName} → EN` : `EN → ${otherLanguage.nativeName}`;
 
-  const bars = useRef(REST.map(() => new Animated.Value(0.65))).current;
+  const [bars] = useState(() => REST.map(() => new Animated.Value(0.65)));
   const loops = useRef<Animated.CompositeAnimation[]>([]);
 
   // Idle: each bar breathes scaleY 0.35→1→0.35 on its own 0.9–1.2s loop with

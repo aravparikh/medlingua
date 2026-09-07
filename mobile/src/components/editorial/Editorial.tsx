@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -350,7 +350,7 @@ interface SpeakBarProps {
 export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false, condensed = false, listening = false, onPress }: SpeakBarProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
-  const pulse = useRef(new Animated.Value(1)).current;
+  const [pulse] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     if (!listening) {
