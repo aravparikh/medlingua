@@ -1210,15 +1210,18 @@ export function ConversationScreen({
       </ScrollView>
 
       {recordingPanelVisible ? (
-        <Appear>
+        <Appear style={s.listening}>
           <RecordingPanel
             speaker={speaker}
             otherLanguage={otherLanguage}
+            detecting={autoMode}
             elapsedMs={recorderState.durationMillis}
             level={meterLevel}
             tooQuiet={tooQuiet}
             onDone={() => void finishListening()}
             onCancel={() => void cancelListening()}
+            onChangeLanguage={onChangeLanguage}
+            onSettings={onShowAbout}
           />
         </Appear>
       ) : (
@@ -1581,7 +1584,7 @@ const makeStyles = (c: ColorTokens) =>
     // It no longer competes with the block for the screen's slack.
     thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
     threadFill: { flexGrow: 1 },
-    threadContent: { paddingHorizontal: 16, paddingVertical: spacing.md, gap: spacing.md },
+    listening: { flex: 1 },    threadContent: { paddingHorizontal: 16, paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     live: { marginTop: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 16, paddingBottom: spacing.lg },
