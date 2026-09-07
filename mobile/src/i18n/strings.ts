@@ -136,6 +136,9 @@ export interface UIStrings {
   /** Short speaker tags in the transcript margin. */
   patientTag: string;
   clinicianTag: string;
+  /** Full words for the transcript speaker pills. */
+  patientWord: string;
+  doctorWord: string;
   // Masthead + mode + meta (reference paper chrome; uppercase lives here)
   idiomaLabel: string;
   changeShort: string;
@@ -271,6 +274,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Delete the whole conversation?',
     patientTag: 'PT',
     clinicianTag: 'DR',
+    patientWord: 'Patient',
+    doctorWord: 'Doctor',
     settingsTitle: 'Settings',
     speakAloudLabel: 'Read aloud',
     speakAloudHint: 'Speak each translation out loud.',
@@ -403,6 +408,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: '¿Borrar toda la conversación?',
     patientTag: 'PAC',
     clinicianTag: 'DR',
+    patientWord: 'Paciente',
+    doctorWord: 'Doctor',
     settingsTitle: 'Ajustes',
     speakAloudLabel: 'Leer en voz alta',
     speakAloudHint: 'Decir cada traducción en voz alta.',
@@ -535,6 +542,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: '要删除整段对话吗？',
     patientTag: '患者',
     clinicianTag: '医生',
+    patientWord: '患者',
+    doctorWord: '医生',
     settingsTitle: '设置',
     speakAloudLabel: '朗读',
     speakAloudHint: '把每条翻译读出来。',
@@ -666,6 +675,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Xóa toàn bộ cuộc trò chuyện?',
     patientTag: 'BN',
     clinicianTag: 'BS',
+    patientWord: 'Bệnh nhân',
+    doctorWord: 'Bác sĩ',
     settingsTitle: 'Cài đặt',
     speakAloudLabel: 'Đọc to',
     speakAloudHint: 'Đọc to từng bản dịch.',
@@ -797,6 +808,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Удалить весь разговор?',
     patientTag: 'ПАЦ',
     clinicianTag: 'ВРАЧ',
+    patientWord: 'Пациент',
+    doctorWord: 'Врач',
     settingsTitle: 'Настройки',
     speakAloudLabel: 'Читать вслух',
     speakAloudHint: 'Произносить каждый перевод вслух.',
@@ -929,6 +942,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'पूरी बातचीत हटाएँ?',
     patientTag: 'रोगी',
     clinicianTag: 'डॉ',
+    patientWord: 'रोगी',
+    doctorWord: 'डॉक्टर',
     settingsTitle: 'सेटिंग्ज़',
     speakAloudLabel: 'ज़ोर से पढ़ें',
     speakAloudHint: 'हर अनुवाद को ज़ोर से बोलें।',
@@ -1061,6 +1076,8 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'ਪੂਰੀ ਗੱਲਬਾਤ ਮਿਟਾਉਣੀ ਹੈ?',
     patientTag: 'ਮਰੀਜ਼',
     clinicianTag: 'ਡਾ',
+    patientWord: 'ਮਰੀਜ਼',
+    doctorWord: 'ਡਾਕਟਰ',
     settingsTitle: 'ਸੈਟਿੰਗਾਂ',
     speakAloudLabel: 'ਉੱਚੀ ਪੜ੍ਹੋ',
     speakAloudHint: 'ਹਰ ਅਨੁਵਾਦ ਉੱਚੀ ਬੋਲੋ।',

@@ -5,7 +5,8 @@ import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Turn } from '../../screens/ConversationScreen';
 import { elevation, fontFor, mono, serifFor, useTheme, type ColorTokens } from '../../theme';
-import { ArrowForwardIcon, ChevronForwardIcon, MicIcon, SpeakIcon } from '../icons';
+import { ArrowForwardIcon, ChevronBackIcon, ChevronForwardIcon, MicIcon, MoreIcon, SpeakIcon } from '../icons';
+import { SageBackground } from '../sage/Sage';
 
 /**
  * The visit as a ledger.
@@ -28,85 +29,80 @@ const isClinician = (turn: Turn) => turn.speaker.code === 'en';
 interface ExchangeProps {
   turn: Turn;
   otherLanguage: Language;
-  /** Margin width: wider on the full screen, which also carries a speaker tag. */
-  wide?: boolean;
-  dimmed?: boolean;
-  tinted?: boolean;
-  /** Transcript only: opens this turn's options (replay, slow, show, check). */
-  onPress?: () => void;
+  /** Plays this turn's translation aloud. */
+  onPlay: () => void;
+  /** Opens this turn's options (replay, slow, show, rephrase, check). */
+  onMore: () => void;
 }
 
-/** One exchange: timestamp margin, speaker rule, source over translation. */
-function Exchange({ turn, otherLanguage, wide = false, dimmed = false, tinted = false, onPress }: ExchangeProps) {
+/** One transcript card: speaker pill, source, translation, play + more. */
+function Exchange({ turn, otherLanguage, onPlay, onMore }: ExchangeProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const clinician = isClinician(turn);
-  const tag = clinician ? t(otherLanguage.code).clinicianTag : t(otherLanguage.code).patientTag;
+  const pill = clinician ? t(otherLanguage.code).doctorWord : t(otherLanguage.code).patientWord;
 
   const en = t('en');
   const other = t(otherLanguage.code);
-  // On the transcript every row is a control: tapping it opens that turn's
-  // options, which is where the four actions live now that the home screen
-  // has no room for them.
-  const Row = onPress ? Pressable : View;
 
   return (
-    <Row
-      style={({ pressed }: { pressed?: boolean } = {}) => [
-        s.exchange,
-        wide && s.exchangeWide,
-        tinted && s.tinted,
-        dimmed && s.dimmed,
-        pressed && s.pressed,
-      ]}
-      onPress={onPress}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={onPress ? `${other.moreOptions}. ${en.moreOptions}` : undefined}
-    >
-      <View style={[s.margin, wide && s.marginWide]}>
-        <Text style={[s.clock, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-          {clockOf(turn)}
-        </Text>
-        {wide ? (
+    <View style={[s.exchangeCard, { backgroundColor: colors.white }]}>
+      <View style={s.exchangeTop}>
+        <View style={[s.speakerPill, { backgroundColor: clinician ? colors.ink : colors.mintLight }]}>
           <Text
             style={[
-              { fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 },
+              { fontSize: 11, lineHeight: 14, letterSpacing: 0.9 },
               fontFor('en', 'semibold'),
-              { color: clinician ? colors.ctaFill : colors.ink },
+              { color: clinician ? colors.white : colors.accent },
             ]}
             allowFontScaling
             maxFontSizeMultiplier={1.4}
           >
-            {tag}
+            {pill.toUpperCase()}
           </Text>
-        ) : null}
+        </View>
+        <Text style={[s.time, { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          {clockOf(turn)}
+        </Text>
       </View>
-      <View
-        style={[
-          s.body,
-          { borderLeftColor: clinician ? colors.accent : colors.border },
-        ]}
-      >
-        {turn.original ? (
-          <Text
-            style={[wide ? s.sourceWide : s.source, serifFor(turn.speaker.code), { color: colors.ink }]}
-            accessibilityLanguage={turn.speaker.speechTag}
-            allowFontScaling
-            maxFontSizeMultiplier={1.8}
-          >
-            {turn.original}
-          </Text>
-        ) : null}
+      {turn.original ? (
         <Text
-          style={[wide ? s.glossWide : s.gloss, fontFor(turn.listener.code), { color: colors.ink2 }]}
-          accessibilityLanguage={turn.listener.speechTag}
+          style={[s.exchangeSource, serifFor(turn.speaker.code, 'medium'), { color: colors.ink }]}
+          accessibilityLanguage={turn.speaker.speechTag}
           allowFontScaling
           maxFontSizeMultiplier={1.8}
         >
-          {turn.translation}
+          {turn.original}
         </Text>
+      ) : null}
+      <Text
+        style={[s.exchangeGloss, fontFor(turn.listener.code), { color: colors.inkSoft }]}
+        accessibilityLanguage={turn.listener.speechTag}
+        allowFontScaling
+        maxFontSizeMultiplier={1.8}
+      >
+        {turn.translation}
+      </Text>
+      <View style={s.exchangeActions}>
+        <Pressable
+          onPress={onPlay}
+          accessibilityRole="button"
+          accessibilityLabel={`${t(turn.listener.code).playAgain}. ${en.playAgain}`}
+          accessibilityLanguage={turn.listener.speechTag}
+          style={({ pressed }) => [s.round34, { backgroundColor: colors.mintLight }, pressed && s.pressed]}
+        >
+          <SpeakIcon size={16} color={colors.accent} />
+        </Pressable>
+        <Pressable
+          onPress={onMore}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.moreOptions}. ${en.moreOptions}`}
+          style={({ pressed }) => [s.round34, { backgroundColor: colors.cream }, pressed && s.pressed]}
+        >
+          <MoreIcon size={16} color={colors.inkSoft} />
+        </Pressable>
       </View>
-    </Row>
+    </View>
   );
 }
 
@@ -232,11 +228,13 @@ interface ScreenProps {
   onSummary: () => void;
   onRequestClear: () => void;
   onConfirmClear: () => void;
-  /** Tapping a row opens that turn's options. */
+  /** The row's more button opens that turn's options. */
   onTurnOptions: (turn: Turn) => void;
+  /** The row's play button speaks that turn's translation aloud. */
+  onPlayTurn: (turn: Turn) => void;
 }
 
-/** The full transcript, pushed over the home screen. */
+/** The full transcript, pushed over the home screen on a pale sage ground. */
 export function TranscriptScreen({
   turns,
   otherLanguage,
@@ -247,6 +245,7 @@ export function TranscriptScreen({
   onRequestClear,
   onConfirmClear,
   onTurnOptions,
+  onPlayTurn,
 }: ScreenProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
@@ -254,23 +253,21 @@ export function TranscriptScreen({
   const other = t(otherLanguage.code);
 
   return (
-    <View style={[s.screen, { backgroundColor: colors.bg }]}>
-      <View style={[s.topRow, { borderBottomColor: colors.hairline }]}>
+    <SageBackground variant="transcript" blobColor={colors.blobPale} single>
+      <View style={s.topRow}>
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
           accessibilityLabel={`${other.back}. ${en.back}`}
           style={({ pressed }) => [s.back, pressed && s.pressed]}
         >
-          <View style={s.backChevron}>
-            <ChevronForwardIcon size={12} color={colors.ink} />
-          </View>
-          <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <ChevronBackIcon size={14} color={colors.inkSoft} />
+          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
             {other.back.toUpperCase()}
           </Text>
         </Pressable>
         <Text
-          style={[s.title, serifFor(otherLanguage.code), { color: colors.ink }]}
+          style={[s.title, serifFor(otherLanguage.code, 'medium'), { color: colors.ink }]}
           accessibilityRole="header"
           accessibilityLanguage={otherLanguage.speechTag}
           allowFontScaling
@@ -278,34 +275,37 @@ export function TranscriptScreen({
         >
           {other.transcriptTitle}
         </Text>
-        <Text style={[s.count, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-          {turns.length}
-        </Text>
+        <View style={s.countWrap}>
+          <View style={[s.countPill, { backgroundColor: colors.white }]}>
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              {turns.length}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView style={s.ledger} contentContainerStyle={s.ledgerContent}>
-        {turns.map((turn, i) => (
+        {turns.map((turn) => (
           <Exchange
             key={turn.id}
             turn={turn}
             otherLanguage={otherLanguage}
-            wide
-            tinted={i === turns.length - 1}
-            onPress={() => onTurnOptions(turn)}
+            onPlay={() => onPlayTurn(turn)}
+            onMore={() => onTurnOptions(turn)}
           />
         ))}
       </ScrollView>
 
-      <View style={[s.footer, { borderTopColor: colors.hairline }]}>
+      <View style={s.footer}>
         {confirmingClear ? (
           <Pressable
             onPress={onConfirmClear}
             accessibilityRole="button"
             accessibilityLabel={`${other.clearAllConfirm} ${other.clearAll}`}
-            style={({ pressed }) => [s.footerButton, { borderColor: colors.danger }, pressed && s.pressed]}
+            style={({ pressed }) => [s.bottomCard, { backgroundColor: colors.white, borderColor: colors.dangerBorder }, pressed && s.pressed]}
           >
-            <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-              {other.clearAllConfirm.toUpperCase()}
+            <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              {other.clearAllConfirm}
             </Text>
           </Pressable>
         ) : (
@@ -316,47 +316,55 @@ export function TranscriptScreen({
               accessibilityRole="button"
               accessibilityLabel={`${other.summary}. ${en.summary}`}
               style={({ pressed }) => [
-                s.footerButton,
-                { borderColor: colors.border },
+                s.bottomCard,
+                { backgroundColor: colors.white },
                 pressed && s.pressed,
                 summaryDisabled && s.disabled,
               ]}
             >
-              <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-                {other.summary.toUpperCase()}
+              <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                {other.summary}
+              </Text>
+              <Text style={[s.bottomSub, fontFor('en', 'semibold'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                {en.summary.toUpperCase()}
               </Text>
             </Pressable>
             <Pressable
               onPress={onRequestClear}
               accessibilityRole="button"
               accessibilityLabel={`${other.clearAll}. ${en.clearAll}`}
-              style={({ pressed }) => [s.footerButton, { borderColor: colors.border }, pressed && s.pressed]}
+              style={({ pressed }) => [s.bottomCard, { backgroundColor: colors.white, borderColor: colors.dangerBorder }, pressed && s.pressed]}
             >
-              <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-                {other.clearAll.toUpperCase()}
+              <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                {other.clearAll}
+              </Text>
+              <Text style={[s.bottomSub, fontFor('en', 'semibold'), { color: colors.danger, opacity: 0.75 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                {en.clearAll.toUpperCase()}
               </Text>
             </Pressable>
           </>
         )}
       </View>
-    </View>
+    </SageBackground>
   );
 }
 
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
-    exchange: { flexDirection: 'row', gap: 8 },
-    exchangeWide: { paddingHorizontal: 22, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.rule },
-    tinted: { backgroundColor: c.surface },
-    dimmed: { opacity: 0.58 },
-    margin: { width: 34 },
-    marginWide: { width: 62, gap: 3 },
-    clock: { textAlign: 'left', fontFamily: mono, fontWeight: '500', fontSize: 10, letterSpacing: 0.3, paddingTop: 4 },
-    body: { flex: 1, minWidth: 0, borderLeftWidth: 2, paddingLeft: 12, gap: 3 },
-    source: { fontSize: 16, lineHeight: 22.4 },
-    gloss: { fontSize: 12, lineHeight: 17.4 },
-    sourceWide: { fontSize: 17, lineHeight: 23.8 },
-    glossWide: { fontSize: 12.5, lineHeight: 18.1 },
+    exchangeCard: {
+      borderRadius: 26,
+      paddingTop: 18,
+      paddingHorizontal: 20,
+      paddingBottom: 14,
+      gap: 10,
+      ...elevation.card,
+    },
+    exchangeTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    speakerPill: { paddingVertical: 4, paddingHorizontal: 9, borderRadius: 999 },
+    exchangeSource: { fontSize: 24, lineHeight: 29 },
+    exchangeGloss: { fontSize: 15, lineHeight: 21 },
+    exchangeActions: { flexDirection: 'row', gap: 6, marginTop: 2 },
+    round34: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
 
     // Conversation state: a fixed card, never a scroller. The slack lives in
     // the spacer above the speak card instead.
@@ -400,30 +408,33 @@ const makeStyles = (c: ColorTokens) =>
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 22,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
+      paddingHorizontal: 16,
+      paddingTop: 4,
+      minHeight: 56,
     },
     // Equal flex on both sides, so the title sits on the screen's centre
     // rather than on the centre of whatever is left over.
-    back: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 48 },
-    backChevron: { transform: [{ rotate: '180deg' }] },
-    title: { flex: 1, fontSize: 17, lineHeight: 22, textAlign: 'center' },
-    count: { flex: 1, textAlign: 'right', fontFamily: mono, fontWeight: '500', fontSize: 10 },
+    back: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48 },
+    title: { flex: 2, fontSize: 26, lineHeight: 30, textAlign: 'center' },
+    countWrap: { flex: 1, alignItems: 'flex-end' },
     ledger: { flex: 1, minHeight: 0 },
-    ledgerContent: { paddingBottom: 16 },
-    footer: { flexDirection: 'row', gap: 9, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 16, borderTopWidth: 1 },
-    footerButton: {
-      flexGrow: 1,
-      flexShrink: 1,
-      flexBasis: 0,
-      minHeight: 48,
-      alignItems: 'center',
+    ledgerContent: { gap: 10, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16 },
+    footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40 },
+    bottomCard: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+      minHeight: 76,
       justifyContent: 'center',
-      borderWidth: 1,
-      borderRadius: 4,
-      padding: 12,
+      borderRadius: 26,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      ...elevation.card,
     },
-    pressed: { backgroundColor: 'rgba(29, 28, 26, 0.04)' },
+    bottomTitle: { fontSize: 22, lineHeight: 26 },
+    bottomSub: { fontSize: 11, lineHeight: 14, letterSpacing: 1 },
+    pressed: { opacity: 0.96 },
     disabled: { opacity: 0.4 },
   });

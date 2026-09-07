@@ -1413,8 +1413,7 @@ export function ConversationScreen({
             otherLanguage={otherLanguage}
             summaryDisabled={busy || offline || turns.length < 2}
             confirmingClear={confirmingClear}
-            onBack={goHome}
-            onSummary={() => {
+            onBack={goHome}            onSummary={() => {
               setSummaryFrom('transcript');
               setConfirmingClear(false);
               void openSummary(turns);
@@ -1422,6 +1421,9 @@ export function ConversationScreen({
             onTurnOptions={(turn) => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setOptionsTurn(turn);
+            }}
+            onPlayTurn={(turn) => {
+              void playTurn(turn);
             }}
             onRequestClear={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
