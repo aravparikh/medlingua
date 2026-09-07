@@ -122,6 +122,13 @@ export interface UIStrings {
   // Transcript
   conversationLabel: string;
   exchanges: string;
+  /** Singular for the "1 INTERCAMBIO" pill. */
+  exchangeSingular: string;
+  /** "You", for the conversation card speaker row. */
+  youLabel: string;
+  /** Audience rows: "for your doctor" / "for you". */
+  forDoctor: string;
+  forYou: string;
   viewTranscript: string;
   transcriptTitle: string;
   clearAll: string;
@@ -254,6 +261,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: 'Chosen',
     conversationLabel: 'Conversation',
     exchanges: 'exchanges',
+    exchangeSingular: 'exchange',
+    youLabel: 'You',
+    forDoctor: 'For your doctor',
+    forYou: 'For you',
     viewTranscript: 'View full transcript',
     transcriptTitle: 'Transcript',
     clearAll: 'Clear',
@@ -382,6 +393,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: 'Elegido',
     conversationLabel: 'Conversación',
     exchanges: 'intercambios',
+    exchangeSingular: 'intercambio',
+    youLabel: 'Usted',
+    forDoctor: 'Para su médico',
+    forYou: 'Para usted',
     viewTranscript: 'Ver transcripción completa',
     transcriptTitle: 'Transcripción',
     clearAll: 'Borrar',
@@ -510,6 +525,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: '已选择',
     conversationLabel: '对话',
     exchanges: '次交流',
+    exchangeSingular: '次交流',
+    youLabel: '您',
+    forDoctor: '给您的医生看',
+    forYou: '给您',
     viewTranscript: '查看完整记录',
     transcriptTitle: '完整记录',
     clearAll: '清除',
@@ -637,6 +656,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: 'Đã chọn',
     conversationLabel: 'Cuộc trò chuyện',
     exchanges: 'lượt trao đổi',
+    exchangeSingular: 'lượt trao đổi',
+    youLabel: 'Bạn',
+    forDoctor: 'Cho bác sĩ của bạn',
+    forYou: 'Cho bạn',
     viewTranscript: 'Xem toàn bộ bản ghi',
     transcriptTitle: 'Bản ghi',
     clearAll: 'Xóa',
@@ -764,6 +787,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: 'Выбрано',
     conversationLabel: 'Разговор',
     exchanges: 'реплик',
+    exchangeSingular: 'реплика',
+    youLabel: 'Вы',
+    forDoctor: 'Для вашего врача',
+    forYou: 'Для вас',
     viewTranscript: 'Посмотреть всю расшифровку',
     transcriptTitle: 'Расшифровка',
     clearAll: 'Очистить',
@@ -892,6 +919,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: 'चुना गया',
     conversationLabel: 'बातचीत',
     exchanges: 'बार बातचीत',
+    exchangeSingular: 'बार बातचीत',
+    youLabel: 'आप',
+    forDoctor: 'अपने डॉक्टर के लिए',
+    forYou: 'आपके लिए',
     viewTranscript: 'पूरा रिकॉर्ड देखें',
     transcriptTitle: 'पूरा रिकॉर्ड',
     clearAll: 'हटाएँ',
@@ -1020,6 +1051,10 @@ export const STRINGS: Record<string, UIStrings> = {
     chosen: 'ਚੁਣਿਆ',
     conversationLabel: 'ਗੱਲਬਾਤ',
     exchanges: 'ਵਾਰ ਗੱਲਬਾਤ',
+    exchangeSingular: 'ਵਾਰ ਗੱਲਬਾਤ',
+    youLabel: 'ਤੁਸੀਂ',
+    forDoctor: 'ਆਪਣੇ ਡਾਕਟਰ ਲਈ',
+    forYou: 'ਤੁਹਾਡੇ ਲਈ',
     viewTranscript: 'ਪੂਰਾ ਰਿਕਾਰਡ ਵੇਖੋ',
     transcriptTitle: 'ਪੂਰਾ ਰਿਕਾਰਡ',
     clearAll: 'ਮਿਟਾਓ',

@@ -144,17 +144,19 @@ interface ModeProps {
   language: Language;
   auto: boolean;
   disabled: boolean;
+  /** Conversation state: tighter option padding. */
+  compact?: boolean;
   onSelect: (auto: boolean) => void;
 }
 
 /** Two pills in one white pill container. The selected pill fills ink. */
-export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
+export function ModeControl({ language, auto, disabled, compact = false, onSelect }: ModeProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const other = t(language.code);
   const en = t('en');
 
-  const half = (isAuto: boolean, name: string, sub: string) => {
+  const half = (isAuto: boolean, name: string, sub: string, tight: boolean) => {
     const selected = auto === isAuto;
     return (
       <Pressable
@@ -165,6 +167,7 @@ export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
         accessibilityLabel={`${name}. ${sub}`}
         style={({ pressed }) => [
           s.half,
+          tight && s.halfCompact,
           selected && { backgroundColor: colors.ink },
           pressed && !selected && s.pressed,
         ]}
@@ -197,8 +200,8 @@ export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
         <Caption>{other.inputModeLabel}</Caption>
       </View>
       <View style={[s.modeBox, { backgroundColor: colors.white }]} accessibilityRole="radiogroup">
-        {half(false, other.oneLanguage, `${language.nativeName.toUpperCase()} → EN`)}
-        {half(true, other.detect, en.auto.toUpperCase())}
+        {half(false, other.oneLanguage, `${language.nativeName.toUpperCase()} → EN`, compact)}
+        {half(true, other.detect, en.auto.toUpperCase(), compact)}
       </View>
     </View>
   );
@@ -215,9 +218,75 @@ export interface ActionRow {
 }
 
 /** Numbered white action cards with mint badges and cream chevrons. */
-export function ActionIndex({ rows, lang, speechTag }: { rows: ActionRow[]; lang: string; speechTag: string }) {
+export function ActionIndex({
+  rows,
+  lang,
+  speechTag,
+  tiles = false,
+}: {
+  rows: ActionRow[];
+  lang: string;
+  speechTag: string;
+  /** Conversation state: three equal tiles in a row instead of cards. */
+  tiles?: boolean;
+}) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
+  if (tiles) {
+    const lead = rows.length > 3 ? rows.slice(0, 1) : [];
+    const rest = rows.length > 3 ? rows.slice(1) : rows;
+    return (
+      <View style={s.tiles}>
+        {lead.map((row) => (
+          <Pressable
+            key={row.key}
+            onPress={row.onPress}
+            disabled={row.disabled}
+            accessibilityRole="button"
+            accessibilityLabel={`${row.name}. ${row.english}`}
+            accessibilityLanguage={speechTag}
+            style={({ pressed }) => [s.tileLead, { backgroundColor: colors.white }, pressed && s.pressed, row.disabled && s.disabled]}
+          >
+            <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accent }]}>
+              {String(rows.indexOf(row) + 1).padStart(2, '0')}
+            </Text>
+            <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+              {row.name}
+            </Text>
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+              {row.english}
+            </Text>
+          </Pressable>
+        ))}
+        <View style={s.tileRow}>
+          {rest.map((row) => {
+            const number = String(rows.indexOf(row) + 1).padStart(2, '0');
+            return (
+              <Pressable
+                key={row.key}
+                onPress={row.onPress}
+                disabled={row.disabled}
+                accessibilityRole="button"
+                accessibilityLabel={`${row.name}. ${row.english}`}
+                accessibilityLanguage={speechTag}
+                style={({ pressed }) => [s.tile, { backgroundColor: colors.white }, pressed && s.pressed, row.disabled && s.disabled]}
+              >
+                <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accent }]}>
+                  {number}
+                </Text>
+                <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                  {row.name}
+                </Text>
+                <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                  {row.english}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }
   return (
     <View style={s.index}>
       {rows.map((row, i) => (
@@ -270,13 +339,15 @@ interface SpeakBarProps {
   disabled?: boolean;
   /** Half-width form for the two bars sharing a row in two-language mode. */
   compact?: boolean;
+  /** Conversation state: slightly smaller title and padding. */
+  condensed?: boolean;
   /** Listening: pulse the mic circle. */
   listening?: boolean;
   onPress: () => void;
 }
 
 /** The primary speak card: selected-gradient fill, mint border, ink mic. */
-export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false, listening = false, onPress }: SpeakBarProps) {
+export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false, condensed = false, listening = false, onPress }: SpeakBarProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -306,6 +377,7 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
       style={({ pressed }) => [
         s.cta,
         compact && s.ctaCompact,
+        condensed && !compact && s.ctaCondensed,
         { borderColor: colors.mint },
         pressed && s.ctaPressed,
         disabled && s.disabled,
@@ -321,7 +393,7 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
       />
       <View style={s.ctaText}>
         <Text
-          style={[compact ? s.ctaNameCompact : s.ctaName, serifFor(lang, 'medium'), { color: colors.ink }]}
+          style={[compact ? s.ctaNameCompact : condensed ? s.ctaNameCondensed : s.ctaName, serifFor(lang, 'medium'), { color: colors.ink }]}
           numberOfLines={1}
           allowFontScaling
           maxFontSizeMultiplier={1.5}
@@ -392,7 +464,13 @@ const makeStyles = (c: ColorTokens) =>
     modeLabel: { paddingHorizontal: 8, marginBottom: 8 },
     modeBox: { flexDirection: 'row', borderRadius: 999, padding: 5, gap: 4 },
     half: { flex: 1, gap: 2, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 999, minHeight: 56, justifyContent: 'center' },
+    halfCompact: { paddingVertical: 10 },
     index: { paddingHorizontal: 16, gap: 10, marginTop: 14 },
+    tiles: { paddingHorizontal: 16, gap: 8, marginTop: 14 },
+    tileRow: { flexDirection: 'row', gap: 8 },
+    tile: { flex: 1, minWidth: 0, gap: 3, minHeight: 112, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 20 },
+    tileLead: { gap: 3, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 22 },
+    tileName: { fontSize: 20, lineHeight: 24 },
     indexRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -419,9 +497,11 @@ const makeStyles = (c: ColorTokens) =>
     },
     ctaPressed: { opacity: 0.94 },
     ctaCompact: { flex: 1, minHeight: 84, borderRadius: 22, paddingVertical: 16, paddingHorizontal: 18 },
+    ctaCondensed: { paddingVertical: 20, paddingHorizontal: 24 },
     ctaText: { flex: 1, justifyContent: 'center', gap: 4, minWidth: 0 },
     ctaName: { fontSize: 34, lineHeight: 38 },
     ctaNameCompact: { fontSize: 26, lineHeight: 30 },
+    ctaNameCondensed: { fontSize: 32, lineHeight: 36 },
     mic: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
     micCompact: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     pressed: { opacity: 0.96 },

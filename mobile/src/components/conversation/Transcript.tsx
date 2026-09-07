@@ -4,8 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Turn } from '../../screens/ConversationScreen';
-import { fontFor, mono, serifFor, useTheme, type ColorTokens } from '../../theme';
-import { ChevronForwardIcon } from '../icons';
+import { elevation, fontFor, mono, serifFor, useTheme, type ColorTokens } from '../../theme';
+import { ArrowForwardIcon, ChevronForwardIcon, MicIcon, SpeakIcon } from '../icons';
 
 /**
  * The visit as a ledger.
@@ -114,56 +114,111 @@ interface BlockProps {
   turns: Turn[];
   otherLanguage: Language;
   onOpen: () => void;
+  onPlayTurn: (turn: Turn) => void;
 }
 
 /**
- * The home screen's conversation block: the last two exchanges, growing up
- * from the bottom so new speech pushes old speech out of view rather than
- * scrolling. One summary of the visit that opens the whole thing.
+ * Home conversation state: the section row with the exchange-count pill,
+ * then one white card with the LATEST exchange — speaker row, source in
+ * Newsreader, divider, target row with a play button, translation, and a
+ * footer that opens the full transcript. The hero returns when empty.
  */
-export function ConversationBlock({ turns, otherLanguage, onOpen }: BlockProps) {
+export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: BlockProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const en = t('en');
   const other = t(otherLanguage.code);
-  const recent = turns.slice(-2);
+  const turn = turns[turns.length - 1];
+  const clinician = isClinician(turn);
+  const countWord = turns.length === 1 ? other.exchangeSingular : other.exchanges;
+  const sourceLabel = clinician
+    ? `${en.youLabel} · ENGLISH`.toUpperCase()
+    : `${other.youLabel} · ${otherLanguage.nativeName}`.toUpperCase();
+  const targetLabel = clinician
+    ? `${other.forYou} · ${otherLanguage.nativeName}`.toUpperCase()
+    : `${en.forDoctor} · ENGLISH`.toUpperCase();
 
   return (
-    <Pressable
-      onPress={onOpen}
-      accessibilityRole="button"
-      accessibilityLabel={`${other.viewTranscript}. ${en.viewTranscript}`}
-      style={({ pressed }) => [s.block, { backgroundColor: colors.surface, borderBottomColor: colors.hairline }, pressed && s.pressed]}
-    >
-      <View style={s.blockLabel}>
-        <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.5 }, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+    <View>
+      <View style={s.blockSection}>
+        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {other.conversationLabel.toUpperCase()}
         </Text>
-        <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ctaFill }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-          {`${turns.length} ${other.exchanges}`.toUpperCase()}
-        </Text>
+        <View style={[s.countPill, { backgroundColor: colors.white }]}>
+          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            {`${turns.length} ${countWord}`.toUpperCase()}
+          </Text>
+        </View>
       </View>
 
-      {/* Clipped and bottom-aligned: without the clip a bottom-aligned column
-         overflows upward and collides with the label as soon as text wraps. */}
-      <View style={s.exchanges}>
-        {recent.map((turn, i) => (
-          <Exchange
-            key={turn.id}
-            turn={turn}
-            otherLanguage={otherLanguage}
-            dimmed={recent.length > 1 && i === 0}
-          />
-        ))}
-      </View>
+      <View style={[s.card, { backgroundColor: colors.white }]}>
+        <View style={s.speakerRow}>
+          <View style={[s.round28, { backgroundColor: colors.mintLight }]} importantForAccessibility="no">
+            {clinician ? <SpeakIcon size={13} color={colors.accent} /> : <MicIcon size={13} color={colors.accent} />}
+          </View>
+          <Text style={[s.speakerLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            {sourceLabel}
+          </Text>
+          <Text style={[s.time, { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            {clockOf(turn)}
+          </Text>
+        </View>
 
-      <View style={[s.blockFooter, { borderTopColor: colors.rule }]}>
-        <Text style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-          {other.viewTranscript.toUpperCase()}
+        {turn.original ? (
+          <Text
+            style={[s.cardSource, serifFor(turn.speaker.code, 'medium'), { color: colors.ink }]}
+            accessibilityLanguage={turn.speaker.speechTag}
+            allowFontScaling
+            maxFontSizeMultiplier={1.8}
+          >
+            {turn.original}
+          </Text>
+        ) : null}
+
+        <View style={[s.divider, { backgroundColor: colors.mintLight }]} />
+
+        <View style={s.speakerRow}>
+          <View style={[s.round28, { backgroundColor: colors.ink }]} importantForAccessibility="no">
+            <ArrowForwardIcon size={15} color={colors.white} />
+          </View>
+          <Text style={[s.speakerLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            {targetLabel}
+          </Text>
+          <Pressable
+            onPress={() => onPlayTurn(turn)}
+            accessibilityRole="button"
+            accessibilityLabel={`${t(turn.listener.code).playAgain}. ${en.playAgain}`}
+            accessibilityLanguage={turn.listener.speechTag}
+            style={({ pressed }) => [s.round28, { backgroundColor: colors.mintLight }, pressed && s.pressed]}
+          >
+            <SpeakIcon size={15} color={colors.accent} />
+          </Pressable>
+        </View>
+
+        <Text
+          style={[s.cardGloss, fontFor(turn.listener.code), { color: colors.ink }]}
+          accessibilityLanguage={turn.listener.speechTag}
+          allowFontScaling
+          maxFontSizeMultiplier={1.8}
+        >
+          {turn.translation}
         </Text>
-        <ChevronForwardIcon size={12} color={colors.ink} />
+
+        <Pressable
+          onPress={onOpen}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.viewTranscript}. ${en.viewTranscript}`}
+          style={({ pressed }) => [s.cardFooter, { borderTopColor: colors.mintLight }, pressed && s.pressed]}
+        >
+          <Text style={[{ fontSize: 13, lineHeight: 18 }, fontFor(otherLanguage.code, 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            {other.viewTranscript}
+          </Text>
+          <View style={[s.chevronCircle, { backgroundColor: colors.cream }]} importantForAccessibility="no">
+            <ChevronForwardIcon size={14} color={colors.inkSoft} />
+          </View>
+        </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -303,33 +358,43 @@ const makeStyles = (c: ColorTokens) =>
     sourceWide: { fontSize: 17, lineHeight: 23.8 },
     glossWide: { fontSize: 12.5, lineHeight: 18.1 },
 
-    // The flexible element on the home screen: full-bleed surface that takes
-    // the slack. Never a fixed-height scroller here.
-    block: {
-      flex: 1,
-      minHeight: 0,
-      overflow: 'hidden',
-      width: '100%',
-      paddingTop: 5,
-      paddingHorizontal: 22,
-      paddingBottom: 12,
-      borderBottomWidth: 1,
-    },
-    blockLabel: { flexGrow: 0, flexShrink: 0, flexDirection: 'row', justifyContent: 'space-between', marginTop: 9, marginBottom: 10 },
-    // flex:1 + minHeight:0 + hidden — all three, or the bottom-aligned column
-    // grows upward through the label instead of clipping.
-    exchanges: { flex: 1, minHeight: 0, overflow: 'hidden', justifyContent: 'flex-end', gap: 12 },
-    blockFooter: {
-      flexGrow: 0,
-      flexShrink: 0,
+    // Conversation state: a fixed card, never a scroller. The slack lives in
+    // the spacer above the speak card instead.
+    blockSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-end',
-      gap: 6,
-      marginTop: 12,
-      paddingTop: 10,
-      borderTopWidth: 1,
+      justifyContent: 'space-between',
+      paddingHorizontal: 24,
+      paddingTop: 22,
+      marginBottom: 10,
     },
+    countPill: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 999 },
+    card: {
+      marginHorizontal: 16,
+      borderRadius: 26,
+      paddingTop: 20,
+      paddingHorizontal: 22,
+      paddingBottom: 16,
+      gap: 12,
+      ...elevation.card,
+    },
+    speakerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    round28: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    speakerLabel: { flex: 1, minWidth: 0, fontSize: 12, lineHeight: 16, letterSpacing: 1 },
+    time: { fontSize: 12, lineHeight: 16, fontFamily: mono, fontVariant: ['tabular-nums'] },
+    cardSource: { fontSize: 24, lineHeight: 29 },
+    divider: { height: 1.5 },
+    cardGloss: { fontSize: 17, lineHeight: 24 },
+    cardFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderTopWidth: 1.5,
+      paddingTop: 6,
+      marginTop: 2,
+      minHeight: 44,
+    },
+    chevronCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
 
     screen: { flex: 1 },
     topRow: {

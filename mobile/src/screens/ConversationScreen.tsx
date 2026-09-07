@@ -1140,6 +1140,9 @@ export function ConversationScreen({
             setTranscriptEver(true);
             setTranscriptOpen(true);
           }}
+          onPlayTurn={(turn) => {
+            void playTurn(turn);
+          }}
         />
       ) : (
         <Hero language={otherLanguage} />
@@ -1230,6 +1233,7 @@ export function ConversationScreen({
             language={otherLanguage}
             auto={autoMode}
             disabled={busy}
+            compact={turns.length > 0}
             onSelect={(next) => {
               if (next !== autoMode) toggleAutoMode();
             }}
@@ -1238,6 +1242,7 @@ export function ConversationScreen({
           <ActionIndex
             lang={otherLanguage.code}
             speechTag={otherLanguage.speechTag}
+            tiles={turns.length > 0}
             rows={[
               // The summary leads the index once there is a visit to summarise.
               // It used to be an outlined button above the ledger, which made
@@ -1290,6 +1295,9 @@ export function ConversationScreen({
 
           {/* Auto-detect is one bar, as drawn. Two-language mode keeps a bar
              each: either person has to be able to speak. */}
+          {/* Conversation state pins the speak card to the bottom: the slack
+             lives here, above it, so the screen fits without scrolling. */}
+          {turns.length > 0 ? <View style={s.slack} /> : null}
           <View style={autoMode ? s.barsSingle : s.bars}>
             {!voiceInput ? (
               // Voice input switched off in settings: the bars go, and the
@@ -1309,6 +1317,7 @@ export function ConversationScreen({
                 speechTag={otherLanguage.speechTag}
                 sub={other.auto.toUpperCase()}
                 disabled={phase === 'translating' || offline}
+                condensed={turns.length > 0}
                 onPress={() => startTap(null)}
               />
             ) : (
@@ -1584,7 +1593,8 @@ const makeStyles = (c: ColorTokens) =>
     // It no longer competes with the block for the screen's slack.
     thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
     threadFill: { flexGrow: 1 },
-    listening: { flex: 1 },    threadContent: { paddingHorizontal: 16, paddingVertical: spacing.md, gap: spacing.md },
+    listening: { flex: 1 },
+    slack: { flex: 1, minHeight: 0 },    threadContent: { paddingHorizontal: 16, paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     live: { marginTop: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 16, paddingBottom: spacing.lg },
