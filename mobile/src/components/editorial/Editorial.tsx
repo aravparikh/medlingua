@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Animated, Easing, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import {
   fontFor,
-  mono,
+  gradients,
   serifFor,
   useTheme,
   type ColorTokens,
@@ -15,21 +15,19 @@ import {
 import { ChevronForwardIcon, MicIcon } from '../icons';
 
 /**
- * The editorial layer: masthead, mode control, action index, and the one solid
- * bar. Everything here is ruled and typeset rather than boxed — no pills, no
- * cards, no shadows, radii at 0–4. Structure comes from hairlines.
- *
- * These are presentation only. Every handler is passed in, so the screen keeps
- * owning what the app actually does.
+ * The Sage editorial layer: masthead, hero, mode control, action index, and
+ * the speak card. White cards on the shared gradient ground — radii 26/22,
+ * one shadow, stroked 1.6px icons. Presentation only; handlers stay with the
+ * screen.
  */
 
-/** A 9.5px uppercase caption in muted ink. Case lives in the string itself. */
+/** A 12px uppercase section label in soft ink. Case lives in the string. */
 export function Caption({ children, style }: { children: string; style?: StyleProp<ViewStyle> }) {
   const { colors } = useTheme();
   return (
     <View style={style}>
       <Text
-        style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink2 }]}
+        style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
         allowFontScaling
         maxFontSizeMultiplier={1.4}
       >
@@ -39,42 +37,30 @@ export function Caption({ children, style }: { children: string; style?: StylePr
   );
 }
 
-/** Three stroked bars, transparent — no circle, no fill, no shadow. */
-function BarsIcon({ color }: { color: string }) {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round">
-      <Path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" />
-    </Svg>
-  );
-}
-
 interface MastheadProps {
   language: Language;
   /** Shown instead of the language name while auto-detect is on. */
   detecting: boolean;
   disabled: boolean;
+  /** Listening hides the cambiar link and freezes both links. */
+  quiet?: boolean;
   onChangeLanguage: () => void;
   onSettings: () => void;
 }
 
-/** Language on the left, settings on the right, closed by a full-width rule. */
-export function Masthead({ language, detecting, disabled, onChangeLanguage, onSettings }: MastheadProps) {
+/** Language on the left, a plain AJUSTES text link on the right. No icon. */
+export function Masthead({ language, detecting, disabled, quiet = false, onChangeLanguage, onSettings }: MastheadProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const en = t('en');
   const other = t(language.code);
+  const frozen = disabled || quiet;
 
   return (
     <View style={s.masthead}>
-      <Pressable
-        onPress={onChangeLanguage}
-        disabled={disabled}
-        accessibilityRole="button"
-        accessibilityLabel={`${other.changeLanguage}. ${en.changeLanguage}`}
-        style={({ pressed }) => [s.mastheadSide, pressed && s.pressed, disabled && s.disabled]}
-      >
+      <View style={s.mastheadSide}>
         <Text
-          style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.5 }, fontFor('en', 'semibold'), { color: colors.ink2 }]}
+          style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
           allowFontScaling
           maxFontSizeMultiplier={1.4}
         >
@@ -82,37 +68,74 @@ export function Masthead({ language, detecting, disabled, onChangeLanguage, onSe
         </Text>
         <View style={s.mastheadRow}>
           <Text
-            style={[s.mastheadName, serifFor(detecting ? 'es' : language.code), { color: colors.ink }]}
+            style={[s.mastheadName, serifFor(detecting ? 'es' : language.code, 'medium'), { color: colors.ink }]}
             accessibilityLanguage={language.speechTag}
             allowFontScaling
             maxFontSizeMultiplier={1.6}
           >
             {detecting ? other.auto : language.nativeName}
           </Text>
-          <Text style={[s.cambiar, fontFor(language.code), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
-            {other.changeShort}
-          </Text>
+          {quiet ? null : (
+            <Pressable
+              onPress={onChangeLanguage}
+              disabled={disabled}
+              accessibilityRole="button"
+              accessibilityLabel={`${other.changeLanguage}. ${en.changeLanguage}`}
+              style={({ pressed }) => [pressed && s.pressed]}
+            >
+              <Text style={[s.cambiar, fontFor(language.code, 'semibold'), { color: colors.accent, borderBottomColor: colors.mint }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                {other.changeShort}
+              </Text>
+            </Pressable>
+          )}
         </View>
-      </Pressable>
+      </View>
 
       <Pressable
         onPress={onSettings}
-        disabled={disabled}
+        disabled={frozen}
         accessibilityRole="button"
         accessibilityLabel={`${other.about}. ${en.about}`}
-        style={({ pressed }) => [s.settings, pressed && s.pressed, disabled && s.disabled]}
+        style={({ pressed }) => [s.settings, pressed && s.pressed, frozen && s.disabled]}
       >
         <Text
-          style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 }, fontFor('en', 'semibold'), { color: colors.ink2 }]}
+          style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
           allowFontScaling
           maxFontSizeMultiplier={1.4}
         >
           {other.settingsLabel}
         </Text>
-        <View importantForAccessibility="no">
-          <BarsIcon color={colors.ink} />
-        </View>
       </Pressable>
+    </View>
+  );
+}
+
+/** Split a tagline at its em dash: head regular, tail italic. */
+function splitTagline(tagline: string): [string, string] {
+  const at = tagline.indexOf('—');
+  if (at < 0) return [tagline, ''];
+  return [tagline.slice(0, at + 1), tagline.slice(at + 1)];
+}
+
+/** The home hero: patient tagline big in Newsreader, English beneath. */
+export function Hero({ language }: { language: Language }) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
+  const en = t('en');
+  const other = t(language.code);
+  const [head, tail] = splitTagline(other.tagline);
+
+  return (
+    <View style={s.hero} accessibilityRole="header">
+      <Text style={[s.heroHead, serifFor(language.code), { color: colors.ink }]} accessibilityLanguage={language.speechTag} allowFontScaling maxFontSizeMultiplier={1.6}>
+        {head}
+        {tail ? <Text style={serifFor(language.code, 'italic')}>{tail}</Text> : null}
+      </Text>
+      {other.tagline === en.tagline ? null : (
+        <Text style={[s.heroSub, fontFor('en'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+          {en.tagline}
+        </Text>
+      )}
     </View>
   );
 }
@@ -124,7 +147,7 @@ interface ModeProps {
   onSelect: (auto: boolean) => void;
 }
 
-/** Two halves in one bordered rectangle. The selected half fills solid. */
+/** Two pills in one white pill container. The selected pill fills ink. */
 export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
@@ -142,12 +165,12 @@ export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
         accessibilityLabel={`${name}. ${sub}`}
         style={({ pressed }) => [
           s.half,
-          selected && { backgroundColor: colors.ctaFill },
+          selected && { backgroundColor: colors.ink },
           pressed && !selected && s.pressed,
         ]}
       >
         <Text
-          style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: selected ? colors.onCta : colors.ink }]}
+          style={[{ fontSize: 15, lineHeight: 20 }, fontFor('en', 'semibold'), { color: selected ? colors.white : colors.ink }]}
           allowFontScaling
           maxFontSizeMultiplier={1.5}
         >
@@ -155,9 +178,9 @@ export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
         </Text>
         <Text
           style={[
-            { fontSize: 9, lineHeight: 12, letterSpacing: 1.2 },
+            { fontSize: 11, lineHeight: 14, letterSpacing: 0.9 },
             fontFor('en', 'semibold'),
-            { color: selected ? colors.onCta : colors.ink2, opacity: selected ? 0.6 : 1 },
+            { color: selected ? colors.white : colors.inkSoft, opacity: selected ? 0.65 : 1 },
           ]}
           allowFontScaling
           maxFontSizeMultiplier={1.4}
@@ -170,12 +193,11 @@ export function ModeControl({ language, auto, disabled, onSelect }: ModeProps) {
 
   return (
     <View style={s.modeWrap}>
-      <View style={s.captionGap}>
+      <View style={s.modeLabel}>
         <Caption>{other.inputModeLabel}</Caption>
       </View>
-      <View style={[s.modeBox, { borderColor: colors.hairline }]} accessibilityRole="radiogroup">
+      <View style={[s.modeBox, { backgroundColor: colors.white }]} accessibilityRole="radiogroup">
         {half(false, other.oneLanguage, `${language.nativeName.toUpperCase()} → EN`)}
-        <View style={[s.modeDivider, { backgroundColor: colors.hairline }]} />
         {half(true, other.detect, en.auto.toUpperCase())}
       </View>
     </View>
@@ -186,18 +208,18 @@ export interface ActionRow {
   key: string;
   /** Serif name in the patient's language. */
   name: string;
-  /** English on the right, uppercased at render (never via textTransform). */
+  /** English beneath, in the patient's language list. */
   english: string;
   disabled?: boolean;
   onPress: () => void;
 }
 
-/** A numbered index of actions. Ruled rows, no fills, no containers. */
+/** Numbered white action cards with mint badges and cream chevrons. */
 export function ActionIndex({ rows, lang, speechTag }: { rows: ActionRow[]; lang: string; speechTag: string }) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View style={[s.index, { borderTopColor: colors.hairline }]}>
+    <View style={s.index}>
       {rows.map((row, i) => (
         <Pressable
           key={row.key}
@@ -206,31 +228,32 @@ export function ActionIndex({ rows, lang, speechTag }: { rows: ActionRow[]; lang
           accessibilityRole="button"
           accessibilityLabel={`${row.name}. ${row.english}`}
           accessibilityLanguage={speechTag}
-          style={({ pressed }) => [
-            s.indexRow,
-            { borderBottomColor: colors.rule },
-            pressed && s.pressed,
-            row.disabled && s.disabled,
-          ]}
+          style={({ pressed }) => [s.indexRow, { backgroundColor: colors.white }, pressed && s.pressed, row.disabled && s.disabled]}
         >
-          <Text style={[s.numeral, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.3}>
-            {String(i + 1).padStart(2, '0')}
-          </Text>
-          <Text
-            style={[s.indexName, serifFor(lang), { color: colors.ink }]}
-            allowFontScaling
-            maxFontSizeMultiplier={1.6}
-          >
-            {row.name}
-          </Text>
-          <Text
-            style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.1 }, fontFor('en', 'semibold'), { color: colors.ink2 }]}
-            allowFontScaling
-            maxFontSizeMultiplier={1.4}
-          >
-            {row.english.toUpperCase()}
-          </Text>
-          <ChevronForwardIcon size={12} color={colors.ink2} />
+          <View style={[s.badge, { backgroundColor: colors.mintLight }]} importantForAccessibility="no">
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accent }]}>
+              {String(i + 1).padStart(2, '0')}
+            </Text>
+          </View>
+          <View style={s.indexText}>
+            <Text
+              style={[s.indexName, serifFor(lang, 'medium'), { color: colors.ink }]}
+              allowFontScaling
+              maxFontSizeMultiplier={1.6}
+            >
+              {row.name}
+            </Text>
+            <Text
+              style={[{ fontSize: 13, lineHeight: 18 }, fontFor('en'), { color: colors.muted }]}
+              allowFontScaling
+              maxFontSizeMultiplier={1.6}
+            >
+              {row.english}
+            </Text>
+          </View>
+          <View style={[s.chevronCircle, { backgroundColor: colors.cream }]} importantForAccessibility="no">
+            <ChevronForwardIcon size={14} color={colors.inkSoft} />
+          </View>
         </Pressable>
       ))}
     </View>
@@ -245,17 +268,34 @@ interface SpeakBarProps {
   /** Uppercase line beneath. */
   sub: string;
   disabled?: boolean;
-  /**
-   * Half-width form, for the two bars that share a row in two-language mode.
-   */
+  /** Half-width form for the two bars sharing a row in two-language mode. */
   compact?: boolean;
+  /** Listening: pulse the mic circle. */
+  listening?: boolean;
   onPress: () => void;
 }
 
-/** The one solid bar: the action and a 16px stroked mic at the right. */
-export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false, onPress }: SpeakBarProps) {
+/** The primary speak card: selected-gradient fill, mint border, ink mic. */
+export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false, listening = false, onPress }: SpeakBarProps) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!listening) {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.08, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [listening, pulse]);
+
   return (
     <Pressable
       onPressIn={onPress}
@@ -266,14 +306,22 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
       style={({ pressed }) => [
         s.cta,
         compact && s.ctaCompact,
-        { backgroundColor: colors.ctaFill },
+        { borderColor: colors.mint },
         pressed && s.ctaPressed,
         disabled && s.disabled,
       ]}
     >
+      <LinearGradient
+        colors={[...gradients.selected.colors]}
+        locations={[...gradients.selected.locations]}
+        start={gradients.selected.start}
+        end={gradients.selected.end}
+        style={[StyleSheet.absoluteFill, { borderRadius: compact ? 22 : 26 }]}
+        importantForAccessibility="no"
+      />
       <View style={s.ctaText}>
         <Text
-          style={[s.ctaName, serifFor(lang), { color: colors.onCta }]}
+          style={[compact ? s.ctaNameCompact : s.ctaName, serifFor(lang, 'medium'), { color: colors.ink }]}
           numberOfLines={1}
           allowFontScaling
           maxFontSizeMultiplier={1.5}
@@ -281,7 +329,7 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
           {name}
         </Text>
         <Text
-          style={[{ fontSize: 9, lineHeight: 12, letterSpacing: 1.2 }, fontFor('en', 'regular'), { color: colors.onCta, opacity: 0.6 }]}
+          style={[{ fontSize: 11, lineHeight: 14, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accent }]}
           numberOfLines={1}
           allowFontScaling
           maxFontSizeMultiplier={1.4}
@@ -289,9 +337,9 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
           {sub}
         </Text>
       </View>
-      <View style={s.micInline} importantForAccessibility="no">
-        <MicIcon size={16} color={colors.onCta} />
-      </View>
+      <Animated.View style={[compact ? s.micCompact : s.mic, { backgroundColor: colors.ink, transform: [{ scale: pulse }] }]} importantForAccessibility="no">
+        <MicIcon size={compact ? 20 : 22} color={colors.white} />
+      </Animated.View>
     </Pressable>
   );
 }
@@ -303,7 +351,7 @@ export function PrivacyLine({ language }: { language: Language }) {
   const other = t(language.code);
   return (
     <Text
-      style={[{ fontSize: 9.5, lineHeight: 13, letterSpacing: 1.1 }, fontFor('en', 'regular'), { color: colors.ink2, textAlign: 'center' }]}
+      style={[{ fontSize: 11, lineHeight: 15, letterSpacing: 1.1 }, fontFor('en'), { color: colors.muted, textAlign: 'center' }]}
       allowFontScaling
       maxFontSizeMultiplier={1.4}
     >
@@ -324,62 +372,58 @@ const makeStyles = (c: ColorTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 22,
-      paddingTop: 12,
-      paddingBottom: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: c.hairline,
+      paddingHorizontal: 24,
+      paddingTop: 4,
     },
-    mastheadSide: { gap: 3, minHeight: 48, justifyContent: 'center' },
+    mastheadSide: { gap: 2, minHeight: 44, justifyContent: 'center' },
     mastheadRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-    mastheadName: { fontSize: 18, lineHeight: 24 },
+    mastheadName: { fontSize: 30, lineHeight: 36 },
     cambiar: {
-      fontSize: 11,
-      lineHeight: 15,
-      borderBottomWidth: 1,
-      borderBottomColor: c.ink2,
+      fontSize: 14,
+      lineHeight: 20,
+      borderBottomWidth: 1.5,
       paddingBottom: 1,
     },
-    settings: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      minHeight: 48,
-      justifyContent: 'center',
-      backgroundColor: 'transparent',
-    },
-    captionGap: { marginBottom: 8 },
-    modeWrap: { paddingHorizontal: 22, paddingTop: 12 },
-    modeBox: { flexDirection: 'row', borderWidth: 1, borderRadius: 4, overflow: 'hidden' },
-    modeDivider: { width: 1 },
-    half: { flex: 1, gap: 2, paddingHorizontal: 12, paddingVertical: 9, minHeight: 48, justifyContent: 'center' },
-    index: { borderTopWidth: 1, marginTop: 12, paddingHorizontal: 22 },
+    settings: { minHeight: 44, justifyContent: 'center' },
+    hero: { paddingHorizontal: 24, marginTop: 34 },
+    heroHead: { fontSize: 36, lineHeight: 39, letterSpacing: -0.72 },
+    heroSub: { fontSize: 15, lineHeight: 22, marginTop: 10 },
+    modeWrap: { paddingHorizontal: 16, marginTop: 20 },
+    modeLabel: { paddingHorizontal: 8, marginBottom: 8 },
+    modeBox: { flexDirection: 'row', borderRadius: 999, padding: 5, gap: 4 },
+    half: { flex: 1, gap: 2, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 999, minHeight: 56, justifyContent: 'center' },
+    index: { paddingHorizontal: 16, gap: 10, marginTop: 14 },
     indexRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
-      minHeight: 48,
-      paddingVertical: 12,
-      paddingHorizontal: 2,
-      borderBottomWidth: 1,
+      minHeight: 76,
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      borderRadius: 22,
     },
-    numeral: { fontFamily: mono, fontSize: 10, fontWeight: '500' },
-    indexName: { flex: 1, fontSize: 18, lineHeight: 24 },
+    badge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+    indexText: { flex: 1, minWidth: 0 },
+    indexName: { fontSize: 24, lineHeight: 29 },
+    chevronCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
     cta: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 60,
-      borderRadius: 4,
+      gap: 12,
+      minHeight: 96,
+      borderWidth: 1.5,
+      borderRadius: 26,
       overflow: 'hidden',
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      paddingVertical: 22,
+      paddingHorizontal: 24,
     },
-    ctaPressed: { opacity: 0.9 },
-    // Half-width, so it stays a comfortable target without a tall bar's bulk.
-    ctaCompact: { flex: 1 },
-    ctaText: { flex: 1, justifyContent: 'center', gap: 1 },
-    ctaName: { fontSize: 17, lineHeight: 22 },
-    micInline: { justifyContent: 'center' },
-    pressed: { backgroundColor: 'rgba(29, 28, 26, 0.04)' },
+    ctaPressed: { opacity: 0.94 },
+    ctaCompact: { flex: 1, minHeight: 84, borderRadius: 22, paddingVertical: 16, paddingHorizontal: 18 },
+    ctaText: { flex: 1, justifyContent: 'center', gap: 4, minWidth: 0 },
+    ctaName: { fontSize: 34, lineHeight: 38 },
+    ctaNameCompact: { fontSize: 26, lineHeight: 30 },
+    mic: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+    micCompact: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    pressed: { opacity: 0.96 },
     disabled: { opacity: 0.4 },
   });

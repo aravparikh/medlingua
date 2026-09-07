@@ -47,7 +47,7 @@ import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
 import { RightsCard } from '../components/RightsCard';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
-import { ActionIndex, Masthead, ModeControl, PrivacyLine, SpeakBar } from '../components/editorial/Editorial';
+import { ActionIndex, Hero, Masthead, ModeControl, PrivacyLine, SpeakBar } from '../components/editorial/Editorial';
 import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
 import { ErrorNotice, HeldNotice, Translating } from '../components/conversation/Notices';
@@ -58,6 +58,7 @@ import { SpeakingBloom } from '../components/conversation/SpeakingBloom';
 import { ScanSheet } from '../components/conversation/ScanSheet';
 import { TeachBackDialog } from '../components/conversation/TeachBackDialog';
 import { ConversationBlock, TranscriptScreen } from '../components/conversation/Transcript';
+import { SageBackground } from '../components/sage/Sage';
 import { TypeSheet } from '../components/conversation/TypeSheet';
 
 export type Phase = 'idle' | 'listening' | 'translating' | 'speaking';
@@ -1093,7 +1094,7 @@ export function ConversationScreen({
   const summaryX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [winWidth, winWidth, 0] });
 
   return (
-    <View style={s.screen}>
+    <SageBackground>
       <Animated.View style={[s.homeLayer, { transform: [{ translateX: homeX }], opacity: homeOpacity }]}>
       <SpeakingBloom active={voiceActive} level={bloomLevel} />
 
@@ -1128,9 +1129,8 @@ export function ConversationScreen({
         </View>
       ) : null}
 
-      {/* The visit so far: the last two exchanges, fixed rather than scrolling,
-         so it cannot slide out from under the live line. The whole ledger is
-         one tap away. Visible from the very first turn. */}
+      {/* The visit so far once it exists; the hero headline before that.
+         The whole ledger is one tap behind the card. */}
       {turns.length > 0 ? (
         <ConversationBlock
           turns={turns}
@@ -1141,7 +1141,9 @@ export function ConversationScreen({
             setTranscriptOpen(true);
           }}
         />
-      ) : null}
+      ) : (
+        <Hero language={otherLanguage} />
+      )}
 
       {/* The live line and anything transient beneath it. */}
       <ScrollView
@@ -1202,7 +1204,6 @@ export function ConversationScreen({
 
         {turns.length === 0 && !error && !setupError && phase === 'idle' ? (
           <Appear style={s.empty}>
-            <Label {...bilingual(other.tagline, en.tagline)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="title" weight="semibold" align="center" />
             <Label {...bilingual(other.holdAndSpeak, en.holdAndSpeak)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} tone="ink2" align="center" />
           </Appear>
         ) : null}
@@ -1550,13 +1551,12 @@ export function ConversationScreen({
         otherLanguage={otherLanguage}
         onClose={() => setFullscreenTurn(null)}
       />
-    </View>
+    </SageBackground>
   );
 }
 
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.bg },
     homeLayer: { flex: 1 },
     pushed: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
     header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
@@ -1570,24 +1570,24 @@ const makeStyles = (c: ColorTokens) =>
       backgroundColor: c.surface,
       borderRadius: 4,
       padding: spacing.sm,
-      marginHorizontal: 22,
+      marginHorizontal: 16,
       marginTop: 12,
     },
     bannerText: { flex: 1, gap: spacing.xs },
-    disclaimer: { gap: spacing.xs, marginTop: spacing.xs, paddingHorizontal: 22 },
+    disclaimer: { gap: spacing.xs, marginTop: spacing.xs, paddingHorizontal: 16 },
     disclaimerOk: { alignSelf: 'stretch' },
     summary: { marginTop: spacing.sm, alignSelf: 'stretch' },
     // Transient only now (errors, the translating line, the empty tagline).
     // It no longer competes with the block for the screen's slack.
     thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
     threadFill: { flexGrow: 1 },
-    threadContent: { paddingHorizontal: 22, paddingVertical: spacing.md, gap: spacing.md },
+    threadContent: { paddingHorizontal: 16, paddingVertical: spacing.md, gap: spacing.md },
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     live: { marginTop: spacing.sm },
-    empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 22, paddingBottom: spacing.lg },
-    bars: { flexDirection: 'row', gap: 9, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12 },
-    barsSingle: { flexDirection: 'column', gap: 9, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12 },
+    empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 16, paddingBottom: spacing.lg },
+    bars: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 14 },
+    barsSingle: { flexDirection: 'column', gap: 10, paddingHorizontal: 16, paddingTop: 14 },
     options: { gap: spacing.xs, padding: spacing.md },
 
-    privacy: { paddingHorizontal: 22, paddingBottom: 14 },
+    privacy: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 },
   });
