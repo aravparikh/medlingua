@@ -580,6 +580,56 @@ export async function simplify(
   return explanation;
 }
 
+/**
+ * Says it differently: restates already-translated text in the same language
+ * with plainer wording, for a turn's options sheet ("repeat slowly" covers
+ * hearing it again; this covers wording it again). Same safety contract as
+ * teach-back simplify — facts preserved exactly, nothing added. Ephemeral:
+ * the caller speaks it without adding a turn.
+ */
+export async function rephrase(text: string, into: Language): Promise<string> {
+  const system = [
+    `You are a medical interpreter. Restate the message below in ${into.englishName} a DIFFERENT, simpler way.`,
+    'Rules:',
+    '- Short sentences. Everyday words. Zero medical jargon.',
+    '- Keep every critical fact exactly: medication names, doses, times, warnings.',
+    '- Do not add information that is not in the message.',
+    '- Return only the restatement, no commentary.',
+  ].join('\n');
+
+  let res: ApiResponse;
+  try {
+    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        ...apiHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: text },
+        ],
+      }),
+    });
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during rephrase');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Rephrase failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const restatement = data.choices?.[0]?.message?.content?.trim();
+  if (!restatement) {
+    throw new TranslationError('Empty rephrase restatement');
+  }
+  return restatement;
+}
+
 /** One line of transcript for the visit summary — original text plus who said it. */
 export interface SummaryLine {
   speaker: Language;

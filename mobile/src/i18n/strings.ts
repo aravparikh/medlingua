@@ -93,6 +93,8 @@ export interface UIStrings {
   cameraPermission: string;
   // Polish pass — slow replay, interpreter rights, offline awareness, tagline
   slowLabel: string;
+  /** Turn option: restate this message with different, simpler wording. */
+  rephraseLabel: string;
   /** Opens the live line's options sheet. */
   moreOptions: string;
   rightsShow: string;
@@ -139,6 +141,13 @@ export interface UIStrings {
   symptomsLabel: string;
   nextStepsLabel: string;
   summaryDisclaimer: string;
+  // Settings — two independent switches over how the visit is spoken and heard.
+  settingsTitle: string;
+  speakAloudLabel: string;
+  speakAloudHint: string;
+  voiceInputLabel: string;
+  voiceInputHint: string;
+  voiceInputOff: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -222,6 +231,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Read aloud',
     cameraPermission: 'MedLingua needs the camera to read the label. Please allow camera access in Settings.',
     slowLabel: 'Slowly',
+    rephraseLabel: 'Say differently',
     moreOptions: 'More options',
     rightsShow: 'Interpreter rights',
     rightsTitle: 'You have the right to a free medical interpreter.',
@@ -250,6 +260,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Delete the whole conversation?',
     patientTag: 'PT',
     clinicianTag: 'DR',
+    settingsTitle: 'Settings',
+    speakAloudLabel: 'Read aloud',
+    speakAloudHint: 'Speak each translation out loud.',
+    voiceInputLabel: 'Voice input',
+    voiceInputHint: 'Use the microphone to talk.',
+    voiceInputOff: 'Voice input is off — use Type or Phrases.',
     idiomaLabel: 'LANGUAGE',
     changeShort: 'change',
     settingsLabel: 'SETTINGS',
@@ -343,6 +359,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Leer en voz alta',
     cameraPermission: 'MedLingua necesita la cámara para leer la etiqueta. Permita el acceso a la cámara en Ajustes.',
     slowLabel: 'Despacio',
+    rephraseLabel: 'Dilo de otra forma',
     moreOptions: 'Más opciones',
     rightsShow: 'Derecho a intérprete',
     rightsTitle: 'Usted tiene derecho a un intérprete médico gratuito.',
@@ -371,6 +388,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: '¿Borrar toda la conversación?',
     patientTag: 'PAC',
     clinicianTag: 'DR',
+    settingsTitle: 'Ajustes',
+    speakAloudLabel: 'Leer en voz alta',
+    speakAloudHint: 'Decir cada traducción en voz alta.',
+    voiceInputLabel: 'Entrada por voz',
+    voiceInputHint: 'Usar el micrófono para hablar.',
+    voiceInputOff: 'La entrada por voz está desactivada — use Escribir o Frases.',
     idiomaLabel: 'IDIOMA',
     changeShort: 'cambiar',
     settingsLabel: 'AJUSTES',
@@ -464,6 +487,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: '朗读',
     cameraPermission: 'MedLingua 需要使用相机来读取标签。请在“设置”中允许使用相机。',
     slowLabel: '慢一点',
+    rephraseLabel: '换种说法',
     moreOptions: '更多选项',
     rightsShow: '口译员权利',
     rightsTitle: '您有权获得免费的医疗口译员。',
@@ -492,6 +516,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: '要删除整段对话吗？',
     patientTag: '患者',
     clinicianTag: '医生',
+    settingsTitle: '设置',
+    speakAloudLabel: '朗读',
+    speakAloudHint: '把每条翻译读出来。',
+    voiceInputLabel: '语音输入',
+    voiceInputHint: '用麦克风说话。',
+    voiceInputOff: '语音输入已关闭——请使用“书写”或“常用语”。',
     idiomaLabel: '语言',
     changeShort: '更换',
     settingsLabel: '设置',
@@ -584,6 +614,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Đọc to',
     cameraPermission: 'MedLingua cần máy ảnh để đọc nhãn. Vui lòng cho phép truy cập máy ảnh trong Cài đặt.',
     slowLabel: 'Chậm lại',
+    rephraseLabel: 'Nói cách khác',
     moreOptions: 'Thêm tùy chọn',
     rightsShow: 'Quyền thông dịch viên',
     rightsTitle: 'Bạn có quyền được thông dịch viên y tế miễn phí.',
@@ -612,6 +643,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Xóa toàn bộ cuộc trò chuyện?',
     patientTag: 'BN',
     clinicianTag: 'BS',
+    settingsTitle: 'Cài đặt',
+    speakAloudLabel: 'Đọc to',
+    speakAloudHint: 'Đọc to từng bản dịch.',
+    voiceInputLabel: 'Nhập bằng giọng nói',
+    voiceInputHint: 'Dùng micrô để nói.',
+    voiceInputOff: 'Nhập bằng giọng nói đã tắt — hãy dùng Gõ hoặc Câu thường dùng.',
     idiomaLabel: 'NGÔN NGỮ',
     changeShort: 'đổi',
     settingsLabel: 'CÀI ĐẶT',
@@ -704,6 +741,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Прочитать вслух',
     cameraPermission: 'MedLingua нужна камера, чтобы прочитать этикетку. Разрешите доступ к камере в Настройках.',
     slowLabel: 'Медленно',
+    rephraseLabel: 'Сказать иначе',
     moreOptions: 'Ещё',
     rightsShow: 'Право на переводчика',
     rightsTitle: 'Вы имеете право на бесплатного медицинского переводчика.',
@@ -732,6 +770,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'Удалить весь разговор?',
     patientTag: 'ПАЦ',
     clinicianTag: 'ВРАЧ',
+    settingsTitle: 'Настройки',
+    speakAloudLabel: 'Читать вслух',
+    speakAloudHint: 'Произносить каждый перевод вслух.',
+    voiceInputLabel: 'Голосовой ввод',
+    voiceInputHint: 'Использовать микрофон для речи.',
+    voiceInputOff: 'Голосовой ввод выключен — используйте «Печатать» или «Фразы».',
     idiomaLabel: 'ЯЗЫК',
     changeShort: 'сменить',
     settingsLabel: 'НАСТРОЙКИ',
@@ -825,6 +869,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'पढ़कर सुनाएँ',
     cameraPermission: 'लेबल पढ़ने के लिए MedLingua को कैमरा चाहिए। कृपया सेटिंग्स में कैमरे की अनुमति दें।',
     slowLabel: 'धीरे-धीरे',
+    rephraseLabel: 'दूसरे शब्दों में कहें',
     moreOptions: 'और विकल्प',
     rightsShow: 'दुभाषिया अधिकार',
     rightsTitle: 'आपको मुफ़्त चिकित्सा दुभाषिया पाने का अधिकार है।',
@@ -853,6 +898,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'पूरी बातचीत हटाएँ?',
     patientTag: 'रोगी',
     clinicianTag: 'डॉ',
+    settingsTitle: 'सेटिंग्ज़',
+    speakAloudLabel: 'ज़ोर से पढ़ें',
+    speakAloudHint: 'हर अनुवाद को ज़ोर से बोलें।',
+    voiceInputLabel: 'आवाज़ से इनपुट',
+    voiceInputHint: 'बोलने के लिए माइक्रोफ़ोन का उपयोग करें।',
+    voiceInputOff: 'आवाज़ से इनपुट बंद है — लिखें या वाक्य का उपयोग करें।',
     idiomaLabel: 'भाषा',
     changeShort: 'बदलें',
     settingsLabel: 'सेटिंग',
@@ -946,6 +997,7 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'ਪੜ੍ਹ ਕੇ ਸੁਣਾਓ',
     cameraPermission: 'ਲੇਬਲ ਪੜ੍ਹਨ ਲਈ MedLingua ਨੂੰ ਕੈਮਰਾ ਚਾਹੀਦਾ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਕੈਮਰੇ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ।',
     slowLabel: 'ਹੌਲੀ-ਹੌਲੀ',
+    rephraseLabel: 'ਹੋਰ ਸ਼ਬਦਾਂ ਵਿੱਚ ਕਹੋ',
     moreOptions: 'ਹੋਰ ਵਿਕਲਪ',
     rightsShow: 'ਦੁਭਾਸ਼ੀਆ ਹੱਕ',
     rightsTitle: 'ਤੁਹਾਨੂੰ ਮੁਫ਼ਤ ਡਾਕਟਰੀ ਦੁਭਾਸ਼ੀਏ ਦਾ ਹੱਕ ਹੈ।',
@@ -974,6 +1026,12 @@ export const STRINGS: Record<string, UIStrings> = {
     clearAllConfirm: 'ਪੂਰੀ ਗੱਲਬਾਤ ਮਿਟਾਉਣੀ ਹੈ?',
     patientTag: 'ਮਰੀਜ਼',
     clinicianTag: 'ਡਾ',
+    settingsTitle: 'ਸੈਟਿੰਗਾਂ',
+    speakAloudLabel: 'ਉੱਚੀ ਪੜ੍ਹੋ',
+    speakAloudHint: 'ਹਰ ਅਨੁਵਾਦ ਉੱਚੀ ਬੋਲੋ।',
+    voiceInputLabel: 'ਆਵਾਜ਼ ਨਾਲ ਇਨਪੁੱਟ',
+    voiceInputHint: 'ਬੋਲਣ ਲਈ ਮਾਈਕ੍ਰੋਫ਼ੋਨ ਵਰਤੋ।',
+    voiceInputOff: 'ਆਵਾਜ਼ ਇਨਪੁੱਟ ਬੰਦ ਹੈ — ਲਿਖੋ ਜਾਂ ਵਾਕ ਵਰਤੋ।',
     idiomaLabel: 'ਭਾਸ਼ਾ',
     changeShort: 'ਬਦਲੋ',
     settingsLabel: 'ਸੈਟਿੰਗ',

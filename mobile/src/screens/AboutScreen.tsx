@@ -6,6 +6,7 @@ import { ChevronBackIcon, ChevronForwardIcon, InfoIcon, LinkIcon, LockIcon, Shie
 import type { Language } from '../config/languages';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/links';
 import { t } from '../i18n/strings';
+import { loadPrefs, savePrefs } from '../services/storage';
 import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, text, useTheme, type ColorTokens } from '../theme';
 import { Label } from '../components/ui/Label';
 import { PressableScale } from '../components/PressableScale';
@@ -22,9 +23,41 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
   const other = t(otherLanguage.code);
   const en = t('en');
   const [rightsOpen, setRightsOpen] = useState(false);
+  // Written straight to prefs. The conversation screen unmounts while this one
+  // is open, so it picks both up when it remounts on the way back.
+  const [speakAloud, setSpeakAloud] = useState(() => loadPrefs().speakAloud ?? true);
+  const [voiceInput, setVoiceInput] = useState(() => loadPrefs().voiceInput ?? true);
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const toggle = (
+    key: 'speakAloud' | 'voiceInput',
+    on: boolean,
+    setOn: (next: boolean) => void,
+    label: { primary: string; secondary?: string },
+    hint: { primary: string; secondary?: string },
+  ) => (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setOn(!on);
+        savePrefs({ [key]: !on });
+      }}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on }}
+      accessibilityLabel={`${label.primary}. ${label.secondary ?? ''} ${hint.primary}`}
+      style={({ pressed }) => [styles.settingRow, { borderBottomColor: colors.rule }, pressed && styles.pressedFill]}
+    >
+      <View style={styles.settingText}>
+        <Label primary={label.primary} secondary={label.secondary} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} weight="semibold" />
+        <Label primary={hint.primary} secondary={hint.secondary} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="caption" tone="ink2" />
+      </View>
+      <View style={[styles.track, { borderColor: on ? colors.ctaFill : colors.border, backgroundColor: on ? colors.ctaFill : 'transparent' }]}>
+        <View style={[styles.knob, { backgroundColor: on ? colors.onCta : colors.ink2 }, on && styles.knobOn]} />
+      </View>
+    </Pressable>
+  );
 
   const backLabel = bilingual(other.back, en.back);
   const rightsLabel = bilingual(other.rightsShow, en.rightsShow);
@@ -49,6 +82,14 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           weight="semibold"
         />
       </Pressable>
+
+      <Text style={[text.label, fontFor('en', 'semibold'), styles.settingsHeading, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+        {other.settingsTitle.toUpperCase()}
+      </Text>
+      <View style={[styles.settings, { borderTopColor: colors.hairline }]}>
+        {toggle('speakAloud', speakAloud, setSpeakAloud, bilingual(other.speakAloudLabel, en.speakAloudLabel), bilingual(other.speakAloudHint, en.speakAloudHint))}
+        {toggle('voiceInput', voiceInput, setVoiceInput, bilingual(other.voiceInputLabel, en.voiceInputLabel), bilingual(other.voiceInputHint, en.voiceInputHint))}
+      </View>
 
       <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header">
         MedLingua
@@ -198,6 +239,20 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
 
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
+    settingsHeading: { marginTop: spacing.lg, marginBottom: spacing.xs },
+    settings: { borderTopWidth: StyleSheet.hairlineWidth },
+    settingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: tapTarget.primary,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    settingText: { flex: 1, gap: 2 },
+    track: { width: 46, height: 28, borderRadius: 14, borderWidth: 1, justifyContent: 'center', paddingHorizontal: 3 },
+    knob: { width: 20, height: 20, borderRadius: 10 },
+    knobOn: { alignSelf: 'flex-end' },
     screen: {
       flex: 1,
       backgroundColor: c.bg,

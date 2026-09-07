@@ -15,17 +15,18 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { CloudOffIcon, EyeIcon, InfoIcon, SlowIcon, SpeakIcon, TrashIcon, UnderstandIcon } from '../components/icons';
+import { CloudOffIcon, EyeIcon, InfoIcon, SlowIcon, SpeakIcon, SparkleIcon, TrashIcon, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
 import type { Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
 import {
-  clearSpokenAudio,
-  MissingKeyError,
-  readMedicationLabel,
-  simplify,
+    clearSpokenAudio,
+    MissingKeyError,
+    readMedicationLabel,
+    rephrase,
+    simplify,
   summarizeVisit,
   synthesize,
   transcribe,
@@ -192,7 +193,9 @@ export function ConversationScreen({
   /** True after ~2s of near-silence while recording — shows "speak louder". */
   const [tooQuiet, setTooQuiet] = useState(false);
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
-  const [flipped, setFlipped] = useState(false);
+  // Both default on; About writes them and this screen remounts on the way back.
+  const [speakAloud] = useState(() => loadPrefs().speakAloud ?? true);
+  const [voiceInput] = useState(() => loadPrefs().voiceInput ?? true);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [typedDraft, setTypedDraft] = useState('');
@@ -310,7 +313,6 @@ export function ConversationScreen({
 
   const en = t('en');
   const other = t(otherLanguage.code);
-  const latestTurn = turns.length > 0 ? turns[turns.length - 1] : null;
 
   /** Recorder metering is in dB (≈ -160 silent … 0 loudest); normal speech at
    * arm's length sits around -30 to -15. Normalized to 0..1 for the meter;
@@ -370,7 +372,6 @@ export function ConversationScreen({
 
   const addTurn = (turn: Turn) => {
     onTurnsChange([...turns, turn]);
-    setFlipped(false);
   };
 
   /**
@@ -552,9 +553,26 @@ export function ConversationScreen({
       }
       // In auto mode the speaker is whoever Whisper heard: English, or if not
       // English (or unrecognized), the other language of the pair.
+      if (!text.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError('didntCatch');
+        setPhase('idle');
+        return;
+      }
       const speakerLang = who ?? (detectedCode === 'en' ? ENGLISH : otherLanguage);
       const listener = speakerLang.code === 'en' ? otherLanguage : ENGLISH;
       const turn = await translateThroughGate(text, speakerLang, listener);
+      // A turn with nothing in it renders as a bare timestamp and tells the
+      // reader nothing, so it is treated as a miss rather than added. Reaching
+      // here means transcription or translation returned blank despite not
+      // throwing; dev builds say which.
+      if (turn && !turn.translation.trim()) {
+        if (__DEV__) setSetupError(`empty translation for "${text}"`);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError('didntCatch');
+        setPhase('idle');
+        return;
+      }
       setRetryCtx(null);
       // The audio has served its purpose either way: a withheld translation is
       // re-attempted by speaking again, never by re-running the same recording.
@@ -605,6 +623,10 @@ export function ConversationScreen({
    * the on-device voice answers immediately instead of waiting on a dead fetch.
    */
   const speak = async (text: string, language: Language, turnId: number, slow = false) => {
+    if (!speakAloud) {
+      setPhase('idle');
+      return;
+    }
     const session = speakSessionRef.current;
     setPhase('speaking');
     // Re-assert playback mode: a recording may have routed audio to the quiet
@@ -674,6 +696,27 @@ export function ConversationScreen({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     stopAllAudio();
     await speak(turn.translation, turn.listener, turn.id, true);
+  };
+
+  /**
+   * "Say differently": restates a turn's translation with plainer wording and
+   * speaks it. Ephemeral like slow replay — spoken, never added as a turn.
+   * The negative id keeps the replay path from mistaking this audio for the
+   * turn's cached normal-pace audio.
+   */
+  const playTurnRephrased = async (turn: Turn) => {
+    if (phase !== 'idle' || offline) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    stopAllAudio();
+    setPhase('translating');
+    try {
+      const restatement = await rephrase(turn.translation, turn.listener);
+      await speak(restatement, turn.listener, -turn.id);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setPhase('idle');
+      setError('connectionError');
+    }
   };
 
   /** Replays any turn. The turn whose audio is loaded replays instantly; others re-synthesize. */
@@ -1033,7 +1076,6 @@ export function ConversationScreen({
 
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
-  const pastTurns = latestTurn ? turns.filter((turn) => turn.id !== latestTurn.id) : turns;
   const pendingRole = speaker == null || speaker.code === 'en' ? 'clinician' : 'patient';
 
   // The warm light is on whenever the app has the floor: hearing someone, or
@@ -1088,8 +1130,8 @@ export function ConversationScreen({
 
       {/* The visit so far: the last two exchanges, fixed rather than scrolling,
          so it cannot slide out from under the live line. The whole ledger is
-         one tap away. */}
-      {pastTurns.length > 0 ? (
+         one tap away. Visible from the very first turn. */}
+      {turns.length > 0 ? (
         <ConversationBlock
           turns={turns}
           otherLanguage={otherLanguage}
@@ -1107,7 +1149,7 @@ export function ConversationScreen({
         // The block takes the screen's slack once it exists; before that there
         // is no block, so the thread has to take it or the whole column
         // collapses to the top and leaves dead space under the footer.
-        style={[s.thread, pastTurns.length === 0 && s.threadFill]}
+        style={[s.thread, turns.length === 0 && s.threadFill]}
         contentContainerStyle={[s.threadContent, turns.length === 0 && s.threadEmpty]}
         // Jump, don't glide: the live line must be fully in view the moment it
         // exists, and a smooth scroll can finish before a taller row has laid out.
@@ -1245,7 +1287,18 @@ export function ConversationScreen({
           {/* Auto-detect is one bar, as drawn. Two-language mode keeps a bar
              each: either person has to be able to speak. */}
           <View style={autoMode ? s.barsSingle : s.bars}>
-            {autoMode ? (
+            {!voiceInput ? (
+              // Voice input switched off in settings: the bars go, and the
+              // screen says where to type instead of leaving a silent gap.
+              <Label
+                {...bilingual(other.voiceInputOff, en.voiceInputOff)}
+                lang={otherLanguage.code}
+                speechTag={otherLanguage.speechTag}
+                size="caption"
+                tone="ink2"
+                align="center"
+              />
+            ) : autoMode ? (
               <SpeakBar
                 name={other.speakAuto}
                 lang={otherLanguage.code}
@@ -1394,9 +1447,11 @@ export function ConversationScreen({
         </Animated.View>
       ) : null}
 
-      {/* The live line's four actions. Off the line itself, because the
-         line is meant to be the sentence and the screen has no room for a
-         control panel under it. */}
+      {/* A turn's options, opened by tapping its transcript row: replay, slow
+         replay, show big, say differently, check understanding (clinician
+         turns), and delete. Off the home screen itself, because the home
+         screen is meant to be the sentence and has no room for a control
+         panel under it. */}
       <Sheet
         visible={optionsTurn != null}
         onClose={() => setOptionsTurn(null)}
@@ -1435,13 +1490,27 @@ export function ConversationScreen({
                 lang={optionsTurn.listener.code}
                 speechTag={optionsTurn.listener.speechTag}
                 variant="outline"
-                accessibilityRole="switch"
-                accessibilityState={{ checked: flipped }}
                 icon={<EyeIcon size={22} color={colors.ink} />}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setFlipped(!flipped);
+                  const turn = optionsTurn;
                   setOptionsTurn(null);
+                  setFullscreenTurn(turn);
+                }}
+              />
+            ) : null}
+            {!optionsTurn.isName ? (
+              <Button
+                label={bilingual(t(optionsTurn.listener.code).rephraseLabel, en.rephraseLabel)}
+                lang={optionsTurn.listener.code}
+                speechTag={optionsTurn.listener.speechTag}
+                variant="outline"
+                disabled={busy || offline}
+                icon={<SparkleIcon size={22} color={colors.ink} />}
+                onPress={() => {
+                  const turn = optionsTurn;
+                  setOptionsTurn(null);
+                  void playTurnRephrased(turn);
                 }}
               />
             ) : null}

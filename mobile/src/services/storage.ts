@@ -8,6 +8,10 @@ interface Prefs {
   languageCode?: string;
   autoMode?: boolean;
   disclaimerSeen?: boolean;
+  /** Read each translation out loud. Default on. */
+  speakAloud?: boolean;
+  /** Allow the microphone as an input. Default on. */
+  voiceInput?: boolean;
   /** Random per-install id sent to the API proxy for rate limiting only.
    * Not derived from the person or the device — a fresh install gets a new one. */
   deviceId?: string;
