@@ -124,7 +124,7 @@ const makeStyles = (c: ColorTokens) =>
     titleBlock: { paddingHorizontal: 24, paddingTop: 8, gap: 6 },
     appName: { fontSize: 40, lineHeight: 44, letterSpacing: -0.8 },
     tagline: { fontSize: 20, lineHeight: 26, color: c.inkSoft, maxWidth: 240 },
-    listLabel: { fontSize: 12, lineHeight: 16, letterSpacing: 1.2, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 12 },
+    listLabel: { fontSize: 12, lineHeight: 16, letterSpacing: 1.2, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 12 },
     list: { flex: 1, minHeight: 0 },
     listContent: { gap: 10, paddingHorizontal: 16, paddingBottom: 40 },
     card: {
@@ -142,7 +142,7 @@ const makeStyles = (c: ColorTokens) =>
     pressed: { opacity: 0.96 },
     checkBadge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     rowText: { flex: 1, minWidth: 0 },
-    native: { fontSize: 30, lineHeight: 36 },
+    native: { fontSize: 30, lineHeight: 33 },
     english: { fontSize: 14, lineHeight: 20, marginTop: 2 },
     chosenWord: { fontSize: 12, lineHeight: 16 },
     chevronCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { elevation, gradients, useTheme } from '../../theme';
 
@@ -34,6 +35,7 @@ interface BackgroundProps {
 
 export function SageBackground({ variant = 'ground', blobColor, single = false, children, style }: BackgroundProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const blob1 = blobColor ?? colors.mint;
   return (
     <View style={[styles.root, style]}>
@@ -49,7 +51,7 @@ export function SageBackground({ variant = 'ground', blobColor, single = false, 
       {single ? null : (
         <View style={[styles.blob2, { backgroundColor: colors.white }]} importantForAccessibility="no" pointerEvents="none" />
       )}
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, { paddingTop: insets.top }]}>{children}</View>
     </View>
   );
 }

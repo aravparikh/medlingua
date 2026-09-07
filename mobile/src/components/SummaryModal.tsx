@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
 import type { Language } from '../config/languages';
@@ -42,6 +43,7 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
 
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
 
   const [secondsLeft, setSecondsLeft] = useState(LIFETIME_S);
   const ready = state?.status === 'ready';
@@ -86,7 +88,7 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
   );
 
   return (
-    <View style={[s.screen, { backgroundColor: colors.summaryBg }]}>
+    <View style={[s.screen, { backgroundColor: colors.summaryBg, paddingTop: insets.top }]}>
       <View style={[s.topRow, { borderBottomColor: colors.hairline }]}>
         <Pressable
           onPress={onBack}

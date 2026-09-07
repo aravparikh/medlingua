@@ -109,7 +109,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.root}>
+      {/* Bottom edge only: gradient screens paint edge-to-edge behind the
+         status bar, and each full screen pads its own top inset. */}
+      <SafeAreaView style={styles.root} edges={['bottom']}>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Appear key={screen} style={styles.root}>
           {screen === 'languages' && <LanguageSelectScreen onSelect={selectLanguage} />}

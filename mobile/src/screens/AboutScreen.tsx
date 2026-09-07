@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { ChevronBackIcon, ChevronForwardIcon, InfoIcon, LinkIcon, LockIcon, ShieldIcon } from '../components/icons';
 
@@ -30,6 +31,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
 
   const toggle = (
     key: 'speakAloud' | 'voiceInput',
@@ -65,7 +67,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
   const termsLabel = bilingual(other.termsLabel, en.termsLabel);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.screen, { paddingTop: insets.top }]} contentContainerStyle={styles.content}>
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
