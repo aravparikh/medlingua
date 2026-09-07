@@ -1,28 +1,25 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { LANGUAGES, type Language } from '../config/languages';
-import { STRINGS, t } from '../i18n/strings';
+import { t } from '../i18n/strings';
 import { loadPrefs } from '../services/storage';
-import { fontFor, serifFor, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
-import { WaveMark } from '../components/icons';
+import { elevation, fontFor, gradients, serifFor, useTheme, type ColorTokens } from '../theme';
+import { CheckIcon, ChevronForwardIcon } from '../components/icons';
+import { SageBackground } from '../components/sage/Sage';
 
 interface Props {
   onSelect: (language: Language) => void;
 }
 
 /**
- * Home, set as a title page: the mark, the wordmark, and an index of
- * languages ruled with hairlines.
- *
- * Hierarchy here comes from serif against sans and from letter-spacing, never
- * from weight — nothing on this screen is bold, and the 30pt wordmark is the
- * largest thing on it. Each language is set in its own script at a size that
- * can be recognised without reading English, which is what makes the list the
- * onboarding.
- *
- * The lockup is fixed and only the list scrolls, so the mark never leaves.
+ * Sage language selector: the MedLingua title in Newsreader 500 over the
+ * italic tagline, then white cards (radius 26) with the native name big in
+ * the language's own serif. The chosen card fills with the selected gradient,
+ * gains a mint border, a check badge on the left and the localized "chosen"
+ * word on the right. Whole card is the tap target; selection logic unchanged.
  */
 export function LanguageSelectScreen({ onSelect }: Props) {
   const { colors } = useTheme();
@@ -30,29 +27,36 @@ export function LanguageSelectScreen({ onSelect }: Props) {
   // Whichever language this device chose last, so returning to the screen
   // shows where you left off rather than an unmarked list.
   const [chosenCode] = useState(() => loadPrefs().languageCode);
+  const en = t('en');
 
   return (
-    <View style={s.screen}>
-      <View style={s.lockup}>
-        <WaveMark size={40} />
-        <Text style={[s.wordmark, serifFor('en'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.4}>
-          MedLingua
+    <SageBackground>
+      <View style={s.titleBlock}>
+        <Text style={[s.appName, serifFor('en', 'medium'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.4}>
+          MedLingua<Text style={{ color: colors.accent }}>.</Text>
         </Text>
-        <Text style={[s.eyebrow, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.6}>
-          CLINICAL TRANSLATION
-        </Text>
-        <Text style={[s.tagline, fontFor('en'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.8}>
-          {STRINGS.en.tagline}
+        <Text
+          style={[s.tagline, serifFor('en', 'italic'), { color: colors.inkSoft }]}
+          accessibilityLanguage="en-US"
+          allowFontScaling
+          maxFontSizeMultiplier={1.8}
+        >
+          {en.tagline}
         </Text>
       </View>
 
-      <Text style={[s.listLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.6}>
-        CHOOSE YOUR LANGUAGE
+      <Text
+        style={[s.listLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
+        allowFontScaling
+        maxFontSizeMultiplier={1.6}
+      >
+        {en.chooseLanguage.toUpperCase()}
       </Text>
 
-      <ScrollView style={[s.list, { borderTopColor: colors.hairline }]} contentContainerStyle={s.listContent}>
+      <ScrollView style={s.list} contentContainerStyle={s.listContent}>
         {LANGUAGES.map((language) => {
           const chosen = language.code === chosenCode;
+          const chosenWord = t(language.code).chosen;
           return (
             <Pressable
               key={language.code}
@@ -64,65 +68,82 @@ export function LanguageSelectScreen({ onSelect }: Props) {
               accessibilityState={{ selected: chosen }}
               accessibilityLabel={`${language.nativeName}. ${language.englishName}`}
               accessibilityLanguage={language.speechTag}
-              style={({ pressed }) => [s.row, { borderBottomColor: colors.rule }, pressed && s.pressed]}
+              style={({ pressed }) => [
+                s.card,
+                { backgroundColor: colors.white },
+                chosen && [s.cardChosen, { borderColor: colors.mint }],
+                pressed && s.pressed,
+              ]}
             >
+              {chosen ? (
+                <LinearGradient
+                  colors={[...gradients.selected.colors]}
+                  locations={[...gradients.selected.locations]}
+                  start={gradients.selected.start}
+                  end={gradients.selected.end}
+                  style={StyleSheet.absoluteFill}
+                  importantForAccessibility="no"
+                />
+              ) : null}
+              {chosen ? (
+                <View style={[s.checkBadge, { backgroundColor: colors.ink }]} importantForAccessibility="no">
+                  <CheckIcon size={15} color={colors.white} />
+                </View>
+              ) : null}
               <View style={s.rowText}>
-                <Text style={[s.native, serifFor(language.code), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.8}>
+                <Text
+                  style={[s.native, serifFor(language.code, 'medium'), { color: colors.ink }]}
+                  allowFontScaling
+                  maxFontSizeMultiplier={1.8}
+                >
                   {language.nativeName}
                 </Text>
-                <Text style={[s.english, fontFor('en'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.8}>
+                <Text style={[s.english, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.8}>
                   {language.englishName}
                 </Text>
               </View>
               {chosen ? (
-                <Text
-                  style={[s.tag, fontFor(language.code, 'semibold'), { color: colors.ink, borderBottomColor: colors.ink }]}
-                  allowFontScaling
-                  maxFontSizeMultiplier={1.6}
-                >
-                  {t(language.code).chosen.toUpperCase()}
+                <Text style={[s.chosenWord, fontFor(language.code, 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                  {chosenWord}
                 </Text>
               ) : (
-                <View style={[s.chevron, { borderColor: colors.ink2 }]} importantForAccessibility="no" />
+                <View style={[s.chevronCircle, { backgroundColor: colors.cream }]} importantForAccessibility="no">
+                  <ChevronForwardIcon size={14} color={colors.inkSoft} />
+                </View>
               )}
             </Pressable>
           );
         })}
       </ScrollView>
-    </View>
+    </SageBackground>
   );
 }
 
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.bg },
-    lockup: { alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
-    wordmark: { fontSize: 30, lineHeight: 32 },
-    eyebrow: { fontSize: 9, letterSpacing: 2.4, marginTop: -spacing.xs },
-    tagline: { fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 240 },
-    listLabel: { fontSize: 10, letterSpacing: 1.6, paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xs },
-    list: { flex: 1, minHeight: 0, borderTopWidth: StyleSheet.hairlineWidth },
-    // Grow to fill a tall screen and spread the rows into it; on a short one
-    // (or at large Dynamic Type) the same content simply scrolls.
-    listContent: {
-      flexGrow: 1,
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.lg,
-    },
-    row: {
+    titleBlock: { paddingHorizontal: 24, paddingTop: 8, gap: 6 },
+    appName: { fontSize: 40, lineHeight: 44, letterSpacing: -0.8 },
+    tagline: { fontSize: 20, lineHeight: 26, color: c.inkSoft, maxWidth: 240 },
+    listLabel: { fontSize: 12, lineHeight: 16, letterSpacing: 1.2, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 12 },
+    list: { flex: 1, minHeight: 0 },
+    listContent: { gap: 10, paddingHorizontal: 16, paddingBottom: 40 },
+    card: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      minHeight: tapTarget.primary,
-      paddingVertical: spacing.sm,
-      borderBottomWidth: StyleSheet.hairlineWidth,
+      gap: 14,
+      minHeight: 96,
+      paddingHorizontal: 24,
+      paddingVertical: 22,
+      borderRadius: 26,
+      overflow: 'hidden',
+      ...elevation.card,
     },
-    pressed: { backgroundColor: 'rgba(29, 28, 26, 0.04)' },
-    rowText: { flex: 1 },
-    native: { fontSize: 20, lineHeight: 27 },
-    english: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
-    tag: { fontSize: 9.5, letterSpacing: 1.3, borderBottomWidth: 1, paddingBottom: 2 },
-    // A chevron drawn from two borders, so it needs no icon and no stroke.
-    chevron: { width: 7, height: 7, borderRightWidth: 2.2, borderBottomWidth: 2.2, transform: [{ rotate: '-45deg' }] },
+    cardChosen: { borderWidth: 1.5 },
+    pressed: { opacity: 0.96 },
+    checkBadge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+    rowText: { flex: 1, minWidth: 0 },
+    native: { fontSize: 30, lineHeight: 36 },
+    english: { fontSize: 14, lineHeight: 20, marginTop: 2 },
+    chosenWord: { fontSize: 12, lineHeight: 16 },
+    chevronCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   });

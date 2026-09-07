@@ -6,6 +6,8 @@ import { AudioModule } from 'expo-audio';
 import { useFonts } from 'expo-font';
 import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif';
 import { Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold } from '@expo-google-fonts/manrope';
+import { Newsreader_400Regular, Newsreader_400Regular_Italic, Newsreader_500Medium } from '@expo-google-fonts/newsreader';
+import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold } from '@expo-google-fonts/figtree';
 import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
 import { NotoSerifDevanagari_400Regular } from '@expo-google-fonts/noto-serif-devanagari';
 import { NotoSerifGurmukhi_400Regular } from '@expo-google-fonts/noto-serif-gurmukhi';
@@ -45,6 +47,12 @@ export default function App() {
     Manrope_500Medium,
     Manrope_600SemiBold,
     Manrope_700Bold,
+    Newsreader_400Regular,
+    Newsreader_500Medium,
+    Newsreader_400Regular_Italic,
+    Figtree_400Regular,
+    Figtree_500Medium,
+    Figtree_600SemiBold,
     NotoSerif_400Regular,
     NotoSerifDevanagari_400Regular,
     NotoSerifGurmukhi_400Regular,

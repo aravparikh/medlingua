@@ -1,24 +1,9 @@
 /**
- * MedLingua design system — "warm paper".
+ * MedLingua design system — "sage".
  *
- * THE IDEA, IN ONE SENTENCE
- * A sheet of warm paper with one focal thing on it: the sentence, set large in
- * a serif, in the reader's own script — everything else quiet, pill-shaped and
- * out of the way, and a warm light that rises from the bottom of the screen
- * whenever the app is listening or speaking.
- *
- * Ground is bone, not white; ink is warm near-black, not black. One accent, a
- * dusty blue, and it only ever fills — never sets type, because at 1.57:1 on
- * this ground it could not. The single warm hue in the app is the speaking
- * bloom, which is decorative and carries no text.
- *
- * Restraint is the rule: one focal element per screen, and never more than one
- * accent-filled element visible at a time.
- *
- * RTL: not required — supported languages are es, zh, vi, hi, pa, ru. Adding
- * an RTL language would need I18nManager.forceRTL, start/end instead of
- * left/right in every style, and mirrored role edges. Nothing else here assumes
- * direction.
+ * A sage-green crown melting into cream, white cards lifted 0/2/10, one green
+ * for links and badges, ink-green for text and dark buttons. Display type is
+ * Newsreader (400/500 + italic); everything else is Figtree (400/500/600).
  */
 
 import { Platform, useColorScheme, type TextStyle } from 'react-native';
@@ -79,6 +64,18 @@ export interface ColorTokens {
   /** Summary ledger ground: lighter than every other screen in light mode. */
   summaryBg: string;
   /**
+   * Sage system. Secondary text and labels; tertiary English subtitles; the
+   * link green; blob/selected-border mint; badge fills; the cream ground; and
+   * paper white for cards. The destructive trio serves the delete rows.
+   */
+  inkSoft: string;
+  muted: string;
+  mint: string;
+  mintLight: string;
+  cream: string;
+  white: string;
+  dangerBorder: string;
+  /**
    * Pain intensity 0–10 as four stops: none → mild → moderate → severe.
    * Same "warmer is worse" rule as the safeguard, so one legend serves both.
    */
@@ -86,48 +83,62 @@ export interface ColorTokens {
 }
 
 export const lightColors: ColorTokens = {
-  bg: '#EFECE5',
-  surface: 'rgba(255,255,255,0.5)',
-  surfacePressed: '#E5E1D8',
-  rule: 'rgba(29,28,26,0.10)',
-  border: 'rgba(29,28,26,0.22)',
-  ink: '#1D1C1A',
-  ink2: '#77726A',
-  accent: '#A9C3CB',
-  onAccent: '#152227',
+  bg: '#F7F3EA',
+  surface: '#FFFFFF',
+  surfacePressed: '#EFF3EC',
+  rule: 'rgba(31,42,36,0.10)',
+  border: 'rgba(31,42,36,0.16)',
+  ink: '#1F2A24',
+  ink2: '#43524A',
+  inkSoft: '#43524A',
+  muted: '#6B7684',
+  accent: '#3F7A55',
+  mint: '#A9C9B0',
+  mintLight: '#E6EFE4',
+  cream: '#F7F3EA',
+  white: '#FFFFFF',
+  onAccent: '#FFFFFF',
   caution: '#8A4B12',
   cautionBg: '#F6E6D5',
-  danger: '#8C2F1C',
-  dangerBg: '#F4DFD8',
-  overlay: 'rgba(29, 28, 26, 0.42)',
-  hairline: 'rgba(29,28,26,0.18)',
-  ctaFill: '#2B3A45',
-  onCta: '#FFFDF8',
+  danger: '#9E3526',
+  dangerBg: '#FBEEEA',
+  dangerBorder: '#E6C9C0',
+  overlay: 'rgba(31,42,36,0.45)',
+  hairline: 'rgba(31,42,36,0.18)',
+  ctaFill: '#1F2A24',
+  onCta: '#FFFFFF',
   summaryBg: '#FDFCFA',
   pain: ['#635E56', '#A8701E', '#8C2F1C', '#5E1A0C'],
 };
 
 export const darkColors: ColorTokens = {
-  // Lamp-lit paper rather than an inversion: the warmth stays, the light goes.
-  bg: '#17150F',
-  surface: '#211E18',
-  surfacePressed: '#2C2820',
-  rule: 'rgba(242, 239, 232, 0.12)',
-  border: 'rgba(242, 239, 232, 0.28)',
-  ink: '#F2EFE8',
-  ink2: '#A8A29A',
-  accent: '#A9C3CB',
-  onAccent: '#152227',
+  // Dark sage: the spec ships light only, so this mirrors its roles —
+  // deep green-black ground, paper-white ink, mint kept for structure.
+  bg: '#141B17',
+  surface: '#1E2721',
+  surfacePressed: '#2A362E',
+  rule: 'rgba(230, 239, 228, 0.12)',
+  border: 'rgba(230, 239, 228, 0.22)',
+  ink: '#EFF4EE',
+  ink2: '#B9C6BB',
+  inkSoft: '#B9C6BB',
+  muted: '#8E9AA0',
+  accent: '#A9C9B0',
+  mint: '#3F7A55',
+  mintLight: '#2A3A2F',
+  cream: '#141B17',
+  white: '#1E2721',
+  onAccent: '#141B17',
   caution: '#E8B57A',
   cautionBg: '#2E2113',
   danger: '#F0A08C',
   dangerBg: '#2E1712',
+  dangerBorder: '#5A322A',
   overlay: 'rgba(0, 0, 0, 0.62)',
-  hairline: 'rgba(242, 239, 232, 0.20)',
-  // Lifted from #2B3A45 so the bar still separates from a near-black ground.
-  ctaFill: '#33454F',
-  onCta: '#FFFDF8',
-  summaryBg: '#201D17',
+  hairline: 'rgba(230, 239, 228, 0.20)',
+  ctaFill: '#EFF4EE',
+  onCta: '#141B17',
+  summaryBg: '#181F1B',
   pain: ['#A8A29A', '#E8B57A', '#F0A08C', '#FF7A63'],
 };
 
@@ -176,16 +187,16 @@ export const ROLE_EDGE_WIDTH = 2;
 /* ─────────────────────────── Typography ─────────────────────────── */
 
 /**
- * One family: Noto Sans. It is the only Google family with first-party Latin,
- * Cyrillic, Vietnamese, Devanagari, Gurmukhi and Simplified Chinese cuts drawn
- * to one design, which is what "one typeface" has to mean across seven
- * languages. Three weights, no more.
+ * UI type: Figtree for Latin and Cyrillic (Vietnamese included), drawn to one
+ * design with Newsreader. Other scripts keep their Noto Sans cuts; Han uses
+ * the system font. Three weights, no 700 anywhere.
  *
  * Coverage is by script, not by language:
- *   latin       en es vi ru   @expo-google-fonts/noto-sans (Cyrillic + Vietnamese included)
- *   devanagari  hi            @expo-google-fonts/noto-sans-devanagari   0.6 MB / 3 weights
- *   gurmukhi    pa            @expo-google-fonts/noto-sans-gurmukhi     0.2 MB / 3 weights
- *   han         zh            SYSTEM FONT by default — see below
+ *   latin       en es vi   Figtree
+ *   cyrillic    ru         Figtree
+ *   devanagari  hi         @expo-google-fonts/noto-sans-devanagari
+ *   gurmukhi    pa         @expo-google-fonts/noto-sans-gurmukhi
+ *   han         zh         SYSTEM FONT by default — see below
  *
  * Han: Noto Sans SC is 30.2 MB for three weights, larger than the rest of the
  * app. Both platforms already ship a Noto-matched CJK face (PingFang SC on
@@ -209,36 +220,44 @@ const SCRIPT_FOR_LANGUAGE: Record<string, Script> = {
 /**
  * Two families, one voice.
  *
- * DISPLAY is a serif, used only for focal text: the live translation, screen
- * titles, a language's own name. UI is Manrope, for everything else.
+ * DISPLAY is Newsreader, used for the app name, native-language names,
+ * action titles and the hero headline — always 400 or 500, never bolder.
+ * Newsreader is Latin-only, so every other script keeps the serif drawn for
+ * it (same arrangement as before, one weight each).
  *
- * Instrument Serif is the display face — but it is Latin-only, so it cannot
- * set four of the six patient languages. Each script therefore gets the serif
- * drawn for it, which is the closest thing to "one serif" that actually exists
- * across these writing systems:
- *
- *   latin       en es vi   Instrument Serif       the reference face
- *   cyrillic    ru         Noto Serif             Instrument Serif has no Cyrillic
- *   devanagari  hi         Noto Serif Devanagari
- *   gurmukhi    pa         Noto Serif Gurmukhi
- *   han         zh         system serif           Noto Serif CJK costs ~30MB
- *
- * A patient never sees two of these at once — their language sets the whole
- * screen — so the differences between them are invisible in use. `null` means
- * the system font, selected by weight.
+ * UI is Figtree 400/500/600 for everything else. `bold` resolves to 600 —
+ * nothing in Sage sets 700.
  */
-const DISPLAY_FAMILIES: Record<Script, string | null> = {
-  latin: 'InstrumentSerif_400Regular',
-  cyrillic: 'NotoSerif_400Regular',
-  devanagari: 'NotoSerifDevanagari_400Regular',
-  gurmukhi: 'NotoSerifGurmukhi_400Regular',
-  han: null,
+type DisplayCut = 'regular' | 'medium' | 'italic';
+
+const DISPLAY_FAMILIES: Record<Script, Record<DisplayCut, string | null>> = {
+  latin: {
+    regular: 'Newsreader_400Regular',
+    medium: 'Newsreader_500Medium',
+    italic: 'Newsreader_400Regular_Italic',
+  },
+  cyrillic: {
+    regular: 'NotoSerif_400Regular',
+    medium: 'NotoSerif_400Regular',
+    italic: 'NotoSerif_400Regular',
+  },
+  devanagari: {
+    regular: 'NotoSerifDevanagari_400Regular',
+    medium: 'NotoSerifDevanagari_400Regular',
+    italic: 'NotoSerifDevanagari_400Regular',
+  },
+  gurmukhi: {
+    regular: 'NotoSerifGurmukhi_400Regular',
+    medium: 'NotoSerifGurmukhi_400Regular',
+    italic: 'NotoSerifGurmukhi_400Regular',
+  },
+  han: { regular: null, medium: null, italic: null },
 };
 
 const UI_FAMILIES: Record<Script, Record<Weight, string> | null> = {
-  latin: { regular: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' },
-  // Manrope covers Cyrillic, so Russian keeps the reference UI face.
-  cyrillic: { regular: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' },
+  latin: { regular: 'Figtree_400Regular', semibold: 'Figtree_600SemiBold', bold: 'Figtree_600SemiBold' },
+  // Figtree covers Cyrillic and Vietnamese, so Russian keeps the UI face.
+  cyrillic: { regular: 'Figtree_400Regular', semibold: 'Figtree_600SemiBold', bold: 'Figtree_600SemiBold' },
   devanagari: {
     regular: 'NotoSansDevanagari_400Regular',
     semibold: 'NotoSansDevanagari_600SemiBold',
@@ -269,12 +288,18 @@ export function fontFor(languageCode: string, weight: Weight = 'regular'): Pick<
 }
 
 /**
- * Display face for a language — focal text only. These serifs ship one weight
- * by design: emphasis comes from size, never from a bolder cut.
+ * Display face for a language — app name, native names, titles, hero.
+ * `medium` is Newsreader 500, `italic` the italic cut; both fall back to the
+ * script's regular serif (or the system font for Han) where unavailable.
  */
-export function serifFor(languageCode: string): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
-  const family = DISPLAY_FAMILIES[scriptOf(languageCode)];
-  return family ? { fontFamily: family } : { fontWeight: '400' };
+export function serifFor(
+  languageCode: string,
+  cut: DisplayCut = 'regular',
+): Pick<TextStyle, 'fontFamily' | 'fontWeight' | 'fontStyle'> {
+  const family = DISPLAY_FAMILIES[scriptOf(languageCode)][cut];
+  if (family) return { fontFamily: family };
+  if (cut === 'italic') return { fontStyle: 'italic', fontWeight: '400' };
+  return { fontWeight: cut === 'medium' ? '500' : '400' };
 }
 
 /**
@@ -318,6 +343,38 @@ export function bilingual(primary: string, secondary: string): BilingualLabel {
   return primary === secondary ? { primary } : { primary, secondary };
 }
 
+/* ─────────────────────── Sage backgrounds ───────────────────── */
+
+/**
+ * Gradient grounds for the Sage system, rendered by SageBackground with
+ * expo-linear-gradient. Stops taken straight from the spec; the 160°
+ * selected gradient is approximated with start/end points.
+ */
+export const gradients = {
+  /** Home, language selector, conversation: mint crown melting into cream. */
+  ground: {
+    colors: ['#CFE0D2', '#E6EFE4', '#F7F3EA'] as const,
+    locations: [0, 0.45, 1] as const,
+  },
+  /** Selected cards and the primary speak card. */
+  selected: {
+    colors: ['#B7D6BF', '#DCEBDF', '#FBF8EF'] as const,
+    locations: [0, 0.6, 1] as const,
+    start: { x: 0.3, y: 0 } as const,
+    end: { x: 0.7, y: 1 } as const,
+  },
+  /** Listening: cream crown, mint gathering at the bottom near controls. */
+  listening: {
+    colors: ['#F7F3EA', '#E6EFE4', '#B7D6BF'] as const,
+    locations: [0, 0.55, 1] as const,
+  },
+  /** Transcription: pale, mostly cream. */
+  transcript: {
+    colors: ['#E6EFE4', '#F7F3EA', '#F7F3EA'] as const,
+    locations: [0, 0.4, 1] as const,
+  },
+} as const;
+
 /* ─────────────────────── Space, shape, motion ───────────────────── */
 
 /** 4pt grid. */
@@ -329,8 +386,14 @@ export const radius = {
   pill: 999,
   /** Cards, panels, and text fields. */
   card: 18,
+  /** Sage list rows (language cards, exchange cards). */
+  row: 26,
+  /** Sage action rows and option rows. */
+  action: 22,
+  /** Sage compact tiles and destructive rows. */
+  tile: 20,
   /** Sheets that slide over the page. */
-  sheet: 22,
+  sheet: 32,
 } as const;
 
 /** Ghost buttons: a hairline circle with a translucent fill, no shadow. */
@@ -345,6 +408,14 @@ export const tapTarget = { min: 48, primary: 64 } as const;
  */
 export const elevation = {
   none: {},
+  /** Sage cards: white fill lifted 0/2/10 at 6% ink. */
+  card: {
+    shadowColor: '#1F2A24',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
   /** The one drop shadow: the primary call to action, and nothing else. */
   cta: {
     shadowColor: '#1D1C1A',
