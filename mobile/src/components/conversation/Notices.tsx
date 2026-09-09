@@ -3,19 +3,21 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
-import { bilingual, fontFor, radius, ROLE_EDGE_WIDTH, roles, spacing, text, useTheme } from '../../theme';
+import { bilingual, fontFor, ROLE_EDGE_WIDTH, roles, spacing, text, useTheme } from '../../theme';
 import { PeopleIcon, RefreshIcon, ShieldIcon, SpeakIcon } from '../icons';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
 
 type Role = keyof typeof roles;
 
-/** Shared frame: a role edge on the left, content to the right. No box. */
+/** Shared frame: a role edge on the left, content to the right. Tinted notices
+ *  are cards (radius 20), never pills — a 999 radius on a tall banner curves
+ *  the text straight off its ends. */
 function Edged({ role, tint, children }: { role: Role | 'danger'; tint?: string; children: ReactNode }) {
   const { colors } = useTheme();
   const edge = role === 'danger' ? colors.danger : colors[roles[role].edge];
   return (
-    <View style={[styles.edged, { borderLeftColor: edge }, tint ? { backgroundColor: tint, borderRadius: radius.pill } : null]}>
+    <View style={[styles.edged, { borderLeftColor: edge }, tint ? { backgroundColor: tint, borderRadius: 20 } : null]}>
       {children}
     </View>
   );
@@ -74,7 +76,7 @@ export function HeldNotice({ stage, speaker, otherLanguage, onSayAgain, onShowRi
     <Edged role="danger" tint={colors.dangerBg}>
       <View style={styles.noticeBody} accessibilityLiveRegion="assertive">
         <View style={styles.noticeHead}>
-          {escalate ? <PeopleIcon size={24} color={colors.danger} /> : <RefreshIcon size={24} color={colors.danger} />}
+          {escalate ? <PeopleIcon size={20} color={colors.danger} /> : <RefreshIcon size={20} color={colors.danger} />}
           <Label
             primary={escalate ? s.gateEscalateTitle : s.gateBlockTitle}
             lang={speaker.code}
@@ -153,10 +155,10 @@ export function ErrorNotice({ primary, secondary, otherLanguage, detail, onRetry
 }
 
 const styles = StyleSheet.create({
-  edged: { borderLeftWidth: ROLE_EDGE_WIDTH, paddingLeft: spacing.md, paddingVertical: spacing.sm, paddingRight: spacing.sm },
+  edged: { borderLeftWidth: ROLE_EDGE_WIDTH, paddingLeft: 20, paddingVertical: 16, paddingRight: 20 },
   translating: { gap: spacing.sm },
   steps: { flexDirection: 'row', gap: spacing.xxs },
   step: { height: 3, width: 32, borderRadius: 2 },
-  noticeBody: { gap: spacing.sm },
-  noticeHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  noticeBody: { gap: 12 },
+  noticeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 });

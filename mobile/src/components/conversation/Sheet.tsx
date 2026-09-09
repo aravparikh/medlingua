@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 
 import type { Language } from '../../config/languages';
@@ -23,6 +24,7 @@ interface Props {
  * downward swipe starting on the header.
  */
 export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard = false, children }: Props) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const en = t('en');
   const other = t(otherLanguage.code);
@@ -53,7 +55,7 @@ export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard =
       onRequestClose={onClose}
     >
       <Wrapper
-        style={[styles.sheet, { backgroundColor: colors.cream }]}
+        style={[styles.sheet, { backgroundColor: colors.cream, paddingBottom: insets.bottom + 24 }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
           <View style={styles.grabberRow} importantForAccessibility="no">
@@ -97,7 +99,7 @@ export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard =
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1 },
+  sheet: { flex: 1, paddingTop: 12, paddingHorizontal: 16, gap: 16 },
   grabberRow: { alignItems: 'center' },
   grabber: { width: 40, height: 4, borderRadius: 2 },
   header: {
