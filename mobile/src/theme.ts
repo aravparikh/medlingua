@@ -70,6 +70,12 @@ export interface ColorTokens {
    */
   inkSoft: string;
   muted: string;
+  /**
+   * Accent for TEXT. The fill accent measures 3.69:1 on the top of the ground
+   * gradient, which fails AA at body size, so links and badge labels use this
+   * and `accent` is reserved for fills, borders and icon shapes.
+   */
+  accentText: string;
   mint: string;
   mintLight: string;
   /** Pale top-right blob on the transcript ground. */
@@ -95,8 +101,9 @@ export const lightColors: ColorTokens = {
   ink: '#1F2A24',
   ink2: '#43524A',
   inkSoft: '#43524A',
-  muted: '#6B7684',
+  muted: '#556069',
   accent: '#3F7A55',
+  accentText: '#376B4A',
   mint: '#A9C9B0',
   mintLight: '#E6EFE4',
   blobPale: '#CFE0D2',
@@ -130,6 +137,7 @@ export const darkColors: ColorTokens = {
   inkSoft: '#B9C6BB',
   muted: '#8E9AA0',
   accent: '#A9C9B0',
+  accentText: '#A9C9B0',
   mint: '#3F7A55',
   mintLight: '#2A3A2F',
   blobPale: '#24352B',

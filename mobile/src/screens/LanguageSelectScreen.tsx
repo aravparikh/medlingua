@@ -33,7 +33,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
     <SageBackground>
       <View style={s.titleBlock}>
         <Text style={[s.appName, serifFor('en', 'medium'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.4}>
-          MedLingua<Text style={{ color: colors.accent }}>.</Text>
+          MedLingua<Text style={{ color: colors.accentText }}>.</Text>
         </Text>
         <Text
           style={[s.tagline, serifFor('en', 'italic'), { color: colors.inkSoft }]}
@@ -103,7 +103,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
                 </Text>
               </View>
               {chosen ? (
-                <Text style={[s.chosenWord, fontFor(language.code, 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                <Text style={[s.chosenWord, fontFor(language.code, 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.6}>
                   {chosenWord}
                 </Text>
               ) : (

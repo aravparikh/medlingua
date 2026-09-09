@@ -4,8 +4,6 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AudioModule } from 'expo-audio';
 import { useFonts } from 'expo-font';
-import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif';
-import { Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold } from '@expo-google-fonts/manrope';
 import { Newsreader_400Regular, Newsreader_400Regular_Italic, Newsreader_500Medium } from '@expo-google-fonts/newsreader';
 import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold } from '@expo-google-fonts/figtree';
 import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
@@ -43,10 +41,6 @@ export default function App() {
   // Every script cut loads here, once, behind the splash — never per screen.
   // Every face loads here, once, behind the splash — never per screen.
   const [fontsLoaded, fontError] = useFonts({
-    InstrumentSerif_400Regular,
-    Manrope_500Medium,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
     Newsreader_400Regular,
     Newsreader_500Medium,
     Newsreader_400Regular_Italic,

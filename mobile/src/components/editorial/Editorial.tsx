@@ -247,7 +247,7 @@ export function ActionIndex({
             accessibilityLanguage={speechTag}
             style={({ pressed }) => [s.tileLead, { backgroundColor: colors.white }, pressed && s.pressed, row.disabled && s.disabled]}
           >
-            <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accent }]}>
+            <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accentText }]}>
               {String(rows.indexOf(row) + 1).padStart(2, '0')}
             </Text>
             <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.6}>
@@ -271,7 +271,7 @@ export function ActionIndex({
                 accessibilityLanguage={speechTag}
                 style={({ pressed }) => [s.tile, { backgroundColor: colors.white }, pressed && s.pressed, row.disabled && s.disabled]}
               >
-                <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accent }]}>
+                <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accentText }]}>
                   {number}
                 </Text>
                 <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.6}>
@@ -300,7 +300,7 @@ export function ActionIndex({
           style={({ pressed }) => [s.indexRow, { backgroundColor: colors.white }, pressed && s.pressed, row.disabled && s.disabled]}
         >
           <View style={[s.badge, { backgroundColor: colors.mintLight }]} importantForAccessibility="no">
-            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accent }]}>
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accentText }]}>
               {String(i + 1).padStart(2, '0')}
             </Text>
           </View>
@@ -401,7 +401,7 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
           {name}
         </Text>
         <Text
-          style={[{ fontSize: 11, lineHeight: 14, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accent }]}
+          style={[{ fontSize: 11, lineHeight: 14, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accentText }]}
           numberOfLines={1}
           allowFontScaling
           maxFontSizeMultiplier={1.4}

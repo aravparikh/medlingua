@@ -53,7 +53,7 @@ function Exchange({ turn, otherLanguage, onPlay, onMore }: ExchangeProps) {
             style={[
               { fontSize: 11, lineHeight: 14, letterSpacing: 0.9 },
               fontFor('en', 'semibold'),
-              { color: clinician ? colors.white : colors.accent },
+              { color: clinician ? colors.white : colors.accentText },
             ]}
             allowFontScaling
             maxFontSizeMultiplier={1.4}
@@ -141,7 +141,7 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
           {other.conversationLabel.toUpperCase()}
         </Text>
         <View style={[s.countPill, { backgroundColor: colors.white }]}>
-          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
             {`${turns.length} ${countWord}`.toUpperCase()}
           </Text>
         </View>
@@ -206,7 +206,7 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
           accessibilityLabel={`${other.viewTranscript}. ${en.viewTranscript}`}
           style={({ pressed }) => [s.cardFooter, { borderTopColor: colors.mintLight }, pressed && s.pressed]}
         >
-          <Text style={[{ fontSize: 13, lineHeight: 18 }, fontFor(otherLanguage.code, 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 13, lineHeight: 18 }, fontFor(otherLanguage.code, 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
             {other.viewTranscript}
           </Text>
           <View style={[s.chevronCircle, { backgroundColor: colors.cream }]} importantForAccessibility="no">
@@ -277,7 +277,7 @@ export function TranscriptScreen({
         </Text>
         <View style={s.countWrap}>
           <View style={[s.countPill, { backgroundColor: colors.white }]}>
-            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
               {turns.length}
             </Text>
           </View>

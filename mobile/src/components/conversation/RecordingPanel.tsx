@@ -123,7 +123,7 @@ export function RecordingPanel({
           </View>
         </View>
 
-        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.accent }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
           {rec.listening.toUpperCase()}
         </Text>
         <Text style={[s.timer, serifFor('en'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.3}>
