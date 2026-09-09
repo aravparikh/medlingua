@@ -36,11 +36,26 @@ export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard =
     if (e.nativeEvent.pageY - swipeFrom.current > 60) onClose();
   };
 
+  // pageSheet rather than a transparent overlay: iOS then presents this as a
+  // real card — rounded top, the screen behind scaling back, and swipe-to-
+  // dismiss for free. It is incompatible with `transparent`, so the hand-drawn
+  // scrim goes with it and UIKit dims the background itself. Android and web
+  // ignore the prop and fall back to a standard full-screen modal.
+  //
+  // The grabber stays hand-drawn: UIKit only shows its own when
+  // prefersGrabberVisible is set on the sheet controller, which React Native's
+  // Modal does not expose. Without ours there would be no drag affordance.
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Wrapper style={[styles.backdrop, { backgroundColor: colors.overlay }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={styles.dismiss} onPress={onClose} accessibilityRole="button" accessibilityLabel={`${other.close}. ${en.close}`} />
-        <View style={[styles.sheet, { backgroundColor: colors.cream }]}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <Wrapper
+        style={[styles.sheet, { backgroundColor: colors.cream }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
           <View style={styles.grabberRow} importantForAccessibility="no">
             <View style={[styles.grabber, { backgroundColor: colors.grabber }]} />
           </View>
@@ -75,25 +90,14 @@ export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard =
               <CloseIcon size={18} color={colors.ink} />
             </Pressable>
           </View>
-          <View style={styles.content}>{children}</View>
-        </View>
+        <View style={styles.content}>{children}</View>
       </Wrapper>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end' },
-  dismiss: { flex: 1 },
-  sheet: {
-    maxHeight: '86%',
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-    gap: 14,
-  },
+  sheet: { flex: 1 },
   grabberRow: { alignItems: 'center' },
   grabber: { width: 40, height: 4, borderRadius: 2 },
   header: {
