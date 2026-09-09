@@ -8,7 +8,7 @@ import type { Language } from '../config/languages';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/links';
 import { t } from '../i18n/strings';
 import { loadPrefs, savePrefs } from '../services/storage';
-import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, text, useTheme, type ColorTokens } from '../theme';
+import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, text, typeCap, useTheme, type ColorTokens } from '../theme';
 import { Label } from '../components/ui/Label';
 import { PressableScale } from '../components/PressableScale';
 import { RightsCard } from '../components/RightsCard';
@@ -85,7 +85,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         />
       </Pressable>
 
-      <Text style={[text.label, fontFor('en', 'semibold'), styles.settingsHeading, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+      <Text style={[text.label, fontFor('en', 'semibold'), styles.settingsHeading, { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
         {other.settingsTitle.toUpperCase()}
       </Text>
       <View style={[styles.settings, { borderTopColor: colors.hairline }]}>
@@ -93,7 +93,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         {toggle('voiceInput', voiceInput, setVoiceInput, bilingual(other.voiceInputLabel, en.voiceInputLabel), bilingual(other.voiceInputHint, en.voiceInputHint))}
       </View>
 
-      <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header">
+      <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={typeCap.chrome} accessibilityRole="header">
         MedLingua
       </Text>
 
@@ -126,7 +126,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         <Text
           style={[styles.heading, fontFor(otherLanguage.code, 'semibold')]}
           allowFontScaling
-          maxFontSizeMultiplier={2}
+          maxFontSizeMultiplier={typeCap.content}
           accessibilityLanguage={otherLanguage.speechTag}
         >
           {other.about}
@@ -134,7 +134,7 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
         <Text
           style={[styles.body, fontFor(otherLanguage.code)]}
           allowFontScaling
-          maxFontSizeMultiplier={2}
+          maxFontSizeMultiplier={typeCap.content}
           accessibilityLanguage={otherLanguage.speechTag}
         >
           {other.aboutBody}
@@ -142,10 +142,10 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
       </View>
 
       <View style={styles.card}>
-        <Text style={[styles.heading, fontFor('en', 'semibold')]} allowFontScaling maxFontSizeMultiplier={2}>
+        <Text style={[styles.heading, fontFor('en', 'semibold')]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
           {en.about}
         </Text>
-        <Text style={[styles.body, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={2}>
+        <Text style={[styles.body, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
           {en.aboutBody}
         </Text>
       </View>
@@ -158,23 +158,23 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           <Text
             style={[styles.noticeText, fontFor(otherLanguage.code, 'semibold')]}
             allowFontScaling
-            maxFontSizeMultiplier={2}
+            maxFontSizeMultiplier={typeCap.content}
             accessibilityLanguage={otherLanguage.speechTag}
           >
             {other.aiDisclaimer}
           </Text>
-          <Text style={[styles.noticeTextEn, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={2}>
+          <Text style={[styles.noticeTextEn, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
             {en.aiDisclaimer}
           </Text>
           <Text
             style={[styles.noticeText, fontFor(otherLanguage.code, 'semibold')]}
             allowFontScaling
-            maxFontSizeMultiplier={2}
+            maxFontSizeMultiplier={typeCap.content}
             accessibilityLanguage={otherLanguage.speechTag}
           >
             {other.dataConsent}
           </Text>
-          <Text style={[styles.noticeTextEn, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={2}>
+          <Text style={[styles.noticeTextEn, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
             {en.dataConsent}
           </Text>
         </View>
@@ -186,12 +186,12 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
           <Text
             style={[styles.noticeText, fontFor(otherLanguage.code, 'semibold')]}
             allowFontScaling
-            maxFontSizeMultiplier={2}
+            maxFontSizeMultiplier={typeCap.content}
             accessibilityLanguage={otherLanguage.speechTag}
           >
             {other.privacyLine}
           </Text>
-          <Text style={[styles.noticeTextEn, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={2}>
+          <Text style={[styles.noticeTextEn, fontFor('en')]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
             {en.privacyLine}
           </Text>
         </View>
@@ -212,7 +212,6 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
             speechTag={otherLanguage.speechTag}
             size="caption"
             weight="semibold"
-            numberOfLines={2}
           />
         </Pressable>
         <Pressable
@@ -229,7 +228,6 @@ export function AboutScreen({ otherLanguage, onBack }: Props) {
             speechTag={otherLanguage.speechTag}
             size="caption"
             weight="semibold"
-            numberOfLines={2}
           />
         </Pressable>
       </View>

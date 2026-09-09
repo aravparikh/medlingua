@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { ENGLISH, type Language } from '../../config/languages';
 import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../../config/phrases';
 import { t } from '../../i18n/strings';
-import { bilingual, fontFor, radius, spacing, tapTarget, text, useTheme, type ColorTokens } from '../../theme';
+import { bilingual, fontFor, radius, spacing, tapTarget, text, typeCap, useTheme, type ColorTokens } from '../../theme';
 import { BodyIcon, BrandGlyph, ChatIcon, SpeakIcon } from '../icons';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
@@ -29,7 +29,7 @@ function painColor(c: ColorTokens, n: number): string {
 function SectionHeading({ label, tone = 'ink2' }: { label: string; tone?: 'ink2' | 'danger' }) {
   const { colors } = useTheme();
   return (
-    <Text style={[text.caption, fontFor('en', 'semibold'), styles.section, { color: tone === 'danger' ? colors.danger : colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={2}>
+    <Text style={[text.caption, fontFor('en', 'semibold'), styles.section, { color: tone === 'danger' ? colors.danger : colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
       {label}
     </Text>
   );
@@ -114,7 +114,7 @@ export function PhraseSheet({ visible, otherLanguage, onClose, onBodyMap, onPhra
                 accessibilityLanguage={otherLanguage.speechTag}
                 style={({ pressed }) => [styles.painChip, { borderColor: tint, backgroundColor: pressed ? colors.surfacePressed : colors.bg }]}
               >
-                <Text style={[text.title, fontFor('en', 'semibold'), { color: tint }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                <Text style={[text.title, fontFor('en', 'semibold'), { color: tint }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                   {n}
                 </Text>
               </Pressable>

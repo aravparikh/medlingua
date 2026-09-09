@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { LANGUAGES, type Language } from '../config/languages';
 import { t } from '../i18n/strings';
 import { loadPrefs } from '../services/storage';
-import { radius, elevation, fontFor, gradients, serifFor, useTheme, type ColorTokens } from '../theme';
+import { elevation, fontFor, gradients, radius, serifFor, typeCap, useTheme, type ColorTokens } from '../theme';
 import { CheckIcon, ChevronForwardIcon } from '../components/icons';
 import { SageBackground } from '../components/sage/Sage';
 
@@ -32,14 +32,14 @@ export function LanguageSelectScreen({ onSelect }: Props) {
   return (
     <SageBackground>
       <View style={s.titleBlock}>
-        <Text style={[s.appName, serifFor('en', 'medium'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[s.appName, serifFor('en', 'medium'), { color: colors.ink }]} accessibilityRole="header" allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           MedLingua<Text style={{ color: colors.accentText }}>.</Text>
         </Text>
         <Text
           style={[s.tagline, serifFor('en', 'italic'), { color: colors.inkSoft }]}
           accessibilityLanguage="en-US"
           allowFontScaling
-          maxFontSizeMultiplier={1.8}
+          maxFontSizeMultiplier={typeCap.content}
         >
           {en.tagline}
         </Text>
@@ -48,7 +48,7 @@ export function LanguageSelectScreen({ onSelect }: Props) {
       <Text
         style={[s.listLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
         allowFontScaling
-        maxFontSizeMultiplier={1.6}
+        maxFontSizeMultiplier={typeCap.chrome}
       >
         {en.chooseLanguage.toUpperCase()}
       </Text>
@@ -94,16 +94,16 @@ export function LanguageSelectScreen({ onSelect }: Props) {
                 <Text
                   style={[s.native, serifFor(language.code, 'medium'), { color: colors.ink }]}
                   allowFontScaling
-                  maxFontSizeMultiplier={1.8}
+                  maxFontSizeMultiplier={typeCap.content}
                 >
                   {language.nativeName}
                 </Text>
-                <Text style={[s.english, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.8}>
+                <Text style={[s.english, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
                   {language.englishName}
                 </Text>
               </View>
               {chosen ? (
-                <Text style={[s.chosenWord, fontFor(language.code, 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                <Text style={[s.chosenWord, fontFor(language.code, 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                   {chosenWord}
                 </Text>
               ) : (

@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Turn } from '../../screens/ConversationScreen';
-import { elevation, fontFor, mono, radius, serifFor, useTheme, type ColorTokens } from '../../theme';
+import { elevation, fontFor, mono, radius, serifFor, typeCap, useTheme, type ColorTokens } from '../../theme';
 import { ArrowForwardIcon, ChevronBackIcon, ChevronForwardIcon, MicIcon, MoreIcon, SpeakIcon } from '../icons';
 import { SageBackground } from '../sage/Sage';
 
@@ -56,12 +56,12 @@ function Exchange({ turn, otherLanguage, onPlay, onMore }: ExchangeProps) {
               { color: clinician ? colors.white : colors.accentText },
             ]}
             allowFontScaling
-            maxFontSizeMultiplier={1.4}
+            maxFontSizeMultiplier={typeCap.chrome}
           >
             {pill.toUpperCase()}
           </Text>
         </View>
-        <Text style={[s.time, { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[s.time, { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {clockOf(turn)}
         </Text>
       </View>
@@ -70,7 +70,7 @@ function Exchange({ turn, otherLanguage, onPlay, onMore }: ExchangeProps) {
           style={[s.exchangeSource, serifFor(turn.speaker.code, 'medium'), { color: colors.ink }]}
           accessibilityLanguage={turn.speaker.speechTag}
           allowFontScaling
-          maxFontSizeMultiplier={1.8}
+          maxFontSizeMultiplier={typeCap.content}
         >
           {turn.original}
         </Text>
@@ -79,7 +79,7 @@ function Exchange({ turn, otherLanguage, onPlay, onMore }: ExchangeProps) {
         style={[s.exchangeGloss, fontFor(turn.listener.code), { color: colors.inkSoft }]}
         accessibilityLanguage={turn.listener.speechTag}
         allowFontScaling
-        maxFontSizeMultiplier={1.8}
+        maxFontSizeMultiplier={typeCap.content}
       >
         {turn.translation}
       </Text>
@@ -137,11 +137,11 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
   return (
     <View>
       <View style={s.blockSection}>
-        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {other.conversationLabel.toUpperCase()}
         </Text>
         <View style={[s.countPill, { backgroundColor: colors.white }]}>
-          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {`${turns.length} ${countWord}`.toUpperCase()}
           </Text>
         </View>
@@ -152,10 +152,10 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
           <View style={[s.round28, { backgroundColor: colors.mintLight }]} importantForAccessibility="no">
             {clinician ? <SpeakIcon size={13} color={colors.accent} /> : <MicIcon size={13} color={colors.accent} />}
           </View>
-          <Text style={[s.speakerLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.speakerLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {sourceLabel}
           </Text>
-          <Text style={[s.time, { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.time, { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {clockOf(turn)}
           </Text>
         </View>
@@ -165,7 +165,7 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
             style={[s.cardSource, serifFor(turn.speaker.code, 'medium'), { color: colors.ink }]}
             accessibilityLanguage={turn.speaker.speechTag}
             allowFontScaling
-            maxFontSizeMultiplier={1.8}
+            maxFontSizeMultiplier={typeCap.content}
           >
             {turn.original}
           </Text>
@@ -177,7 +177,7 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
           <View style={[s.round28, { backgroundColor: colors.ink }]} importantForAccessibility="no">
             <ArrowForwardIcon size={15} color={colors.white} />
           </View>
-          <Text style={[s.speakerLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.speakerLabel, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {targetLabel}
           </Text>
           <Pressable
@@ -195,7 +195,7 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
           style={[s.cardGloss, fontFor(turn.listener.code), { color: colors.ink }]}
           accessibilityLanguage={turn.listener.speechTag}
           allowFontScaling
-          maxFontSizeMultiplier={1.8}
+          maxFontSizeMultiplier={typeCap.content}
         >
           {turn.translation}
         </Text>
@@ -206,7 +206,7 @@ export function ConversationBlock({ turns, otherLanguage, onOpen, onPlayTurn }: 
           accessibilityLabel={`${other.viewTranscript}. ${en.viewTranscript}`}
           style={({ pressed }) => [s.cardFooter, { borderTopColor: colors.mintLight }, pressed && s.pressed]}
         >
-          <Text style={[{ fontSize: 13, lineHeight: 18 }, fontFor(otherLanguage.code, 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 13, lineHeight: 18 }, fontFor(otherLanguage.code, 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.viewTranscript}
           </Text>
           <View style={[s.chevronCircle, { backgroundColor: colors.cream }]} importantForAccessibility="no">
@@ -262,7 +262,7 @@ export function TranscriptScreen({
           style={({ pressed }) => [s.back, pressed && s.pressed]}
         >
           <ChevronBackIcon size={14} color={colors.inkSoft} />
-          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.back.toUpperCase()}
           </Text>
         </Pressable>
@@ -271,13 +271,13 @@ export function TranscriptScreen({
           accessibilityRole="header"
           accessibilityLanguage={otherLanguage.speechTag}
           allowFontScaling
-          maxFontSizeMultiplier={1.5}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {other.transcriptTitle}
         </Text>
         <View style={s.countWrap}>
           <View style={[s.countPill, { backgroundColor: colors.white }]}>
-            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
               {turns.length}
             </Text>
           </View>
@@ -304,7 +304,7 @@ export function TranscriptScreen({
             accessibilityLabel={`${other.clearAllConfirm} ${other.clearAll}`}
             style={({ pressed }) => [s.bottomCard, { backgroundColor: colors.white, borderColor: colors.dangerBorder }, pressed && s.pressed]}
           >
-            <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+            <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
               {other.clearAllConfirm}
             </Text>
           </Pressable>
@@ -322,10 +322,10 @@ export function TranscriptScreen({
                 summaryDisabled && s.disabled,
               ]}
             >
-              <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                 {other.summary}
               </Text>
-              <Text style={[s.bottomSub, fontFor('en', 'semibold'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[s.bottomSub, fontFor('en', 'semibold'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                 {en.summary.toUpperCase()}
               </Text>
             </Pressable>
@@ -335,10 +335,10 @@ export function TranscriptScreen({
               accessibilityLabel={`${other.clearAll}. ${en.clearAll}`}
               style={({ pressed }) => [s.bottomCard, { backgroundColor: colors.white, borderColor: colors.dangerBorder }, pressed && s.pressed]}
             >
-              <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[s.bottomTitle, serifFor(otherLanguage.code, 'medium'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                 {other.clearAll}
               </Text>
-              <Text style={[s.bottomSub, fontFor('en', 'semibold'), { color: colors.danger, opacity: 0.75 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[s.bottomSub, fontFor('en', 'semibold'), { color: colors.danger, opacity: 0.75 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                 {en.clearAll.toUpperCase()}
               </Text>
             </Pressable>

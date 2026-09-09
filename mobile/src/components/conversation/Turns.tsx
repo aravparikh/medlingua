@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Phase, Turn } from '../../screens/ConversationScreen';
-import { bilingual, fontFor, radius, ROLE_EDGE_WIDTH, roles, serifFor, spacing, tapTarget, text, useTheme } from '../../theme';
+import { ROLE_EDGE_WIDTH, bilingual, fontFor, radius, roles, serifFor, spacing, tapTarget, text, typeCap, useTheme } from '../../theme';
 import { AlertCircleIcon, ExpandIcon, MoreIcon, SpeakingArc, TrashIcon } from '../icons';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
@@ -77,11 +77,11 @@ export function LedgerRow({ turn, confirming, onRequest, onCancel, onConfirm, on
         style={({ pressed }) => [styles.rowBody, pressed && { opacity: 0.7 }]}
       >
         {turn.original ? (
-          <Text style={[text.caption, fontFor(turn.speaker.code), { color: colors.ink2 }]} accessibilityLanguage={turn.speaker.speechTag} allowFontScaling maxFontSizeMultiplier={2}>
+          <Text style={[text.caption, fontFor(turn.speaker.code), { color: colors.ink2 }]} accessibilityLanguage={turn.speaker.speechTag} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
             {turn.original}
           </Text>
         ) : null}
-        <Text style={[text.body, fontFor(turn.listener.code), { color: colors.ink }]} accessibilityLanguage={turn.listener.speechTag} allowFontScaling maxFontSizeMultiplier={2}>
+        <Text style={[text.body, fontFor(turn.listener.code), { color: colors.ink }]} accessibilityLanguage={turn.listener.speechTag} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
           {turn.translation}
         </Text>
       </Pressable>
@@ -119,7 +119,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
   return (
     <View style={[styles.live, { borderLeftColor: edge }]}>
       {turn.original ? (
-        <Text style={[text.body, fontFor(turn.speaker.code), { color: colors.ink2 }]} accessibilityLanguage={turn.speaker.speechTag} allowFontScaling maxFontSizeMultiplier={2}>
+        <Text style={[text.body, fontFor(turn.speaker.code), { color: colors.ink2 }]} accessibilityLanguage={turn.speaker.speechTag} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
           {highlightFlagged(turn.original, turn.verdict === 'caution' ? turn.flaggedTerms : undefined, [fontFor(turn.speaker.code, 'bold'), { color: colors.caution, textDecorationLine: 'underline' }])}
         </Text>
       ) : null}
@@ -146,7 +146,7 @@ export function LiveLine({ turn, otherLanguage, phase, flipped, offline, confirm
           accessibilityLanguage={turn.listener.speechTag}
           accessibilityLiveRegion="polite"
           allowFontScaling
-          maxFontSizeMultiplier={1.4}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {turn.translation}
         </Text>

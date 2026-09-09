@@ -41,7 +41,7 @@ import { gatedTranslate } from '../services/safeguard';
 import { isDisplayable, type GateVerdict } from '../services/safeguardDecision';
 import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
-import { bilingual, fontFor, radius, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
+import { bilingual, fontFor, radius, spacing, tapTarget, typeCap, useTheme, type ColorTokens } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Appear } from '../components/Appear';
 import { BodyMapModal } from '../components/BodyMap';
@@ -210,7 +210,7 @@ function OptionRow({
         <Text
           style={[{ fontSize: 16, lineHeight: 22 }, fontFor(lang, 'semibold'), { color: destructive ? colors.danger : colors.ink }]}
           allowFontScaling
-          maxFontSizeMultiplier={1.4}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {title}
         </Text>
@@ -218,7 +218,7 @@ function OptionRow({
           <Text
             style={[{ fontSize: 12, lineHeight: 17 }, fontFor('en'), { color: destructive ? colors.danger : colors.muted, opacity: destructive ? 0.8 : 1 }]}
             allowFontScaling
-            maxFontSizeMultiplier={1.4}
+            maxFontSizeMultiplier={typeCap.chrome}
           >
             {sub}
           </Text>

@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, Vie
 
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
-import { bilingual, fontFor, radius, serifFor, useTheme, type BilingualLabel } from '../../theme';
+import { bilingual, fontFor, radius, serifFor, typeCap, useTheme, type BilingualLabel } from '../../theme';
 import { CloseIcon } from '../icons';
 
 interface Props {
@@ -71,12 +71,12 @@ export function Sheet({ visible, onClose, title, otherLanguage, icon, keyboard =
                 accessibilityRole="header"
                 accessibilityLanguage={otherLanguage.speechTag}
                 allowFontScaling
-                maxFontSizeMultiplier={1.4}
+                maxFontSizeMultiplier={typeCap.chrome}
               >
                 {title.primary}
               </Text>
               {title.secondary ? (
-                <Text style={[styles.subtitle, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+                <Text style={[styles.subtitle, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                   {title.secondary}
                 </Text>
               ) : null}

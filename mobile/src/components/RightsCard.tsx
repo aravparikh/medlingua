@@ -4,7 +4,7 @@ import { CloseIcon, SealMark } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { fontFor, radius, serifFor, spacing, tapTarget, text, useTheme, type ColorTokens } from '../theme';
+import { fontFor, radius, serifFor, spacing, tapTarget, text, typeCap, useTheme, type ColorTokens } from '../theme';
 
 interface Props {
   visible: boolean;
@@ -52,7 +52,7 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
               <Text
                 style={[styles.title, serifFor(otherLanguage.code)]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={typeCap.content}
                 accessibilityRole="header"
                 accessibilityLanguage={otherLanguage.speechTag}
               >
@@ -61,7 +61,7 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
               <Text
                 style={[styles.body, fontFor(otherLanguage.code)]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={typeCap.content}
                 accessibilityLanguage={otherLanguage.speechTag}
               >
                 {other.rightsBody}
@@ -69,10 +69,10 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
 
               <View style={styles.divider} importantForAccessibility="no" />
 
-              <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
                 {en.rightsTitle}
               </Text>
-              <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
                 {en.rightsBody}
               </Text>
             </View>

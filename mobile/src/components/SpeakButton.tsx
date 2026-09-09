@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { fontFor, radius, spacing, text, useTheme } from '../theme';
+import { fontFor, radius, spacing, text, typeCap, useTheme } from '../theme';
 import { MicIcon } from './icons';
 
 interface Props {
@@ -41,7 +41,7 @@ export function SpeakButton({ language, disabled, fill, fillPressed, onFill, onS
       <Text
         style={[text.title, fontFor(language.code, 'semibold'), { color: ink }, styles.label]}
         allowFontScaling
-        maxFontSizeMultiplier={1.3}
+        maxFontSizeMultiplier={typeCap.chrome}
       >
         {language.speakLabel}
       </Text>
@@ -82,11 +82,11 @@ export function AutoSpeakButton({ otherLanguage, disabled, onStart }: AutoProps)
           style={[text.title, fontFor(otherLanguage.code, 'semibold'), { color: colors.onAccent }, styles.label]}
           accessibilityLanguage={otherLanguage.speechTag}
           allowFontScaling
-          maxFontSizeMultiplier={1.3}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {other.speakAuto}
         </Text>
-        <Text style={[text.caption, fontFor('en'), { color: colors.onAccent }, styles.secondary]} allowFontScaling maxFontSizeMultiplier={1.3}>
+        <Text style={[text.caption, fontFor('en'), { color: colors.onAccent }, styles.secondary]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {en.speakAuto}
         </Text>
       </View>

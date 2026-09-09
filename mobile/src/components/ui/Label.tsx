@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
-import { fontFor, serifFor, spacing, text, useTheme, type BilingualLabel, type ColorTokens, type Weight } from '../../theme';
+import { fontFor, serifFor, spacing, text, typeCap, useTheme, type BilingualLabel, type ColorTokens, type Weight } from '../../theme';
 
 type Tone = 'ink' | 'ink2' | 'onAccent' | 'onInk' | 'danger' | 'caution';
 type Size = keyof typeof text;
@@ -76,7 +76,7 @@ export function Label({
           style={[text.caption, fontFor('en', 'regular'), { color: tones.secondary, opacity: secondaryOpacity }, alignStyle]}
           numberOfLines={numberOfLines}
           allowFontScaling
-          maxFontSizeMultiplier={2}
+          maxFontSizeMultiplier={typeCap.content}
         >
           {secondary}
         </Text>

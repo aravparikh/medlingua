@@ -7,7 +7,7 @@ import Svg, { Circle, Ellipse, G, Rect } from 'react-native-svg';
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
+import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, typeCap, useTheme, type ColorTokens } from '../theme';
 import { Appear } from './Appear';
 import { PressableScale } from './PressableScale';
 import { Pulse } from './Pulse';
@@ -225,10 +225,10 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
       <View style={styles.screen}>
         <View style={styles.header}>
           <View style={styles.titleWrap}>
-            <Text style={[styles.title, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={[styles.title, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
               {other.whereHurts}
             </Text>
-            <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.whereHurts}</Text>
+            <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>{en.whereHurts}</Text>
           </View>
           {/* Chrome: the label rule forbids the inline join, and a close is
              the one control whose glyph beats either language. Both names
@@ -278,7 +278,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
           </View>
 
           {selected == null ? (
-            <Text style={styles.hint} allowFontScaling maxFontSizeMultiplier={2} accessibilityLiveRegion="polite" accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={styles.hint} allowFontScaling maxFontSizeMultiplier={typeCap.content} accessibilityLiveRegion="polite" accessibilityLanguage={otherLanguage.speechTag}>
               {other.bodyMapHint}
             </Text>
           ) : null}
@@ -298,17 +298,17 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
               <View style={styles.regionRow}>
                 <PinIcon  size={22} color={colors.accent} importantForAccessibility="no" />
                 <View style={styles.regionLabels}>
-                  <Text style={[styles.regionName, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
+                  <Text style={[styles.regionName, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={typeCap.content} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
                     {region.name[otherLanguage.code]}
                   </Text>
-                  <Text style={styles.regionNameEn} allowFontScaling maxFontSizeMultiplier={2}>{region.name.en}</Text>
+                  <Text style={styles.regionNameEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>{region.name.en}</Text>
                 </View>
               </View>
 
-              <Text style={styles.panelQuestion} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
+              <Text style={styles.panelQuestion} allowFontScaling maxFontSizeMultiplier={typeCap.content} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.howMuchHurt}
               </Text>
-              <Text style={styles.panelQuestionEn} allowFontScaling maxFontSizeMultiplier={2}>{en.howMuchHurt}</Text>
+              <Text style={styles.panelQuestionEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>{en.howMuchHurt}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.painRow}>
                 {Array.from({ length: 11 }, (_, n) => {
                   const active = intensity === n;
@@ -328,7 +328,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
                       <Text
                         style={[styles.painChipText, n >= 7 && styles.painChipTextHigh, active && styles.painChipTextActive]}
                         allowFontScaling
-                        maxFontSizeMultiplier={1.4}
+                        maxFontSizeMultiplier={typeCap.chrome}
                       >
                         {n}
                       </Text>
@@ -346,10 +346,10 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
               >
                 <SpeakIcon  size={26} color={colors.bg} />
                 <View style={styles.sayLabels}>
-                  <Text style={styles.sayText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
+                  <Text style={styles.sayText} allowFontScaling maxFontSizeMultiplier={typeCap.chrome} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.sayIt}
                   </Text>
-                  {other.sayIt !== en.sayIt ? <Text style={styles.sayTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.sayIt}</Text> : null}
+                  {other.sayIt !== en.sayIt ? <Text style={styles.sayTextEn} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>{en.sayIt}</Text> : null}
                 </View>
               </PressableScale>
             </Appear>

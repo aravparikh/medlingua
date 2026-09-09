@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
 import type { Turn } from '../screens/ConversationScreen';
-import { fontFor, mono, serifFor, useTheme, type ColorTokens } from '../theme';
+import { fontFor, mono, serifFor, typeCap, useTheme, type ColorTokens } from '../theme';
 import { ChevronForwardIcon, TimeIcon } from './icons';
 
 const LIFETIME_S = 120;
@@ -99,7 +99,7 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
           <View style={s.backChevron}>
             <ChevronForwardIcon size={12} color={colors.ink} />
           </View>
-          <Text style={[s.backLabel, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.backLabel, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.back.toUpperCase()}
           </Text>
         </Pressable>
@@ -108,37 +108,37 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
           accessibilityRole="header"
           accessibilityLanguage={otherLanguage.speechTag}
           allowFontScaling
-          maxFontSizeMultiplier={1.5}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {other.summary}
         </Text>
-        <Text style={[s.side, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[s.side, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {en.summary.toUpperCase()}
         </Text>
       </View>
 
       <View style={[s.meta, { borderBottomColor: colors.hairline }]}>
         <View style={s.metaCol}>
-          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.appointmentLabel.toUpperCase()}
           </Text>
-          <Text style={[s.metaValue, serifFor(otherLanguage.code), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.metaValue, serifFor(otherLanguage.code), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {otherLanguage.nativeName}
           </Text>
         </View>
         <View style={s.metaCol}>
-          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.timeLabel.toUpperCase()}
           </Text>
-          <Text style={[s.metaMono, { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.metaMono, { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {timeRange}
           </Text>
         </View>
         <View style={s.metaColNarrow}>
-          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.turnsLabel.toUpperCase()}
           </Text>
-          <Text style={[s.metaMono, { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.metaMono, { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {turns.length}
           </Text>
         </View>
@@ -147,10 +147,10 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
       {ready ? (
         <View style={[s.timer, warn && { backgroundColor: colors.danger }]}>
           <TimeIcon size={16} color={warn ? colors.bg : colors.ink} />
-          <Text style={[s.timerText, fontFor(otherLanguage.code), warn && { color: colors.bg }]} allowFontScaling maxFontSizeMultiplier={1.3}>
+          <Text style={[s.timerText, fontFor(otherLanguage.code), warn && { color: colors.bg }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.summaryEphemeral}
           </Text>
-          <Text style={[s.timerClock, warn && { color: colors.bg }]} allowFontScaling maxFontSizeMultiplier={1.3}>
+          <Text style={[s.timerClock, warn && { color: colors.bg }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {`${mm}:${ss}`}
           </Text>
         </View>
@@ -158,12 +158,12 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
 
       <ScrollView style={s.body} contentContainerStyle={s.bodyContent}>
         {state?.status === 'loading' ? (
-          <Text style={[s.loadingText, fontFor(otherLanguage.code, 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.loadingText, fontFor(otherLanguage.code, 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.generatingSummary}
           </Text>
         ) : null}
         {state?.status === 'error' ? (
-          <Text style={[s.loadingText, fontFor(otherLanguage.code, 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.loadingText, fontFor(otherLanguage.code, 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.connectionError}
           </Text>
         ) : null}
@@ -228,7 +228,7 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
           accessibilityLabel={`${other.transcriptTitle}. ${en.transcriptTitle}`}
           style={({ pressed }) => [s.outlineButton, { borderColor: colors.border }, pressed && s.pressed]}
         >
-          <Text style={[s.footerLabel, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.footerLabel, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.transcriptTitle.toUpperCase()}
           </Text>
         </Pressable>
@@ -238,7 +238,7 @@ export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript
           accessibilityLabel={`${other.share}. ${en.share}`}
           style={({ pressed }) => [s.filledButton, { backgroundColor: colors.ctaFill, borderColor: colors.ctaFill }, pressed && s.pressedFill]}
         >
-          <Text style={[s.footerLabel, fontFor('en', 'semibold'), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[s.footerLabel, fontFor('en', 'semibold'), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {other.share.toUpperCase()}
           </Text>
         </Pressable>

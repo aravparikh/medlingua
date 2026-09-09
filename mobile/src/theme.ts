@@ -477,6 +477,22 @@ export const motion = {
  */
 export const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
+/**
+ * Dynamic Type ceilings.
+ *
+ * iOS accessibility sizes run to roughly 3.1x. Capping content below that
+ * silently excludes the people this app exists for, so anything a patient or
+ * clinician actually has to READ scales all the way. Only chrome that cannot
+ * reflow — uppercase micro-labels, the elapsed timer, speaker tags — is held
+ * back, and even then to 1.6 rather than the 1.3 it used to be.
+ */
+export const typeCap = {
+  /** Translations, transcripts, phrases, body-region names, summaries. */
+  content: 3,
+  /** Labels and numerals that would break their row if they grew further. */
+  chrome: 1.6,
+} as const;
+
 /** Icon stroke geometry (components/icons): 16px stroked mic, 12px chevrons, all 1.6. */
 export const strokes = { icon: 1.6, iconSmall: 1.6 } as const;
 

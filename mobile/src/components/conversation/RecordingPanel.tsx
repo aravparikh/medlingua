@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
-import { fontFor, radius, serifFor, useTheme, type ColorTokens } from '../../theme';
+import { fontFor, radius, serifFor, typeCap, useTheme, type ColorTokens } from '../../theme';
 import { Masthead } from '../editorial/Editorial';
 import { CheckIcon, CloseIcon } from '../icons';
 import { SageBackground } from '../sage/Sage';
@@ -123,17 +123,17 @@ export function RecordingPanel({
           </View>
         </View>
 
-        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.accentText }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {rec.listening.toUpperCase()}
         </Text>
-        <Text style={[s.timer, serifFor('en'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.3}>
+        <Text style={[s.timer, serifFor('en'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {formatElapsed(elapsedMs)}
         </Text>
-        <Text style={[{ fontSize: 14, lineHeight: 20 }, fontFor('en'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+        <Text style={[{ fontSize: 14, lineHeight: 20 }, fontFor('en'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {`${en.listening.replace(/…|\.\.\./g, '')} · ${pair}`}
         </Text>
         {tooQuiet ? (
-          <Text style={[{ fontSize: 14, lineHeight: 20 }, fontFor(speaker?.code ?? otherLanguage.code, 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+          <Text style={[{ fontSize: 14, lineHeight: 20 }, fontFor(speaker?.code ?? otherLanguage.code, 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
             {rec.speakLouder}
           </Text>
         ) : null}
@@ -163,10 +163,10 @@ export function RecordingPanel({
           style={({ pressed }) => [s.done, { backgroundColor: colors.ink }, pressed && s.pressed]}
         >
           <View style={s.doneText}>
-            <Text style={[{ fontSize: 30, lineHeight: 34 }, serifFor(speaker?.code ?? otherLanguage.code, 'medium'), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={[{ fontSize: 30, lineHeight: 34 }, serifFor(speaker?.code ?? otherLanguage.code, 'medium'), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
               {rec.doneLabel}
             </Text>
-            <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.onCta, opacity: 0.65 }]} allowFontScaling maxFontSizeMultiplier={1.3}>
+            <Text style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.onCta, opacity: 0.65 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
               {en.doneLabel.toUpperCase()}
             </Text>
           </View>

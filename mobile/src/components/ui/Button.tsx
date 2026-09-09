@@ -111,7 +111,6 @@ export function Button({
         size={dense ? 'caption' : 'body'}
         weight="semibold"
         align="center"
-        numberOfLines={2}
       />
     </Pressable>
   );

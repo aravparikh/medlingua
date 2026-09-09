@@ -12,6 +12,7 @@ import {
   serifFor,
   useTheme,
   type ColorTokens,
+  typeCap,
 } from '../../theme';
 import { ChevronForwardIcon, MicIcon } from '../icons';
 
@@ -30,7 +31,7 @@ export function Caption({ children, style }: { children: string; style?: StylePr
       <Text
         style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
         allowFontScaling
-        maxFontSizeMultiplier={1.4}
+        maxFontSizeMultiplier={typeCap.chrome}
       >
         {children}
       </Text>
@@ -63,7 +64,7 @@ export function Masthead({ language, detecting, disabled, quiet = false, onChang
         <Text
           style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
           allowFontScaling
-          maxFontSizeMultiplier={1.4}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {other.idiomaLabel}
         </Text>
@@ -72,7 +73,7 @@ export function Masthead({ language, detecting, disabled, quiet = false, onChang
             style={[s.mastheadName, serifFor(detecting ? 'es' : language.code, 'medium'), { color: colors.ink }]}
             accessibilityLanguage={language.speechTag}
             allowFontScaling
-            maxFontSizeMultiplier={1.6}
+            maxFontSizeMultiplier={typeCap.chrome}
           >
             {detecting ? other.auto : language.nativeName}
           </Text>
@@ -84,7 +85,7 @@ export function Masthead({ language, detecting, disabled, quiet = false, onChang
               accessibilityLabel={`${other.changeLanguage}. ${en.changeLanguage}`}
               style={({ pressed }) => [pressed && s.pressed]}
             >
-              <Text style={[s.cambiar, fontFor(language.code, 'semibold'), { color: colors.accent, borderBottomColor: colors.mint }]} allowFontScaling maxFontSizeMultiplier={1.4}>
+              <Text style={[s.cambiar, fontFor(language.code, 'semibold'), { color: colors.accent, borderBottomColor: colors.mint }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                 {other.changeShort}
               </Text>
             </Pressable>
@@ -102,7 +103,7 @@ export function Masthead({ language, detecting, disabled, quiet = false, onChang
         <Text
           style={[{ fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, fontFor('en', 'semibold'), { color: colors.inkSoft }]}
           allowFontScaling
-          maxFontSizeMultiplier={1.4}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {other.settingsLabel}
         </Text>
@@ -128,12 +129,12 @@ export function Hero({ language }: { language: Language }) {
 
   return (
     <View style={s.hero} accessibilityRole="header">
-      <Text style={[s.heroHead, serifFor(language.code), { color: colors.ink }]} accessibilityLanguage={language.speechTag} allowFontScaling maxFontSizeMultiplier={1.6}>
+      <Text style={[s.heroHead, serifFor(language.code), { color: colors.ink }]} accessibilityLanguage={language.speechTag} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
         {head}
         {tail ? <Text style={serifFor(language.code, 'italic')}>{tail}</Text> : null}
       </Text>
       {other.tagline === en.tagline ? null : (
-        <Text style={[s.heroSub, fontFor('en'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+        <Text style={[s.heroSub, fontFor('en'), { color: colors.inkSoft }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
           {en.tagline}
         </Text>
       )}
@@ -176,7 +177,7 @@ export function ModeControl({ language, auto, disabled, compact = false, onSelec
         <Text
           style={[{ fontSize: 15, lineHeight: 20 }, fontFor('en', 'semibold'), { color: selected ? colors.white : colors.ink }]}
           allowFontScaling
-          maxFontSizeMultiplier={1.5}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {name}
         </Text>
@@ -187,7 +188,7 @@ export function ModeControl({ language, auto, disabled, compact = false, onSelec
             { color: selected ? colors.white : colors.inkSoft, opacity: selected ? 0.65 : 1 },
           ]}
           allowFontScaling
-          maxFontSizeMultiplier={1.4}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {sub}
         </Text>
@@ -251,10 +252,10 @@ export function ActionIndex({
             <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accentText }]}>
               {String(rows.indexOf(row) + 1).padStart(2, '0')}
             </Text>
-            <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+            <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
               {row.name}
             </Text>
-            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+            <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
               {row.english}
             </Text>
           </Pressable>
@@ -275,10 +276,10 @@ export function ActionIndex({
                 <Text style={[{ fontSize: 11, lineHeight: 14 }, fontFor('en', 'semibold'), { color: colors.accentText }]}>
                   {number}
                 </Text>
-                <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                <Text style={[s.tileName, serifFor(lang, 'medium'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                   {row.name}
                 </Text>
-                <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={1.6}>
+                <Text style={[{ fontSize: 12, lineHeight: 16 }, fontFor('en'), { color: colors.muted }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
                   {row.english}
                 </Text>
               </Pressable>
@@ -309,14 +310,14 @@ export function ActionIndex({
             <Text
               style={[s.indexName, serifFor(lang, 'medium'), { color: colors.ink }]}
               allowFontScaling
-              maxFontSizeMultiplier={1.6}
+              maxFontSizeMultiplier={typeCap.chrome}
             >
               {row.name}
             </Text>
             <Text
               style={[{ fontSize: 13, lineHeight: 18 }, fontFor('en'), { color: colors.muted }]}
               allowFontScaling
-              maxFontSizeMultiplier={1.6}
+              maxFontSizeMultiplier={typeCap.chrome}
             >
               {row.english}
             </Text>
@@ -395,9 +396,8 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
       <View style={s.ctaText}>
         <Text
           style={[compact ? s.ctaNameCompact : condensed ? s.ctaNameCondensed : s.ctaName, serifFor(lang, 'medium'), { color: colors.ink }]}
-          numberOfLines={1}
           allowFontScaling
-          maxFontSizeMultiplier={1.5}
+          maxFontSizeMultiplier={typeCap.content}
         >
           {name}
         </Text>
@@ -405,7 +405,7 @@ export function SpeakBar({ name, lang, speechTag, sub, disabled, compact = false
           style={[{ fontSize: 11, lineHeight: 14, letterSpacing: 1 }, fontFor('en', 'semibold'), { color: colors.accentText }]}
           numberOfLines={1}
           allowFontScaling
-          maxFontSizeMultiplier={1.4}
+          maxFontSizeMultiplier={typeCap.chrome}
         >
           {sub}
         </Text>
@@ -426,7 +426,7 @@ export function PrivacyLine({ language }: { language: Language }) {
     <Text
       style={[{ fontSize: 11, lineHeight: 15, letterSpacing: 1.1 }, fontFor('en'), { color: colors.muted, textAlign: 'center' }]}
       allowFontScaling
-      maxFontSizeMultiplier={1.4}
+      maxFontSizeMultiplier={typeCap.chrome}
     >
       {`${other.privacyShort} · ${en.privacyShort}`.toUpperCase()}
     </Text>
@@ -501,7 +501,7 @@ const makeStyles = (c: ColorTokens) =>
     ctaCondensed: { paddingVertical: 20, paddingHorizontal: 24 },
     ctaText: { flex: 1, justifyContent: 'center', gap: 4, minWidth: 0 },
     ctaName: { fontSize: 34, lineHeight: 38 },
-    ctaNameCompact: { fontSize: 26, lineHeight: 30 },
+    ctaNameCompact: { fontSize: 22, lineHeight: 27 },
     ctaNameCondensed: { fontSize: 32, lineHeight: 36 },
     mic: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
     micCompact: { width: 44, height: 44, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center' },
