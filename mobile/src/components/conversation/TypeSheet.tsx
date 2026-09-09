@@ -126,10 +126,10 @@ const styles = StyleSheet.create({
   // which is what pushed text outside the visible box.
   input: {
     minHeight: 112,
-    borderRadius: 18,
+    borderRadius: radius.card,
     borderWidth: 1,
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 17,
     lineHeight: 24,
     textAlignVertical: 'top',

@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
 import type { Turn } from '../../screens/ConversationScreen';
-import { elevation, fontFor, mono, serifFor, useTheme, type ColorTokens } from '../../theme';
+import { elevation, fontFor, mono, radius, serifFor, useTheme, type ColorTokens } from '../../theme';
 import { ArrowForwardIcon, ChevronBackIcon, ChevronForwardIcon, MicIcon, MoreIcon, SpeakIcon } from '../icons';
 import { SageBackground } from '../sage/Sage';
 
@@ -352,15 +352,15 @@ export function TranscriptScreen({
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
     exchangeCard: {
-      borderRadius: 26,
-      paddingTop: 18,
+      borderRadius: radius.card,
+      paddingTop: 20,
       paddingHorizontal: 20,
-      paddingBottom: 14,
+      paddingBottom: 16,
       gap: 10,
       ...elevation.card,
     },
     exchangeTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    speakerPill: { paddingVertical: 4, paddingHorizontal: 9, borderRadius: 999 },
+    speakerPill: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 999 },
     exchangeSource: { fontSize: 24, lineHeight: 29 },
     exchangeGloss: { fontSize: 15, lineHeight: 21 },
     exchangeActions: { flexDirection: 'row', gap: 6, marginTop: 2 },
@@ -373,15 +373,15 @@ const makeStyles = (c: ColorTokens) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 24,
-      paddingTop: 22,
+      paddingTop: 24,
       marginBottom: 12,
     },
-    countPill: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 999 },
+    countPill: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 999 },
     card: {
       marginHorizontal: 16,
-      borderRadius: 26,
+      borderRadius: radius.card,
       paddingTop: 20,
-      paddingHorizontal: 22,
+      paddingHorizontal: 24,
       paddingBottom: 16,
       gap: 14,
       ...elevation.card,
@@ -419,14 +419,14 @@ const makeStyles = (c: ColorTokens) =>
     countWrap: { flex: 1, alignItems: 'flex-end' },
     ledger: { flex: 1, minHeight: 0 },
     ledgerContent: { gap: 10, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16 },
-    footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40 },
+    footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
     bottomCard: {
       flex: 1,
       minWidth: 0,
       gap: 2,
       minHeight: 76,
       justifyContent: 'center',
-      borderRadius: 26,
+      borderRadius: radius.card,
       borderWidth: 1.5,
       borderColor: 'transparent',
       paddingVertical: 16,

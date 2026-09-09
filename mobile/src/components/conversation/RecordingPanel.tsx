@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 
 import type { Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
-import { fontFor, serifFor, useTheme, type ColorTokens } from '../../theme';
+import { fontFor, radius, serifFor, useTheme, type ColorTokens } from '../../theme';
 import { Masthead } from '../editorial/Editorial';
 import { CheckIcon, CloseIcon } from '../icons';
 import { SageBackground } from '../sage/Sage';
@@ -212,7 +212,7 @@ const makeStyles = (c: ColorTokens) =>
     cancel: {
       width: 64,
       minHeight: 76,
-      borderRadius: 26,
+      borderRadius: radius.card,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -222,11 +222,11 @@ const makeStyles = (c: ColorTokens) =>
       alignItems: 'center',
       gap: 12,
       minHeight: 76,
-      borderRadius: 26,
-      paddingVertical: 18,
+      borderRadius: radius.card,
+      paddingVertical: 20,
       paddingHorizontal: 24,
     },
     doneText: { flex: 1, minWidth: 0 },
-    check: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    check: { width: 44, height: 44, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center' },
     pressed: { opacity: 0.92 },
   });

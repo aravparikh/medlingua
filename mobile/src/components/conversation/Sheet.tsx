@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     maxHeight: '86%',
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
-    paddingTop: 14,
+    paddingTop: 16,
     paddingHorizontal: 16,
     paddingBottom: 40,
     gap: 14,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   titleWrap: { flex: 1, minWidth: 0 },
   title: { fontSize: 30, lineHeight: 34 },
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 2 },
-  close: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  close: { width: 36, height: 36, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center' },
   content: { gap: 8 },
   pressed: { opacity: 0.9 },
 });

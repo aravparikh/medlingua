@@ -398,18 +398,17 @@ export const spacing = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 48 
 
 /** Three shapes, and nothing between them. */
 export const radius = {
-  /** Every button and chip. The mockup's 99px, which is any large number. */
+  /** Every button, chip and pill. */
   pill: 999,
-  /** Cards, panels, and text fields. */
-  card: 18,
-  /** Sage list rows (language cards, exchange cards). */
-  row: 26,
-  /** Sage action rows and option rows. */
-  action: 22,
-  /** Sage compact tiles and destructive rows. */
+  /** Compact tiles and destructive rows. */
   tile: 20,
+  /** Cards, list rows, action rows, panels and text fields — one value, so
+   * nested surfaces stay concentric instead of drifting by two points. */
+  card: 24,
   /** Sheets that slide over the page. */
-  sheet: 32,
+  sheet: 28,
+  /** @deprecated use `card`. */ row: 24,
+  /** @deprecated use `card`. */ action: 24,
 } as const;
 
 /** Ghost buttons: a hairline circle with a translucent fill, no shadow. */

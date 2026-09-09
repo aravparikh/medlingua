@@ -235,11 +235,11 @@ const optionStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     minHeight: 60,
-    borderRadius: 20,
+    borderRadius: radius.tile,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    paddingVertical: 14,
-    paddingHorizontal: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
   icon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, minWidth: 0 },
@@ -1697,5 +1697,5 @@ const makeStyles = (c: ColorTokens) =>
     barsSingle: { flexDirection: 'column', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
     options: { gap: 8 },
 
-    privacy: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40 },
+    privacy: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
   });

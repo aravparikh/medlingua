@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { LANGUAGES, type Language } from '../config/languages';
 import { t } from '../i18n/strings';
 import { loadPrefs } from '../services/storage';
-import { elevation, fontFor, gradients, serifFor, useTheme, type ColorTokens } from '../theme';
+import { radius, elevation, fontFor, gradients, serifFor, useTheme, type ColorTokens } from '../theme';
 import { CheckIcon, ChevronForwardIcon } from '../components/icons';
 import { SageBackground } from '../components/sage/Sage';
 
@@ -133,8 +133,8 @@ const makeStyles = (c: ColorTokens) =>
       gap: 14,
       minHeight: 96,
       paddingHorizontal: 24,
-      paddingVertical: 22,
-      borderRadius: 26,
+      paddingVertical: 24,
+      borderRadius: radius.card,
       overflow: 'hidden',
       ...elevation.card,
     },
