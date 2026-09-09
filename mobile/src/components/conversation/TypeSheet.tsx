@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ENGLISH, type Language } from '../../config/languages';
 import { t } from '../../i18n/strings';
-import { bilingual, fontFor, radius, spacing, tapTarget, text, useTheme } from '../../theme';
+import { bilingual, fontFor, radius, spacing, tapTarget, useTheme } from '../../theme';
 import { ArrowForwardIcon, CheckIcon, PencilIcon, PersonIcon } from '../icons';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
@@ -74,10 +74,8 @@ export function TypeSheet({ visible, otherLanguage, draft, onChangeDraft, nameMo
           accessibilityLabel={nameMode ? `${other.nameLabel}. ${en.nameLabel}` : `${other.typeLabel}. ${en.typeLabel}`}
           style={[
             styles.input,
-            text.body,
             fontFor(otherLanguage.code),
             { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.border },
-            !nameMode && styles.inputTall,
           ]}
         />
 
@@ -123,7 +121,18 @@ const styles = StyleSheet.create({
   },
   nameText: { flex: 1 },
   check: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  input: { minHeight: tapTarget.primary, borderRadius: radius.pill, borderWidth: 1, padding: spacing.sm, textAlignVertical: 'top' },
-  inputTall: { minHeight: 112 },
+  // Explicit horizontal padding + a card radius (not a pill): on a tall
+  // multiline box the pill's end curves eat into the first and last lines,
+  // which is what pushed text outside the visible box.
+  input: {
+    minHeight: 112,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    fontSize: 17,
+    lineHeight: 24,
+    textAlignVertical: 'top',
+  },
   sendRow: { flexDirection: 'row', gap: spacing.sm },
 });

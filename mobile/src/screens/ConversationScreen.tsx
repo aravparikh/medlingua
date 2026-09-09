@@ -1181,7 +1181,28 @@ export function ConversationScreen({
 
   return (
     <SageBackground>
-      <Animated.View style={[s.homeLayer, { transform: [{ translateX: homeX }], opacity: homeOpacity }]}>
+      <Animated.ScrollView
+        style={[s.homeLayer, { transform: [{ translateX: homeX }], opacity: homeOpacity }]}
+        contentContainerStyle={s.homeContent}
+        showsVerticalScrollIndicator={false}
+      >
+      {recordingPanelVisible ? (
+        <Appear style={s.listening}>
+          <RecordingPanel
+            speaker={speaker}
+            otherLanguage={otherLanguage}
+            detecting={autoMode}
+            elapsedMs={recorderState.durationMillis}
+            level={meterLevel}
+            tooQuiet={tooQuiet}
+            onDone={() => void finishListening()}
+            onCancel={() => void cancelListening()}
+            onChangeLanguage={onChangeLanguage}
+            onSettings={onShowAbout}
+          />
+        </Appear>
+      ) : (
+      <>
       <SpeakingBloom active={voiceActive} level={bloomLevel} />
 
       {/* Header: the patient's language, the auto-detect toggle, about. */}
@@ -1237,6 +1258,7 @@ export function ConversationScreen({
       {/* The live line and anything transient beneath it. */}
       <ScrollView
         ref={scrollRef}
+        scrollEnabled={false}
         // The block takes the screen's slack once it exists; before that there
         // is no block, so the thread has to take it or the whole column
         // collapses to the top and leaves dead space under the footer.
@@ -1298,23 +1320,6 @@ export function ConversationScreen({
         ) : null}
       </ScrollView>
 
-      {recordingPanelVisible ? (
-        <Appear style={s.listening}>
-          <RecordingPanel
-            speaker={speaker}
-            otherLanguage={otherLanguage}
-            detecting={autoMode}
-            elapsedMs={recorderState.durationMillis}
-            level={meterLevel}
-            tooQuiet={tooQuiet}
-            onDone={() => void finishListening()}
-            onCancel={() => void cancelListening()}
-            onChangeLanguage={onChangeLanguage}
-            onSettings={onShowAbout}
-          />
-        </Appear>
-      ) : (
-        <>
           <ModeControl
             language={otherLanguage}
             auto={autoMode}
@@ -1488,7 +1493,7 @@ export function ConversationScreen({
 
       <BodyMapModal visible={bodyMapOpen} otherLanguage={otherLanguage} onClose={() => setBodyMapOpen(false)} onConfirm={confirmBodyPain} />
       <RightsCard visible={rightsOpen} otherLanguage={otherLanguage} onClose={() => setRightsOpen(false)} />
-      </Animated.View>
+      </Animated.ScrollView>
       {transcriptEver ? (
         <Animated.View
           style={[s.pushed, { transform: [{ translateX: transcriptX }], opacity: transcriptOpacity }]}
@@ -1659,6 +1664,7 @@ export function ConversationScreen({
 const makeStyles = (c: ColorTokens) =>
   StyleSheet.create({
     homeLayer: { flex: 1 },
+    homeContent: { flexGrow: 1 },
     pushed: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
     header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
     headerLanguage: { flex: 1, justifyContent: 'flex-start', paddingHorizontal: spacing.xs },
@@ -1687,9 +1693,9 @@ const makeStyles = (c: ColorTokens) =>
     threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
     live: { marginTop: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 16, paddingBottom: spacing.lg },
-    bars: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 14 },
-    barsSingle: { flexDirection: 'column', gap: 10, paddingHorizontal: 16, paddingTop: 14 },
+    bars: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
+    barsSingle: { flexDirection: 'column', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
     options: { gap: 8 },
 
-    privacy: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 },
+    privacy: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 40 },
   });

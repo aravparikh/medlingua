@@ -374,7 +374,7 @@ const makeStyles = (c: ColorTokens) =>
       justifyContent: 'space-between',
       paddingHorizontal: 24,
       paddingTop: 22,
-      marginBottom: 10,
+      marginBottom: 12,
     },
     countPill: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: 999 },
     card: {
@@ -383,7 +383,7 @@ const makeStyles = (c: ColorTokens) =>
       paddingTop: 20,
       paddingHorizontal: 22,
       paddingBottom: 16,
-      gap: 12,
+      gap: 14,
       ...elevation.card,
     },
     speakerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
