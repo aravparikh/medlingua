@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedLingua — Hable con su médico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --ground:#efece5; --card:#f7f5f0; --sheet:#fdfcfa;
+    --ink:#1d1c1a; --muted:#77726a; --hair:rgba(29,28,26,.10);
+    --accent:#a9c3cb; --accent-ink:#152227;
+    --peach1:#e8a288; --peach2:#f2c4ad; --peach-pale:#fbe4d8; --bark:#3a2019;
+  }
+  html,body{height:100%}
+  body{
+    background:var(--ground);
+    font-family:Manrope,system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:28px 16px;
+  }
+  .stage{display:flex;gap:28px;align-items:flex-start;flex-direction:column}
+  .stage-caption{font-size:12px;color:var(--muted);letter-spacing:.04em;max-width:390px;line-height:1.5}
+  .stage-caption strong{display:inline-block;background:var(--ink);color:var(--ground);font-size:10px;padding:2px 7px;border-radius:99px;margin-right:8px;letter-spacing:.08em}
+  /* PHONE FRAME 390x844 */
+  .phone{
+    width:390px;height:844px;min-width:390px;min-height:844px;max-width:390px;max-height:844px;
+    background:var(--card);
+    border-radius:44px;overflow:hidden;position:relative;
+    border:1px solid rgba(29,28,26,.12);
+    box-shadow:0 30px 80px rgba(29,28,26,.16), 0 2px 8px rgba(29,28,26,.08);
+    display:flex;flex-direction:column;
+  }
+  .statusbar{
+    height:52px;flex:0 0 52px;display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px 6px 20px;
+  }
+  .brand-pill{
+    font-size:11px;font-weight:600;letter-spacing:.02em;
+    background:rgba(29,28,26,.07);padding:5px 11px;border-radius:99px;color:var(--ink);
+  }
+  .batt{display:flex;align-items:center;gap:5px}
+  .batt i{display:block;background:var(--ink);border-radius:3px}
+  .screens{flex:1;position:relative;overflow:hidden}
+  .screen{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    background:var(--card);overflow:hidden;
+  }
+  .screen.active{display:flex}
+  .screen.sheet{background:var(--sheet)}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:0 22px 16px 22px}
+  .scroll::-webkit-scrollbar{display:none}
+  .label{
+    font-size:10.5px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--muted);
+  }
+  .serif{font-family:"Instrument Serif",Georgia,serif;font-weight:400}
+  /* ghost buttons 38-46px circles */
+  .ghost{
+    width:42px;height:42px;min-width:42px;border-radius:99px;
+    border:1px solid var(--hair);background:rgba(255,255,255,.55);
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;color:var(--ink);cursor:pointer;box-shadow:none;user-select:none;
+  }
+  .ghost:active{transform:scale(.96)}
+  .pill{border-radius:99px}
+  button{font-family:Manrope,sans-serif}
+  /* ---------- SCREEN 1 onboarding ---------- */
+  .illus{
+    margin:8px 0 0 0;border-radius:20px;border:1px solid var(--hair);
+    height:338px;display:flex;align-items:center;justify-content:center;
+    background:
+      repeating-linear-gradient(-45deg, rgba(29,28,26,.07) 0 8px, transparent 8px 16px),
+      #f1eee8;
+    position:relative;overflow:hidden;
+  }
+  .illus span{
+    font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;color:var(--muted);
+  }
+  .h1{font-family:"Instrument Serif",serif;font-size:34px;line-height:1.12;letter-spacing:-.01em;text-align:center;margin:26px 6px 0 6px}
+  .sub{font-size:13.5px;line-height:1.6;color:var(--ink);opacity:.82;text-align:center;margin:12px 10px 0 10px;font-weight:500}
+  .stats{display:flex;justify-content:center;gap:34px;margin:24px 0 22px 0}
+  .stat{text-align:center}
+  .stat b{font-family:"Instrument Serif",serif;font-weight:400;font-size:26px;display:block;line-height:1}
+  .stat small{font-size:11px;color:var(--muted);font-weight:500}
+  .cta{
+    width:100%;border:none;cursor:pointer;border-radius:99px;
+    background:var(--accent);color:var(--accent-ink);
+    font-weight:700;font-size:15.5px;padding:17px 20px;letter-spacing:-.01em;
+    box-shadow:0 10px 26px rgba(21,34,39,.18);
+  }
+  .cta:active{transform:scale(.985)}
+  .cta.dark{background:var(--ink);color:var(--card);box-shadow:none}
+  /* ---------- SCREEN 2 speak ---------- */
+  .topbar{display:flex;align-items:center;gap:10px;padding:6px 18px 0 18px}
+  .lang-pill{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:10px;
+    border:1px solid var(--hair);background:rgba(255,255,255,.6);
+    border-radius:99px;padding:0 14px;height:42px;
+    font-size:12.5px;font-weight:600;white-space:nowrap;
+  }
+  .track{width:52px;height:3px;border-radius:99px;background:rgba(29,28,26,.12);position:relative;overflow:hidden}
+  .track i{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--ink);border-radius:99px}
+  .appt{
+    margin:14px 18px 0 18px;background:var(--sheet);border:1px solid var(--hair);
+    border-radius:18px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .appt .t{font-size:10.5px;font-weight:700;letter-spacing:.10em;color:var(--muted)}
+  .appt .s{font-family:"Instrument Serif",serif;font-size:19px;margin-top:2px}
+  .dots{display:flex;gap:7px}
+  .dots i{width:9px;height:9px;border-radius:99px;background:rgba(29,28,26,.14);display:block}
+  .dots i.on{background:var(--ink)}
+  .focal-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px 26px 6px 26px;position:relative;z-index:3}
+  .listening-tag{font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--muted);margin-bottom:12px}
+  .focal{font-family:"Instrument Serif",serif;font-size:32px;line-height:1.18;letter-spacing:-.01em;cursor:pointer}
+  .ipa{
+    margin-top:14px;display:inline-flex;align-items:center;gap:8px;
+    border:1px solid var(--hair);background:rgba(255,255,255,.65);
+    border-radius:99px;padding:8px 14px;font-size:12.5px;font-weight:500;color:var(--ink);
+  }
+  .ipa button{border:none;background:var(--ink);color:#fff;width:18px;height:18px;border-radius:99px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .gloss{margin-top:10px;font-size:13.5px;color:var(--muted);font-weight:500}
+  /* transcription (voice presence) */
+  .transcript{display:none;flex-direction:column;align-items:center;width:100%;gap:10px;margin-top:4px}
+  .speak-listening .transcript{display:flex}
+  .speak-listening .focal-static{display:none}
+  .bubble{
+    background:var(--sheet);border:1px solid var(--hair);border-radius:99px;
+    padding:10px 18px;font-size:13.5px;font-weight:600;max-width:100%;
+    box-shadow:none;
+  }
+  .stream{font-family:"Instrument Serif",serif;font-size:19px;line-height:1.45;min-height:56px}
+  .stream .cursor{display:inline-block;width:2px;height:18px;background:var(--ink);vertical-align:-3px;margin-left:4px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .util-row{display:flex;justify-content:center;gap:14px;padding:8px 0 14px 0;position:relative;z-index:4}
+  .mic-row{display:flex;align-items:center;justify-content:center;gap:18px;padding:0 22px 26px 22px;position:relative;z-index:4}
+  .mic-row .ghost.small{width:42px;height:42px;opacity:.9}
+  /* bloom — warm gradient rising from bottom, feathered over ~40% height */
+  .bloom-wrap{
+    position:absolute;left:0;right:0;bottom:0;height:340px;pointer-events:none;
+    opacity:0;transition:opacity .6s ease;z-index:1;overflow:hidden;
+  }
+  .speak-listening .bloom-wrap{opacity:1;pointer-events:auto}
+  .bloom{position:absolute;inset:-12% -18% -22% -18%;will-change:transform,opacity}
+  .bloom-1{
+    background:radial-gradient(ellipse 118% 92% at 50% 102%, #e8a288 0%, #f2c4ad 36%, rgba(242,196,173,0) 70%);
+    animation:breathe 3.2s ease-in-out infinite;
+    opacity:.85;
+  }
+  .bloom-2{
+    background:radial-gradient(ellipse 105% 82% at 32% 104%, #f2c4ad 0%, #e8a288 32%, rgba(232,162,136,0) 72%);
+    animation:breathe2 5.4s ease-in-out infinite;
+    animation-delay:-1.7s;opacity:.7;mix-blend-mode:multiply;
+  }
+  @keyframes breathe{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.06);opacity:1}}
+  @keyframes breathe2{0%,100%{transform:scale(1) translateX(-1.5%);opacity:.62}50%{transform:scale(1.06) translateX(1.5%);opacity:.92}}
+  .voice-dock{
+    position:absolute;left:0;right:0;bottom:96px;display:none;
+    align-items:center;justify-content:center;gap:16px;z-index:5;
+  }
+  .speak-listening .voice-dock{display:flex}
+  .speak-listening .mic-row{display:none}
+  .speak-listening .util-row{opacity:0;pointer-events:none;height:0;padding:0;overflow:hidden}
+  .vbtn{
+    width:54px;height:54px;border-radius:99px;border:1px solid rgba(58,32,25,.14);
+    background:#fbe4d8;color:var(--ink);font-size:19px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;box-shadow:none;
+  }
+  .vbtn.end{background:#3a2019;color:#fbe4d8;border-color:#3a2019;font-size:18px;width:58px;height:58px}
+  .vbtn.mic-live{outline:2px solid rgba(58,32,25,.22);outline-offset:3px}
+  /* ---------- SCREEN 3 detail ---------- */
+  .detail-head{display:flex;padding:8px 18px 0 18px}
+  .detail-title{font-family:"Instrument Serif",serif;font-size:36px;text-align:center;margin:18px 10px 0 10px;letter-spacing:-.01em;line-height:1.1}
+  .center{display:flex;flex-direction:column;align-items:center}
+  .pos{margin-top:8px;font-size:13.5px;color:var(--muted);font-weight:500}
+  .sec{margin-top:26px}
+  .sec h4{font-size:10.5px;font-weight:700;letter-spacing:.10em;color:var(--muted);margin-bottom:12px}
+  .ex{font-size:14px;line-height:1.65;font-weight:500;margin-bottom:12px}
+  .ex b{font-weight:700;margin-right:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{border:1px solid var(--hair);background:rgba(255,255,255,.6);border-radius:99px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .ctx{font-size:14px;line-height:1.65;font-weight:500}
+  .foot{border-top:1px solid var(--hair);padding:16px 0 22px 0;display:flex;justify-content:center;gap:16px;background:var(--sheet)}
+  /* ---------- SCREEN 4 languages ---------- */
+  .lang-top{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0 18px}
+  .edit{border:1px solid var(--hair);background:rgba(255,255,255,.6);border-radius:99px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+  .lang-title{font-family:"Instrument Serif",serif;font-size:32px;margin:16px 22px 0 22px;letter-spacing:-.01em}
+  .lang-sub{font-size:13px;color:var(--muted);margin:6px 22px 0 22px;font-weight:500}
+  .hero{
+    margin:16px 18px 0 18px;background:var(--sheet);border:1px solid var(--hair);
+    border-radius:20px;padding:16px 16px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .hero .native{font-family:"Instrument Serif",serif;font-size:26px;line-height:1.1}
+  .hero .eng{font-size:12.5px;color:var(--muted);margin-top:4px;font-weight:500}
+  .check{width:38px;height:38px;border-radius:99px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700}
+  .lang-list{margin:10px 22px 0 22px}
+  .lang-row{
+    display:flex;align-items:center;justify-content:space-between;width:100%;
+    background:none;border:none;border-bottom:1px solid var(--hair);
+    padding:15px 2px;cursor:pointer;text-align:left;color:var(--ink);
+  }
+  .lang-row:last-child{border-bottom:none}
+  .lang-row .nat{font-family:"Instrument Serif",serif;font-size:20px}
+  .lang-row .right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-weight:500}
+  .lang-row .chev{font-size:16px;color:var(--muted)}
+  .lang-row.selected .nat{font-weight:400}
+  .search-wrap{padding:12px 18px 22px 18px;background:linear-gradient(transparent,var(--card) 30%)}
+  .search{
+    display:flex;align-items:center;gap:10px;background:var(--sheet);
+    border:1px solid var(--hair);border-radius:99px;padding:6px 6px 6px 14px;
+  }
+  .search input{flex:1;border:none;background:none;outline:none;font-family:Manrope;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .search input::placeholder{color:var(--muted)}
+  .search .x{width:32px;height:32px;border-radius:99px;border:1px solid var(--hair);background:transparent;cursor:pointer;color:var(--muted)}
+  @media (prefers-reduced-motion: reduce){
+    .bloom-1,.bloom-2{animation:none !important;transform:none !important;opacity:.9 !important}
+    .stream .cursor{animation:none !important}
+    *{scroll-behavior:auto !important}
+  }
+  @media (max-width:430px){ body{padding:0} .phone{border-radius:0;border:none;box-shadow:none;width:100vw;height:100dvh;max-width:100vw;max-height:100dvh;min-width:0;min-height:0} .stage-caption{display:none} }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone" id="phone" role="application" aria-label="MedLingua mobile app UI">
+    <div class="statusbar">
+      <div class="brand-pill">MedLingua</div>
+      <div class="batt" aria-hidden="true"><i style="width:14px;height:8px"></i><i style="width:18px;height:10px;border:1px solid #1d1c1a;background:transparent;padding:1px"><i style="width:10px;height:5px;margin:1px"></i></i></div>
+    </div>
+
+    <div class="screens">
+      <!-- 1 ONBOARDING -->
+      <section class="screen active" id="screen-onboarding">
+        <div class="scroll">
+          <div class="illus"><span>illustration</span></div>
+          <h1 class="h1">Hable con su médico en su propio idioma</h1>
+          <p class="sub">Speak with your doctor in your own language. MedLingua translates out loud, both ways, in seconds.</p>
+          <div class="stats">
+            <div class="stat"><b>7</b><small>idiomas</small></div>
+            <div class="stat"><b>4.8</b><small>valoración</small></div>
+            <div class="stat"><b>0</b><small>datos guardados</small></div>
+          </div>
+          <button class="cta" onclick="show('screen-speak')">Comenzar · Get started</button>
+          <div style="height:18px"></div>
+        </div>
+      </section>
+
+      <!-- 2 SPEAK -->
+      <section class="screen" id="screen-speak">
+        <div class="topbar">
+          <div class="ghost" onclick="openLang()" aria-label="menu">☰</div>
+          <div class="lang-pill"><span id="langPair">Español → English</span><span class="track"><i></i></span></div>
+          <div class="ghost" onclick="swapLang()" aria-label="swap">⇅</div>
+        </div>
+        <div class="appt">
+          <div><div class="t">CITA DE HOY · Cardiología 14:30</div><div class="s">Cardiología · 14:30</div></div>
+          <div class="dots"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+        </div>
+
+        <div class="focal-wrap" style="flex:1">
+          <div class="focal-static" style="display:flex;flex-direction:column;align-items:center">
+            <div class="listening-tag" id="listenTag" style="visibility:hidden">ESCUCHANDO…</div>
+            <div class="focal" onclick="show('screen-detail')">Me duele el pecho al caminar</div>
+            <div class="ipa">me ˈdwe.le el peˈtʃo <button onclick="event.stopPropagation();toggleSpeak()" aria-label="play">▶</button></div>
+            <div class="gloss">I get chest pain when I walk</div>
+          </div>
+          <div class="transcript">
+            <div class="listening-tag">ESCUCHANDO…</div>
+            <div class="bubble" id="bubble">Me duele el pecho…</div>
+            <div class="stream"><span id="streamText"></span><span class="cursor"></span></div>
+          </div>
+        </div>
+
+        <div class="util-row">
+          <div class="ghost" onclick="show('screen-detail')">i</div>
+          <div class="ghost" onclick="toggleSpeak()">↑</div>
+          <div class="ghost">♡</div>
+          <div class="ghost">▢</div>
+        </div>
+        <div class="mic-row">
+          <div class="ghost small">◧</div>
+          <button class="cta" id="micPill" style="width:auto;padding:15px 34px;display:flex;align-items:center;gap:10px" onclick="toggleSpeak()">
+            <span id="micDot" style="width:10px;height:14px;border-radius:99px;background:#152227;display:inline-block"></span>
+            <span id="micLabel">Hablar</span>
+          </button>
+          <div class="ghost small">◧</div>
+        </div>
+
+        <!-- voice presence bloom -->
+        <div class="bloom-wrap" id="bloomWrap">
+          <div class="bloom bloom-1" id="bloom1"></div>
+          <div class="bloom bloom-2" id="bloom2"></div>
+        </div>
+        <div class="voice-dock">
+          <button class="vbtn" aria-label="settings">⚙</button>
+          <button class="vbtn mic-live" id="dockMic" onclick="toggleSpeak()" aria-label="mic">●</button>
+          <button class="vbtn end" onclick="toggleSpeak(true)" aria-label="end">✕</button>
+        </div>
+      </section>
+
+      <!-- 3 PHRASE DETAIL (sheet) -->
+      <section class="screen sheet" id="screen-detail">
+        <div class="scroll" style="padding-bottom:0">
+          <div class="detail-head"><div class="ghost" onclick="back()">✕</div></div>
+          <div class="center">
+            <div class="detail-title">Me falta el aire</div>
+            <div class="ipa" style="margin-top:12px">me ˈfal.ta el ˈai.ɾe <button aria-label="play">▶</button></div>
+            <div class="pos">(frase) · I am short of breath</div>
+          </div>
+          <div class="sec">
+            <h4>EJEMPLOS · EXAMPLES</h4>
+            <p class="ex"><b>1.</b> Me falta el aire al subir escaleras. — I am short of breath climbing stairs.</p>
+            <p class="ex"><b>2.</b> Me falta el aire por la noche. — I am short of breath at night.</p>
+          </div>
+          <div class="sec">
+            <h4>OTRAS MANERAS DE DECIRLO</h4>
+            <div class="chips">
+              <div class="chip">no puedo respirar bien</div>
+              <div class="chip">me ahogo</div>
+              <div class="chip">respiro con dificultad</div>
+              <div class="chip">siento opresión</div>
+            </div>
+          </div>
+          <div class="sec" style="margin-bottom:26px">
+            <h4>CONTEXTO CLÍNICO</h4>
+            <p class="ctx">Your clinician may ask when it started, whether it happens at rest, and if it wakes you at night.</p>
+          </div>
+        </div>
+        <div class="foot">
+          <div class="ghost">i</div><div class="ghost">↑</div><div class="ghost">♡</div><div class="ghost">▢</div>
+        </div>
+      </section>
+
+      <!-- 4 LANGUAGE SELECTOR (sheet) -->
+      <section class="screen sheet" id="screen-lang">
+        <div class="lang-top"><div class="ghost" onclick="back()">✕</div><button class="edit">Editar</button></div>
+        <div class="lang-title">Elija su idioma</div>
+        <div class="lang-sub">Choose your language — 7 available</div>
+        <div class="hero">
+          <div><div class="label">SELECCIONADO</div><div class="native" id="heroNative">Español</div><div class="eng" id="heroEng">Spanish</div></div>
+          <div class="check">✓</div>
+        </div>
+        <div class="scroll" style="padding-bottom:4px">
+          <div class="lang-list" id="langList"></div>
+          <div style="height:8px"></div>
+        </div>
+        <div class="search-wrap">
+          <div class="search"><span style="color:#77726a">○</span><input id="searchInput" placeholder="Buscar idioma" oninput="renderLangs()"><button class="x" onclick="document.getElementById('searchInput').value='';renderLangs()">✕</button></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+var prev = 'screen-speak';
+var langs = [
+  {native:'Español', eng:'Spanish'},
+  {native:'中文', eng:'Chinese (Mandarin)'},
+  {native:'Tiếng Việt', eng:'Vietnamese'},
+  {native:'हिन्दी', eng:'Hindi'},
+  {native:'ਪੰਜਾਬੀ', eng:'Punjabi'},
+  {native:'Русский', eng:'Russian'},
+  {native:'العربية', eng:'Arabic'}
+];
+var selected = 0;
+var swapped = false;
+function show(id){
+  if(id!=='screen-lang' && document.getElementById('screen-lang').classList.contains('active')){}
+  else if(id!=='screen-lang'){ /* keep prev for back */ }
+  if(document.querySelector('.screen.active') && document.querySelector('.screen.active').id!=='screen-lang' && id==='screen-lang'){
+    prev = document.querySelector('.screen.active').id;
+  }
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+}
+function back(){ show(prev||'screen-speak'); }
+function openLang(){ show('screen-lang'); }
+function selectLang(i){
+  selected = i;
+  var L = langs[i];
+  document.getElementById('heroNative').textContent = L.native;
+  document.getElementById('heroEng').textContent = L.eng;
+  updatePair();
+  renderLangs();
+}
+function updatePair(){
+  var from = langs[selected].native;
+  var el = document.getElementById('langPair');
+  el.textContent = swapped ? ('English → ' + from) : (from + ' → English');
+}
+function swapLang(){ swapped=!swapped; updatePair(); }
+function renderLangs(){
+  var q = (document.getElementById('searchInput').value||'').toLowerCase();
+  var box = document.getElementById('langList'); box.innerHTML='';
+  langs.forEach(function(L,i){
+    if(q && (L.native.toLowerCase().indexOf(q)<0 && L.eng.toLowerCase().indexOf(q)<0)) return;
+    var b=document.createElement('button');
+    b.className='lang-row'+(i===selected?' selected':'');
+    b.innerHTML='<span class="nat"></span><span class="right"><span></span><span class="chev">›</span></span>';
+    b.querySelector('.nat').textContent=L.native;
+    b.querySelector('.right span').textContent=L.eng;
+    (function(idx){b.onclick=function(){selectLang(idx);};})(i);
+    box.appendChild(b);
+  });
+}
+renderLangs(); updatePair();
+
+/* ---- speaking state + bloom amplitude + streaming ---- */
+var listening=false, streamTimer=null;
+var utterFull='Me duele el pecho al caminar';
+var transWords=['I','get','chest','pain','when','I','walk.'];
+var smooth=0, target=0, raf=null, t0=performance.now();
+var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function toggleSpeak(forceOff){
+  listening = forceOff ? false : !listening;
+  var sec=document.getElementById('screen-speak');
+  var pill=document.getElementById('micPill');
+  var label=document.getElementById('micLabel');
+  var dot=document.getElementById('micDot');
+  var tag=document.getElementById('listenTag');
+  if(listening){
+    if(document.getElementById('screen-speak').classList.contains('active')===false) show('screen-speak');
+    sec.classList.add('speak-listening');
+    pill.classList.add('dark'); pill.classList.remove('cta');
+    pill.style.background='#1d1c1a'; pill.style.color='#f7f5f0';
+    label.textContent='Detener'; dot.style.background='#f7f5f0';
+    tag.style.visibility='visible';
+    startStream(); startLoop();
+  }else{
+    sec.classList.remove('speak-listening');
+    pill.classList.remove('dark'); pill.classList.add('cta');
+    pill.style.background=''; pill.style.color='';
+    label.textContent='Hablar'; dot.style.background='#152227';
+    tag.style.visibility='hidden';
+    stopStream();
+    if(!reduceMotion){ /* let bloom fade via CSS */ }
+  }
+}
+function startStream(){
+  var el=document.getElementById('streamText');
+  var bub=document.getElementById('bubble');
+  el.textContent=''; bub.textContent='Me duele…';
+  var ui=0, ti=0;
+  clearInterval(streamTimer);
+  var utterParts=['Me duele…','Me duele el pecho…','Me duele el pecho al caminar'];
+  streamTimer=setInterval(function(){
+    if(ui<utterParts.length){ bub.textContent=utterParts[ui]; ui++; }
+    // reveal a few words at a time
+    if(ti<transWords.length){
+      var chunk=transWords.slice(0, ti+2).join(' ');
+      el.textContent=chunk; ti+=2;
+    } else {
+      // hold, then loop softly
+      clearInterval(streamTimer);
+      setTimeout(function(){ if(listening) startStream(); }, 2600);
+    }
+  }, 420);
+}
+function stopStream(){ clearInterval(streamTimer); document.getElementById('streamText').textContent=''; }
+function startLoop(){
+  if(raf) return;
+  function frame(t){
+    var sec=document.getElementById('screen-speak');
+    if(!sec.classList.contains('speak-listening')){ raf=null; return; }
+    if(reduceMotion){
+      // hold the bloom static, no breathing
+      document.getElementById('bloom1').style.transform='none';
+      document.getElementById('bloom2').style.transform='none';
+      raf=requestAnimationFrame(frame); return;
+    }
+    // simulated voice amplitude: peaks + noise
+    var s=Math.abs(Math.sin(t/380))*0.6 + Math.abs(Math.sin(t/173))*0.3 + Math.random()*0.15;
+    target=Math.min(1,s);
+    // lerp toward target each frame so it never jitters
+    smooth += (target - smooth) * 0.08;
+    var b1=document.getElementById('bloom1');
+    var b2=document.getElementById('bloom2');
+    // amplitude modulates the bloom: brighter and slightly taller on peaks
+    var sc1=1 + smooth*0.10, sc2=1 + smooth*0.07;
+    b1.style.opacity=(0.85 + smooth*0.15).toFixed(3);
+    b1.style.height='340px';
+    // combine breathing scale (CSS anim handles base) with amplitude via extra scale wrapper on parent
+    document.getElementById('bloomWrap').style.transform='scale('+(1+smooth*0.03)+','+(1+smooth*0.09)+')';
+    document.getElementById('bloomWrap').style.transformOrigin='50% 100%';
+    document.getElementById('bloomWrap').style.filter='brightness('+(1+smooth*0.12).toFixed(3)+')';
+    raf=requestAnimationFrame(frame);
+  }
+  raf=requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

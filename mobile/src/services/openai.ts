@@ -1,6 +1,13 @@
 import { fetch as expoFetch } from 'expo/fetch';
 import { File, Paths } from 'expo-file-system';
 
+import { SAFEGUARD_TIMEOUT_MS } from '../config/safeguard';
+import {
+  backTranslationSystem,
+  judgeSystem,
+  structuredTranslationSystem,
+  STRUCTURED_TRANSLATION_SCHEMA,
+} from './safeguardPrompts';
 import type { Language } from '../config/languages';
 import { getDeviceId } from './storage';
 
@@ -63,14 +70,25 @@ type ApiResponse = Awaited<ReturnType<typeof expoFetch>>;
 
 /**
  * fetch with a hard timeout; timeouts surface as retryable TranslationErrors.
- * Uses expo/fetch explicitly: on SDK 54 the global fetch is still React
- * Native's, which can't upload expo-file-system Files as Blobs (the Whisper
- * request) and is unreliable for arrayBuffer() (the TTS bytes). The browser
- * preview masked both — expo/fetch behaves the same everywhere.
+ *
+ * Imports expo/fetch explicitly rather than calling the global. On SDK 54 that
+ * was mandatory: the global fetch was React Native's, which cannot upload an
+ * expo-file-system File as a Blob (the Whisper request) and is unreliable for
+ * arrayBuffer() (the TTS bytes) — the browser preview masked both, and it took
+ * a device to find them. Since SDK 56 expo/fetch IS globalThis.fetch, so the
+ * import is now belt and braces. It stays: it survives EXPO_PUBLIC_USE_RN_FETCH
+ * being set to opt back out, and it keeps the requirement legible at the call
+ * site instead of depending on a global we do not control.
  */
-async function fetchWithTimeout(url: string, init: FetchInit): Promise<ApiResponse> {
+async function fetchWithTimeout(
+  url: string,
+  init: FetchInit,
+  /** Override for calls that must degrade faster than the conversation flow —
+   * the confidence gate gives up in 8s rather than leaving someone waiting. */
+  timeoutMs: number = REQUEST_TIMEOUT_MS,
+): Promise<ApiResponse> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await expoFetch(url, { ...init, signal: controller.signal });
   } catch (err) {
@@ -266,6 +284,240 @@ export async function translate(text: string, from: Language, to: Language): Pro
   return translation;
 }
 
+/** A word or phrase the translating model considered risky to get wrong. */
+export interface FlaggedTerm {
+  /** The span as it appeared in the source utterance. */
+  source: string;
+  /** Why it was flagged: ambiguous, idiomatic, dosage, negation, laterality, time. */
+  reason: string;
+}
+
+export interface StructuredTranslation {
+  translation: string;
+  flaggedTerms: FlaggedTerm[];
+  /** The model's own 0–1 confidence. null when it returned nothing usable. */
+  selfConfidence: number | null;
+}
+
+/** Models sometimes wrap JSON in ``` fences despite being told not to. */
+function stripFences(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+}
+
+/**
+ * Translation for the confidence gate: same interpreting task as `translate`,
+ * but the model also reports which spans were risky and how sure it is.
+ *
+ * Deliberately a separate function rather than a change to `translate` — with
+ * the safeguard flag off, the original single-call path stays exactly as it
+ * was, including its prompt.
+ */
+export async function translateStructured(
+  text: string,
+  from: Language,
+  to: Language,
+): Promise<StructuredTranslation> {
+  const system = structuredTranslationSystem(from.englishName, to.englishName);
+
+  let res: ApiResponse;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/chat/completions`,
+      {
+        method: 'POST',
+        headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          temperature: 0.2,
+          response_format: {
+            type: 'json_schema',
+            json_schema: STRUCTURED_TRANSLATION_SCHEMA,
+          },
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: text },
+          ],
+        }),
+      },
+      SAFEGUARD_TIMEOUT_MS,
+    );
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during translation');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Translation failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new TranslationError('Empty translation');
+
+  let parsed: {
+    translation?: unknown;
+    flagged_terms?: unknown;
+    self_confidence?: unknown;
+  };
+  try {
+    parsed = JSON.parse(stripFences(raw));
+  } catch {
+    throw new TranslationError('Malformed structured translation');
+  }
+
+  const translation = typeof parsed.translation === 'string' ? parsed.translation.trim() : '';
+  if (!translation) throw new TranslationError('Empty translation');
+
+  const flaggedTerms = Array.isArray(parsed.flagged_terms)
+    ? parsed.flagged_terms
+        .map((item) => {
+          const o = (item ?? {}) as { source?: unknown; reason?: unknown };
+          return {
+            source: typeof o.source === 'string' ? o.source : '',
+            reason: typeof o.reason === 'string' ? o.reason : '',
+          };
+        })
+        .filter((term) => term.source.length > 0)
+    : [];
+
+  const selfConfidence =
+    typeof parsed.self_confidence === 'number' && Number.isFinite(parsed.self_confidence)
+      ? Math.min(1, Math.max(0, parsed.self_confidence))
+      : null;
+
+  return { translation, flaggedTerms, selfConfidence };
+}
+
+/**
+ * Step 2 of the gate: translate the translation back, with no sight of the
+ * original. Any meaning that fell out on the way over shows up as a difference
+ * between this and what the person actually said.
+ */
+export async function backTranslate(translated: string, from: Language, to: Language): Promise<string> {
+  const system = backTranslationSystem(from.englishName, to.englishName);
+
+  let res: ApiResponse;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/chat/completions`,
+      {
+        method: 'POST',
+        headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          temperature: 0,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: translated },
+          ],
+        }),
+      },
+      SAFEGUARD_TIMEOUT_MS,
+    );
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during back-translation');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Back-translation failed (${res.status})`);
+  }
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const back = data.choices?.[0]?.message?.content?.trim();
+  if (!back) throw new TranslationError('Empty back-translation');
+  return back;
+}
+
+/**
+ * Step 3, judge variant: how much of the original survived the round trip.
+ *
+ * The judge sees ONLY the original and the back-translation — never the
+ * forward translation — so it scores what actually came back rather than being
+ * anchored by the wording it is meant to be checking.
+ */
+export async function judgeEquivalence(
+  original: string,
+  backTranslation: string,
+  language: Language,
+): Promise<{ score: number; reason: string }> {
+  const system = judgeSystem(language.englishName);
+
+  const res = await fetchWithTimeout(
+    `${BASE_URL}/chat/completions`,
+    {
+      method: 'POST',
+      headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: `A: ${original}\nB: ${backTranslation}` },
+        ],
+      }),
+    },
+    SAFEGUARD_TIMEOUT_MS,
+  );
+  if (!res.ok) throw new TranslationError(`Judge failed (${res.status})`);
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new TranslationError('Empty judge response');
+
+  const parsed = JSON.parse(stripFences(raw)) as { score?: unknown; reason?: unknown };
+  if (typeof parsed.score !== 'number' || !Number.isFinite(parsed.score)) {
+    throw new TranslationError('Judge returned no score');
+  }
+  return {
+    score: Math.min(1, Math.max(0, parsed.score)),
+    reason: typeof parsed.reason === 'string' ? parsed.reason : '',
+  };
+}
+
+/**
+ * Step 3, embeddings variant: cosine similarity of the original and the
+ * back-translation.
+ *
+ * NOTE: needs `/v1/embeddings` and `text-embedding-3-small` added to the proxy
+ * allowlist (proxy/worker.js) before it will work in production. Selected via
+ * DRIFT_SCORER in config/safeguard.ts.
+ */
+export async function embeddingSimilarity(a: string, b: string): Promise<number> {
+  const res = await fetchWithTimeout(
+    `${BASE_URL}/embeddings`,
+    {
+      method: 'POST',
+      headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: [a, b] }),
+    },
+    SAFEGUARD_TIMEOUT_MS,
+  );
+  if (!res.ok) throw new TranslationError(`Embeddings failed (${res.status})`);
+
+  const data = (await res.json()) as { data?: { embedding?: number[] }[] };
+  const [va, vb] = [data.data?.[0]?.embedding, data.data?.[1]?.embedding];
+  if (!va || !vb || va.length !== vb.length) {
+    throw new TranslationError('Malformed embeddings response');
+  }
+
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < va.length; i += 1) {
+    dot += va[i] * vb[i];
+    normA += va[i] * va[i];
+    normB += vb[i] * vb[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denom === 0) throw new TranslationError('Degenerate embedding');
+  // Cosine similarity of these embeddings runs roughly 0.3–1.0 for related
+  // text; it is used directly and calibrated by the thresholds, not rescaled.
+  return Math.min(1, Math.max(0, dot / denom));
+}
+
 /**
  * Teach-back: re-explains a clinician's message in the patient's language at
  * the simplest possible level. `evenSimpler` is the second attempt, used when
@@ -326,6 +578,56 @@ export async function simplify(
     throw new TranslationError('Empty teach-back explanation');
   }
   return explanation;
+}
+
+/**
+ * Says it differently: restates already-translated text in the same language
+ * with plainer wording, for a turn's options sheet ("repeat slowly" covers
+ * hearing it again; this covers wording it again). Same safety contract as
+ * teach-back simplify — facts preserved exactly, nothing added. Ephemeral:
+ * the caller speaks it without adding a turn.
+ */
+export async function rephrase(text: string, into: Language): Promise<string> {
+  const system = [
+    `You are a medical interpreter. Restate the message below in ${into.englishName} a DIFFERENT, simpler way.`,
+    'Rules:',
+    '- Short sentences. Everyday words. Zero medical jargon.',
+    '- Keep every critical fact exactly: medication names, doses, times, warnings.',
+    '- Do not add information that is not in the message.',
+    '- Return only the restatement, no commentary.',
+  ].join('\n');
+
+  let res: ApiResponse;
+  try {
+    res = await fetchWithTimeout(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        ...apiHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0.2,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: text },
+        ],
+      }),
+    });
+  } catch (err) {
+    if (err instanceof TranslationError) throw err;
+    throw new TranslationError('Network error during rephrase');
+  }
+  if (!res.ok) {
+    throw new TranslationError(`Rephrase failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const restatement = data.choices?.[0]?.message?.content?.trim();
+  if (!restatement) {
+    throw new TranslationError('Empty rephrase restatement');
+  }
+  return restatement;
 }
 
 /** One line of transcript for the visit summary — original text plus who said it. */

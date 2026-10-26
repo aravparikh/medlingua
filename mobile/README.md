@@ -2,7 +2,7 @@
 
 Real-time, two-way medical translation between English and Spanish, Mandarin
 Chinese, Vietnamese, or Russian — built for seniors and people with limited
-English. React Native + Expo (SDK 57).
+English. React Native + Expo (SDK 54).
 
 ## How it works
 
@@ -87,3 +87,42 @@ src/
   components/                # SpeakButton (hold-or-tap), Pulse
   screens/                   # Onboarding, LanguageSelect, Conversation, About
 ```
+
+## The confidence gate
+
+Machine translation normally arrives with no indication of how much to trust it. The gate
+adds a second opinion before anyone reads a translation. It works in three steps: GPT-4o
+translates and also reports which words it found risky (dosages, negations, left/right,
+time frames) and how confident it is; the translation is then translated **back** to the
+original language by a second call that never sees the original; and a third call scores
+how much the round trip changed the meaning. The lower of the two scores decides what
+happens — shown normally, shown marked "may not be exact", or withheld with a request to
+say it again. Two withheld attempts on the same sentence recommends a human interpreter
+and notes it in the visit summary. If any check fails or times out, the result is marked
+imprecise rather than shown as confident — the gate never upgrades on failure.
+
+**What it does not do:** it detects meaning that *changed* in translation, not meaning that
+was unclear to begin with. A vague sentence that translates faithfully still scores well.
+Drift is scored by embedding similarity; a GPT-4o judge is available as a fallback but
+discriminates far less well. Thresholds in `src/config/safeguard.ts` are still provisional —
+run `npm run tune` and check the distribution before relying on them.
+
+## Terminology verification
+
+The medication names primed into every language's Whisper prompt are not a list we
+made up. `src/config/medications.ts` is the single source of truth for them, and
+`npm run verify:terms` checks every name against **RxNorm**, the U.S. National Library
+of Medicine's normalized drug vocabulary and a source vocabulary of the UMLS
+Metathesaurus. The result — each name with its RxNorm concept identifier (RXCUI) — is
+written to `src/config/terminology.json` and committed, so it can be audited without
+running anything: lisinopril is RXCUI 29046, and you can check that yourself at
+rxnav.nlm.nih.gov.
+
+Two tests keep it honest (`tests/terminology.test.ts`): every roster name must appear
+in all seven Whisper prompts, and every name must have resolved to an exact RxNorm
+match. Adding a drug without verifying it fails the suite.
+
+Verification runs at build time. The app makes no terminology calls at runtime and
+gains no runtime dependency. Anatomy terms are checked against the UMLS Metathesaurus
+proper, which needs a free UTS account — set `UMLS_API_KEY` in `mobile/.env` and re-run;
+without it that step is skipped and the RxNorm half still runs.

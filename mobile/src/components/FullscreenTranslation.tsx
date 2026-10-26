@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CloseIcon, SwapIcon } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { colors, fonts, MIN_TARGET, radius, spacing, type } from '../theme';
+import { bilingual, radius, serifFor, spacing, tapTarget, useTheme, type ColorTokens } from '../theme';
 import { PressableScale } from './PressableScale';
+import { Label } from './ui/Label';
 
 interface Props {
   /** The translation to display, or null when hidden. */
@@ -37,11 +38,18 @@ function fitFontSize(text: string): number {
  * A translation blown up to fill the whole screen — for loud rooms, low vision,
  * or holding the phone across a bed rail (flip turns it toward the other
  * person). Tap anywhere to dismiss.
+ *
+ * This is the most focal text in the app, so it is set in the display serif of
+ * the language it is written in — the same face the live line uses, at the
+ * largest size that fits.
  */
 export function FullscreenTranslation({ text, language, otherLanguage, onClose }: Props) {
   const [flipped, setFlipped] = useState(false);
   const en = t('en');
   const other = t(otherLanguage.code);
+
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // A fresh open always starts unflipped, whatever the last session did.
   useEffect(() => {
@@ -50,6 +58,8 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
 
   if (text == null || language == null) return null;
   const fontSize = fitFontSize(text);
+  const flipLabel = bilingual(other.flip, en.flip);
+  const hintLabel = bilingual(other.tapToClose, en.tapToClose);
 
   return (
     <Modal visible animationType="fade" onRequestClose={onClose}>
@@ -57,9 +67,12 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
         style={styles.screen}
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel={`${other.tapToClose} — ${en.tapToClose}`}
+        accessibilityLabel={`${other.tapToClose}. ${en.tapToClose}`}
       >
         <View style={styles.topBar}>
+          {/* Flip is a real feature and has to be named; close is the one
+             glyph that outperforms either language, so it carries its names
+             in the accessibility label only. */}
           <PressableScale
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -67,30 +80,34 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
             }}
             accessibilityRole="switch"
             accessibilityState={{ checked: flipped }}
-            accessibilityLabel={`${other.flip} — ${en.flip}`}
-            style={[styles.topButton, flipped && styles.topButtonActive]}
+            accessibilityLabel={`${other.flip}. ${en.flip}`}
+            style={[styles.flip, flipped && styles.flipActive]}
           >
-            <SwapIcon  size={22} color={colors.primary} />
-            <Text style={styles.topButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-              {other.flip === en.flip ? en.flip : `${other.flip} · ${en.flip}`}
-            </Text>
+            <SwapIcon size={22} color={flipped ? colors.bg : colors.ink} />
+            <Label
+              primary={flipLabel.primary}
+              secondary={flipLabel.secondary}
+              lang={otherLanguage.code}
+              speechTag={otherLanguage.speechTag}
+              size="caption"
+              weight="semibold"
+              tone={flipped ? 'onInk' : 'ink'}
+            />
           </PressableScale>
-          <PressableScale
+
+          <Pressable
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel={`${other.close} — ${en.close}`}
-            style={styles.topButton}
+            accessibilityLabel={`${other.close}. ${en.close}`}
+            style={({ pressed }) => [styles.close, pressed && styles.pressedFill]}
           >
-            <CloseIcon  size={24} color={colors.primary} />
-            <Text style={styles.topButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-              {other.close === en.close ? en.close : `${other.close} · ${en.close}`}
-            </Text>
-          </PressableScale>
+            <CloseIcon size={24} color={colors.ink} />
+          </Pressable>
         </View>
 
         <View style={[styles.body, flipped && styles.bodyFlipped]}>
           <Text
-            style={[styles.bigText, { fontSize, lineHeight: fontSize * 1.2 }]}
+            style={[styles.bigText, serifFor(language.code), { fontSize, lineHeight: fontSize * 1.2 }]}
             accessibilityLanguage={language.speechTag}
             accessibilityLiveRegion="polite"
             // Already sized to the largest type that fits — scaling on top
@@ -101,61 +118,70 @@ export function FullscreenTranslation({ text, language, otherLanguage, onClose }
           </Text>
         </View>
 
-        <Text style={styles.closeHint} allowFontScaling maxFontSizeMultiplier={1.3} importantForAccessibility="no">
-          {other.tapToClose === en.tapToClose ? en.tapToClose : `${other.tapToClose} · ${en.tapToClose}`}
-        </Text>
+        <Label
+          primary={hintLabel.primary}
+          secondary={hintLabel.secondary}
+          lang={otherLanguage.code}
+          size="caption"
+          tone="ink2"
+          align="center"
+          style={styles.closeHint}
+        />
       </Pressable>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  topButton: {
-    minHeight: MIN_TARGET - 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceTint,
-  },
-  topButtonActive: {
-    backgroundColor: colors.primaryTint,
-  },
-  topButtonText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  bodyFlipped: {
-    transform: [{ rotate: '180deg' }],
-  },
-  bigText: {
-    fontFamily: fonts.bodyBold,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  closeHint: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textFaint,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.lg,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    flip: {
+      minHeight: tapTarget.min,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface,
+    },
+    flipActive: {
+      backgroundColor: c.ink,
+    },
+    close: {
+      width: tapTarget.min,
+      height: tapTarget.min,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.pill,
+    },
+    pressedFill: {
+      backgroundColor: c.surfacePressed,
+    },
+    body: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    bodyFlipped: {
+      transform: [{ rotate: '180deg' }],
+    },
+    bigText: {
+      color: c.ink,
+      textAlign: 'center',
+    },
+    closeHint: {
+      alignSelf: 'center',
+    },
+  });

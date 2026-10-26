@@ -1,17 +1,26 @@
 import { View, type ViewProps } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { colors, strokes } from '../../theme';
+import { useTheme } from '../../theme';
 import { IconBase, type IconProps } from './Icon';
 
 /**
- * Brand-scale drawings — the capsule language at illustration size.
- * Same rules as glyphs: decorative, hidden from screen readers via plain
- * View props only (never on SVG elements — they leak into the web DOM).
+ * Brand-scale drawings — the capsule language at illustration size. Same rules
+ * as the glyphs: decorative, and hidden from screen readers by IconBase's
+ * plain View wrapper (never by props on SVG elements — those leak into the
+ * web DOM).
  */
 
-/** The logo mark: the brand bubble carrying the medical cross, filled. */
-export function BrandMark({ size = 34, color, ...rest }: IconProps) {
+/**
+ * The logo mark: the brand bubble carrying the medical cross, filled.
+ *
+ * `cross` is the cross's colour — pass the ground the mark sits on so the
+ * cross reads as a knockout rather than a drawn shape. It defaults to the page
+ * ground, which is what that knockout wants in either scheme.
+ */
+export function BrandMark({ size = 34, color, cross, ...rest }: IconProps & { cross?: string }) {
+  const { colors } = useTheme();
+
   return (
     <IconBase size={size} color={color} {...rest}>
       <Path
@@ -19,15 +28,15 @@ export function BrandMark({ size = 34, color, ...rest }: IconProps) {
         fill={color}
         strokeWidth={0}
       />
-      <Path d="M12 7.6v5.2M9.4 10.2h5.2" stroke={colors.primary} />
+      <Path d="M12 7.6v5.2M9.4 10.2h5.2" stroke={cross ?? colors.bg} />
     </IconBase>
   );
 }
 
 /**
  * The interpreter-rights seal: a double ring (inner ring dotted, like a
- * rosette) around the brand cross. Drawn to photograph like an official
- * mark when the card is shown to staff.
+ * rosette) around the brand cross. Drawn to photograph like an official mark
+ * when the card is shown to staff.
  */
 export function SealMark({ size = 52, color, ...rest }: IconProps) {
   return (
@@ -39,45 +48,24 @@ export function SealMark({ size = 52, color, ...rest }: IconProps) {
   );
 }
 
-const SCENE_VB_W = 260;
-const SCENE_VB_H = 102;
-
 /**
- * The empty-state scene: two capsule figures — the same people as the
- * body-map figure — with the sound arc traveling between them. One glance:
- * two people, two languages, one conversation.
+ * The wave mark: five bars and a crossbar that read as a waveform and a
+ * medical cross at once. Fills only, no strokes, so it stays legible at 16px.
+ *
+ * The three colours are fixed rather than themed — this is a logo, and a logo
+ * that changes hue between light and dark is two logos. It sits on the ground
+ * unboxed: no circle, badge, or bubble around it.
  */
-export function TwoVoicesScene({ width = 280, ...rest }: { width?: number } & ViewProps) {
-  const height = (width * SCENE_VB_H) / SCENE_VB_W;
+export function WaveMark({ size = 40, ...rest }: { size?: number } & ViewProps) {
   return (
-    <View
-      style={{ width, height }}
-      importantForAccessibility="no"
-      accessibilityElementsHidden
-      pointerEvents="none"
-      {...rest}
-    >
-      <Svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${SCENE_VB_W} ${SCENE_VB_H}`}
-        fill="none"
-        strokeWidth={strokes.icon * 1.6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/* The clinician speaks English (teal, left)… */}
-        <Circle cx={40} cy={30} r={13} stroke={colors.primary} fill={colors.surface} />
-        <Rect x={26} y={49} width={28} height={44} rx={14} stroke={colors.primary} fill={colors.surface} />
-        {/* …the patient answers in their language (indigo, right). */}
-        <Circle cx={220} cy={30} r={13} stroke={colors.secondary} fill={colors.surface} />
-        <Rect x={206} y={49} width={28} height={44} rx={14} stroke={colors.secondary} fill={colors.surface} />
-        {/* The sound arc, both directions. */}
-        <Circle cx={80} cy={58} r={4.2} fill={colors.primary} strokeWidth={0} />
-        <Path d="M94 46a14.5 14.5 0 0 1 0 24" stroke={colors.accent} />
-        <Path d="M108 38a25 25 0 0 1 0 40" stroke={colors.accent} />
-        <Circle cx={180} cy={58} r={4.2} fill={colors.secondary} strokeWidth={0} />
-        <Path d="M166 48a12.5 12.5 0 0 0 0 20" stroke={colors.accent} strokeDasharray="0.1 7" />
+    <View style={{ width: size, height: size }} importantForAccessibility="no" accessibilityElementsHidden {...rest}>
+      <Svg width={size} height={size} viewBox="0 0 64 64">
+        <Rect x={6} y={28} width={6} height={8} rx={3} fill="#7FA3AD" />
+        <Rect x={17} y={22} width={6} height={20} rx={3} fill="#2B3A45" />
+        <Rect x={29} y={8} width={6} height={48} rx={3} fill="#2B3A45" />
+        <Rect x={41} y={22} width={6} height={20} rx={3} fill="#2B3A45" />
+        <Rect x={52} y={28} width={6} height={8} rx={3} fill="#7FA3AD" />
+        <Rect x={17} y={29} width={30} height={6} rx={3} fill="#A9C3CB" />
       </Svg>
     </View>
   );

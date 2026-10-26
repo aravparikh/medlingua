@@ -1,22 +1,33 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AudioModule } from 'expo-audio';
 import { useFonts } from 'expo-font';
-import { Lexend_600SemiBold, Lexend_700Bold } from '@expo-google-fonts/lexend';
+import { Newsreader_400Regular, Newsreader_400Regular_Italic, Newsreader_500Medium } from '@expo-google-fonts/newsreader';
+import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold } from '@expo-google-fonts/figtree';
+import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
+import { NotoSerifDevanagari_400Regular } from '@expo-google-fonts/noto-serif-devanagari';
+import { NotoSerifGurmukhi_400Regular } from '@expo-google-fonts/noto-serif-gurmukhi';
 import {
-  NotoSans_400Regular,
-  NotoSans_600SemiBold,
-  NotoSans_700Bold,
-} from '@expo-google-fonts/noto-sans';
+  NotoSansDevanagari_400Regular,
+  NotoSansDevanagari_600SemiBold,
+  NotoSansDevanagari_700Bold,
+} from '@expo-google-fonts/noto-sans-devanagari';
+import {
+  NotoSansGurmukhi_400Regular,
+  NotoSansGurmukhi_600SemiBold,
+  NotoSansGurmukhi_700Bold,
+} from '@expo-google-fonts/noto-sans-gurmukhi';
+// Simplified Chinese deliberately uses the system CJK faces: bundling Noto
+// Serif CJK and Noto Sans SC would cost ~60MB between them. See theme.ts.
 
 import { getLanguage, type Language } from './src/config/languages';
 import { loadPrefs, savePrefs } from './src/services/storage';
-import { colors, fonts, spacing, type } from './src/theme';
+import { spacing, text, useTheme, type ColorTokens } from './src/theme';
 import { Appear } from './src/components/Appear';
 import { AboutScreen } from './src/screens/AboutScreen';
-import { ConversationScreen, type Turn } from './src/screens/ConversationScreen';
+import { ConversationScreen, type Escalation, type Turn } from './src/screens/ConversationScreen';
 import { LanguageSelectScreen } from './src/screens/LanguageSelectScreen';
 
 type Screen = 'languages' | 'conversation' | 'about';
@@ -27,15 +38,30 @@ type Screen = 'languages' | 'conversation' | 'about';
  * `Appear` wrapper (keyed by screen) gives a gentle fade-and-rise transition.
  */
 export default function App() {
+  // Every script cut loads here, once, behind the splash — never per screen.
+  // Every face loads here, once, behind the splash — never per screen.
   const [fontsLoaded, fontError] = useFonts({
-    Lexend_600SemiBold,
-    Lexend_700Bold,
-    NotoSans_400Regular,
-    NotoSans_600SemiBold,
-    NotoSans_700Bold,
+    Newsreader_400Regular,
+    Newsreader_500Medium,
+    Newsreader_400Regular_Italic,
+    Figtree_400Regular,
+    Figtree_500Medium,
+    Figtree_600SemiBold,
+    NotoSerif_400Regular,
+    NotoSerifDevanagari_400Regular,
+    NotoSerifGurmukhi_400Regular,
+    NotoSansDevanagari_400Regular,
+    NotoSansDevanagari_600SemiBold,
+    NotoSansDevanagari_700Bold,
+    NotoSansGurmukhi_400Regular,
+    NotoSansGurmukhi_600SemiBold,
+    NotoSansGurmukhi_700Bold,
   });
 
-  // No onboarding by design: the native-script language cards are the
+  const { scheme, colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  // No onboarding by design: the native-script language rows are the
   // onboarding, and they need zero English to use.
   const [prefs] = useState(loadPrefs);
   const [screen, setScreen] = useState<Screen>('languages');
@@ -49,10 +75,15 @@ export default function App() {
   // The visit transcript lives here (not in the conversation screen) so a trip
   // to the About screen doesn't wipe it. Memory only — never written to disk.
   const [turns, setTurns] = useState<Turn[]>([]);
+  // Utterances the confidence gate gave up on. Held next to the transcript and
+  // on the same terms: memory only, wiped with it, appended to the summary so
+  // the clinician can see what never made it across.
+  const [escalations, setEscalations] = useState<Escalation[]>([]);
 
   const selectLanguage = (language: Language) => {
     setOtherLanguage(language);
     setTurns([]);
+    setEscalations([]);
     savePrefs({ languageCode: language.code });
     setScreen('conversation');
     // Ask for the microphone now, at a calm moment — not mid-gesture during
@@ -64,7 +95,7 @@ export default function App() {
   if (!fontsLoaded && !fontError) {
     return (
       <View style={styles.splash}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.splashText}>MedLingua</Text>
       </View>
     );
@@ -72,8 +103,10 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.root}>
-        <StatusBar style="dark" />
+      {/* Bottom edge only: gradient screens paint edge-to-edge behind the
+         status bar, and each full screen pads its own top inset. */}
+      <SafeAreaView style={styles.root} edges={['bottom']}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Appear key={screen} style={styles.root}>
           {screen === 'languages' && <LanguageSelectScreen onSelect={selectLanguage} />}
           {screen === 'conversation' && otherLanguage && (
@@ -81,6 +114,8 @@ export default function App() {
               otherLanguage={otherLanguage}
               turns={turns}
               onTurnsChange={setTurns}
+              escalations={escalations}
+              onEscalation={(escalation) => setEscalations((prev) => [...prev, escalation])}
               onChangeLanguage={() => setScreen('languages')}
               onShowAbout={() => setScreen('about')}
             />
@@ -94,22 +129,10 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  splash: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  splashText: {
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg },
+    splash: { flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
     // Fonts aren't loaded yet on the splash — system font on purpose.
-    fontSize: type.body,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
+    splashText: { ...text.body, color: c.ink, fontWeight: '600' },
+  });

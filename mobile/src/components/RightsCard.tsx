@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CloseIcon, SealMark } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { colors, displayFontFor, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
+import { fontFor, radius, serifFor, spacing, tapTarget, text, typeCap, useTheme, type ColorTokens } from '../theme';
 
 interface Props {
   visible: boolean;
@@ -23,20 +24,23 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
   const en = t('en');
   const other = t(otherLanguage.code);
 
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.screen}>
         <View style={styles.topBar}>
+          {/* Chrome, so the label rule applies — and a close is the one
+             control where the glyph outperforms either language. The name
+             lives in the accessibility label instead, in both. */}
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel={`${other.close} — ${en.close}`}
-            style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
+            accessibilityLabel={`${other.close}. ${en.close}`}
+            style={({ pressed }) => [styles.close, pressed && styles.pressedFill]}
           >
-            <CloseIcon size={24} color={colors.primary} />
-            <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {other.close} · {en.close}
-            </Text>
+            <CloseIcon size={24} color={colors.ink} />
           </Pressable>
         </View>
 
@@ -44,20 +48,20 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
           {/* The document: double-rule frame, seal on top — certificate grammar. */}
           <View style={styles.frameOuter}>
             <View style={styles.frameInner}>
-              <SealMark size={56} color={colors.secondary} style={styles.seal} />
+              <SealMark size={56} color={colors.ink} style={styles.seal} />
               <Text
-                style={[styles.title, { fontFamily: displayFontFor(otherLanguage.code) }]}
+                style={[styles.title, serifFor(otherLanguage.code)]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={typeCap.content}
                 accessibilityRole="header"
                 accessibilityLanguage={otherLanguage.speechTag}
               >
                 {other.rightsTitle}
               </Text>
               <Text
-                style={styles.body}
+                style={[styles.body, fontFor(otherLanguage.code)]}
                 allowFontScaling
-                maxFontSizeMultiplier={2}
+                maxFontSizeMultiplier={typeCap.content}
                 accessibilityLanguage={otherLanguage.speechTag}
               >
                 {other.rightsBody}
@@ -65,10 +69,10 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
 
               <View style={styles.divider} importantForAccessibility="no" />
 
-              <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
                 {en.rightsTitle}
               </Text>
-              <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={2}>
+              <Text style={styles.bodyEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>
                 {en.rightsBody}
               </Text>
             </View>
@@ -79,86 +83,77 @@ export function RightsCard({ visible, otherLanguage, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: spacing.xl,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.md,
-  },
-  close: {
-    minHeight: MIN_TARGET - 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-  },
-  pressedDim: {
-    opacity: 0.6,
-  },
-  closeText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
-  frameOuter: {
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.xl,
-    padding: spacing.xxs,
-    backgroundColor: colors.surface,
-    ...shadows.card,
-  },
-  frameInner: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    // Concentric with the outer frame: inner = outer radius − the gap
-    // between them, so the two rules stay optically parallel.
-    borderRadius: radius.xl - spacing.xxs,
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  seal: {
-    alignSelf: 'center',
-  },
-  title: {
-    fontSize: type.title,
-    color: colors.text,
-    lineHeight: type.title * 1.25,
-    textAlign: 'center',
-  },
-  body: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.text,
-    lineHeight: type.body * 1.5,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.xs,
-  },
-  titleEn: {
-    fontFamily: fonts.displayMedium,
-    fontSize: type.button,
-    color: colors.textMuted,
-    lineHeight: type.button * 1.3,
-  },
-  bodyEn: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
-    lineHeight: type.small * 1.5,
-  },
-});
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+      paddingTop: spacing.xl,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingHorizontal: spacing.md,
+    },
+    close: {
+      width: tapTarget.min,
+      height: tapTarget.min,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.pill,
+    },
+    pressedFill: {
+      backgroundColor: c.surfacePressed,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xxl,
+    },
+    frameOuter: {
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: radius.sheet,
+      padding: spacing.xxs,
+      backgroundColor: c.surface,
+    },
+    frameInner: {
+      borderWidth: 1,
+      borderColor: c.rule,
+      // Concentric with the outer frame: inner = outer radius − the gap
+      // between them, which is exactly the card radius.
+      borderRadius: radius.card,
+      backgroundColor: c.surface,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    seal: {
+      alignSelf: 'center',
+    },
+    title: {
+      ...text.heading,
+      color: c.ink,
+      textAlign: 'center',
+    },
+    body: {
+      ...text.body,
+      lineHeight: text.body.fontSize * 1.5,
+      color: c.ink,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: c.rule,
+      marginVertical: spacing.xs,
+    },
+    titleEn: {
+      ...text.title,
+      ...fontFor('en', 'semibold'),
+      color: c.ink2,
+    },
+    bodyEn: {
+      ...text.caption,
+      ...fontFor('en'),
+      lineHeight: text.caption.fontSize * 1.5,
+      color: c.ink2,
+    },
+  });

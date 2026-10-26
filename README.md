@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MedLingua
 
-## Getting Started
+Real-time, two-way medical translation between English and Spanish, Mandarin
+Chinese, Vietnamese, Russian, Hindi, and Punjabi — built for seniors and people
+with limited English. The app is React Native + Expo (SDK 54); a small Next.js
+site serves the `/privacy` and `/terms` pages linked from inside the app.
 
-First, run the development server:
+## Repo layout
+
+| Path | What it is |
+|---|---|
+| `mobile/` | The MedLingua app (React Native + Expo, SDK 54). This is the product. |
+| `app/`, `components/` | The Next.js landing + legal site (`/privacy`, `/terms`). |
+| `proxy/` | Cloudflare Worker that holds the OpenAI key for production builds. |
+
+## Run the app (Expo Go, localhost)
+
+You need [Expo Go](https://expo.dev/go) on your phone and an OpenAI API key.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd mobile
+npm install
+cp .env.example .env        # then paste your OpenAI key into EXPO_PUBLIC_OPENAI_API_KEY
+npx expo start              # opens the dev server + QR code on localhost
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Scan the QR code with Expo Go (or press `i` for the iOS simulator, `a` for
+Android). The phone and your computer must be on the same network so the device
+can reach the Metro server on localhost. `expo start` also accepts:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run ios                 # start and open the iOS simulator
+npm run android             # start and open an Android emulator
+npm run web                 # run in the browser
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+In this local mode the app calls OpenAI directly and your key is inlined into
+the dev bundle. That is fine for development on your own device, but never ship
+a store build this way — set `EXPO_PUBLIC_API_PROXY_URL` to your deployed proxy
+instead (see `proxy/README.md`), which keeps the key out of the binary.
 
-## Learn More
+## Run the web site (localhost)
 
-To learn more about Next.js, take a look at the following resources:
+The Next.js site hosts the privacy policy and terms.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev                 # http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000) to see it. Pages live in
+`app/`; edits hot-reload.
 
-## Deploy on Vercel
+## More
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `mobile/README.md` — app internals, adding a language, project structure.
+- `LAUNCH.md` — App Store submission checklist.
+- `proxy/README.md` — standing up the key proxy for production.

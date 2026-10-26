@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { AlertCircleIcon, BrandGlyph, CloseIcon, DocumentIcon, ShareIcon, TimeIcon } from './icons';
 
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
-import { PressableScale } from './PressableScale';
-import { SkeletonBar } from './Skeleton';
+import type { Turn } from '../screens/ConversationScreen';
+import { fontFor, mono, serifFor, typeCap, useTheme, type ColorTokens } from '../theme';
+import { ChevronForwardIcon, TimeIcon } from './icons';
 
 const LIFETIME_S = 120;
 const WARN_AT_S = 30;
@@ -19,64 +18,55 @@ export type SummaryState =
   | { status: 'error' };
 
 interface Props {
-  /** null = closed. */
+  /** null = closed (the pushed screen stays mounted, per the push contract). */
   state: SummaryState | null;
   otherLanguage: Language;
+  turns: Turn[];
+  onBack: () => void;
+  onTranscript: () => void;
   onClose: () => void;
 }
 
+const clockOf = (id: number) =>
+  new Date(id).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
 /**
- * The ephemeral visit summary. Deliberately self-destructing: a visible 2:00
- * countdown, then the text is gone — the patient copies or shares it to a
- * place THEY choose, and MedLingua keeps its "nothing is saved" promise.
+ * The ephemeral visit summary as a pushed screen on the summary ground
+ * (#FDFCFA), not a bottom sheet. Same back row as the transcript, a meta
+ * strip, scrolling sections, and an outlined TRANSCRIPCIÓN + filled COMPARTIR
+ * footer. The 2:00 countdown is kept: when it ends the text is gone, which is
+ * what keeps the "nothing is saved" promise.
  */
-export function SummaryModal({ state, otherLanguage, onClose }: Props) {
+export function SummaryModal({ state, otherLanguage, turns, onBack, onTranscript, onClose }: Props) {
   const en = t('en');
   const other = t(otherLanguage.code);
 
-  const [secondsLeft, setSecondsLeft] = useState(LIFETIME_S);
-  const [copied, setCopied] = useState(false);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
 
+  const [secondsLeft, setSecondsLeft] = useState(LIFETIME_S);
   const ready = state?.status === 'ready';
 
   // The countdown starts the moment the summary is readable and never pauses.
+  // Same shape as the original bottom-sheet timer: reset on new content,
+  // tick every second, expiry clears the summary upstream.
   useEffect(() => {
     if (!ready) return;
     setSecondsLeft(LIFETIME_S);
-    setCopied(false);
     const interval = setInterval(() => {
-      setSecondsLeft((s) => s - 1);
+      setSecondsLeft((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [ready]);
+  }, [ready, state]);
 
-  // Expiry closes the modal, which clears the summary from state upstream.
+  // Expiry clears the summary upstream — the text only ever lived in state.
   useEffect(() => {
     if (ready && secondsLeft <= 0) onClose();
   }, [ready, secondsLeft, onClose]);
 
-  useEffect(() => () => {
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-  }, []);
-
-  if (!state) return null;
-
-  const warn = secondsLeft <= WARN_AT_S;
-  const mm = Math.floor(Math.max(secondsLeft, 0) / 60);
-  const ss = String(Math.max(secondsLeft, 0) % 60).padStart(2, '0');
-
-  const copyAll = async () => {
-    if (state.status !== 'ready') return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await Clipboard.setStringAsync(state.text);
-    setCopied(true);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = setTimeout(() => setCopied(false), 2000);
-  };
-
   const shareAll = async () => {
-    if (state.status !== 'ready') return;
+    if (state?.status !== 'ready') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await Share.share({ message: state.text });
@@ -85,322 +75,247 @@ export function SummaryModal({ state, otherLanguage, onClose }: Props) {
     }
   };
 
+  const warn = secondsLeft <= WARN_AT_S;
+  const mm = Math.floor(Math.max(secondsLeft, 0) / 60);
+  const ss = String(Math.max(secondsLeft, 0) % 60).padStart(2, '0');
+
+  const firstId = turns.length > 0 ? turns[0].id : Date.now();
+  const lastId = turns.length > 0 ? turns[turns.length - 1].id : Date.now();
+  const timeRange = useMemo(() => `${clockOf(firstId)} – ${clockOf(lastId)}`, [firstId, lastId]);
+  const parsed = useMemo(
+    () => (state?.status === 'ready' ? parseSummary(state.text) : null),
+    [state],
+  );
+
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+    <View style={[s.screen, { backgroundColor: colors.summaryBg, paddingTop: insets.top }]}>
+      <View style={[s.topRow, { borderBottomColor: colors.hairline }]}>
         <Pressable
-          style={styles.dismiss}
-          onPress={onClose}
+          onPress={onBack}
           accessibilityRole="button"
-          accessibilityLabel={`${other.close} — ${en.close}`}
-        />
-        <View style={styles.sheet}>
-          <View style={styles.handle} importantForAccessibility="no" />
-          <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <DocumentIcon  size={24} color={colors.primary} />
-              <View style={styles.titleWrap}>
-                <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
-                  {other.summary}
-                </Text>
-                <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.summary}</Text>
-              </View>
-            </View>
-            <Pressable
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel={`${other.close} — ${en.close}`}
-              style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
-            >
-              <CloseIcon  size={22} color={colors.primary} />
-              <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
-                {other.close} · {en.close}
-              </Text>
-            </Pressable>
+          accessibilityLabel={`${other.back}. ${en.back}`}
+          style={({ pressed }) => [s.back, pressed && s.pressed]}
+        >
+          <View style={s.backChevron}>
+            <ChevronForwardIcon size={12} color={colors.ink} />
           </View>
+          <Text style={[s.backLabel, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.back.toUpperCase()}
+          </Text>
+        </Pressable>
+        <Text
+          style={[s.title, serifFor(otherLanguage.code), { color: colors.ink }]}
+          accessibilityRole="header"
+          accessibilityLanguage={otherLanguage.speechTag}
+          allowFontScaling
+          maxFontSizeMultiplier={typeCap.chrome}
+        >
+          {other.summary}
+        </Text>
+        <Text style={[s.side, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+          {en.summary.toUpperCase()}
+        </Text>
+      </View>
 
-          {state.status === 'loading' ? (
-            <View style={styles.loading} accessibilityLiveRegion="polite">
-              <SkeletonBar width="62%" height={16} />
-              <SkeletonBar width="88%" height={16} />
-              <SkeletonBar width="74%" height={16} />
-              <Text style={styles.loadingText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                {other.generatingSummary}
-              </Text>
-              <Text style={styles.loadingTextEn} allowFontScaling maxFontSizeMultiplier={2}>{en.generatingSummary}</Text>
-            </View>
-          ) : null}
-
-          {state.status === 'error' ? (
-            <View style={styles.loading} accessibilityLiveRegion="assertive">
-              <AlertCircleIcon  size={30} color={colors.dangerText} />
-              <Text style={styles.errorText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                {other.connectionError}
-              </Text>
-              <Text style={styles.loadingTextEn} allowFontScaling maxFontSizeMultiplier={2}>{en.connectionError}</Text>
-            </View>
-          ) : null}
-
-          {state.status === 'ready' ? (
-            <>
-              {/* The self-destruct banner: this is a feature, not a bug. */}
-              <View style={[styles.timerBanner, warn && styles.timerBannerWarn]} accessibilityLiveRegion="polite">
-                <TimeIcon  size={20} color={warn ? colors.onPrimary : colors.secondary} />
-                <View style={styles.timerTextWrap}>
-                  <Text style={[styles.timerText, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.summaryEphemeral}
-                  </Text>
-                  <Text style={[styles.timerTextEn, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3}>{en.summaryEphemeral}</Text>
-                </View>
-                <Text style={[styles.timerClock, warn && styles.timerTextWarn]} allowFontScaling maxFontSizeMultiplier={1.3}>
-                  {mm}:{ss}
-                </Text>
-              </View>
-              <View style={styles.timerTrack} importantForAccessibility="no">
-                <View
-                  style={[
-                    styles.timerFill,
-                    warn && styles.timerFillWarn,
-                    { width: `${(Math.max(secondsLeft, 0) / LIFETIME_S) * 100}%` },
-                  ]}
-                />
-              </View>
-
-              <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-                <Text style={styles.summaryText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                  {state.text}
-                </Text>
-              </ScrollView>
-
-              <View style={styles.actions}>
-                <PressableScale
-                  onPress={copyAll}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${other.copy} — ${en.copy}`}
-                  flexFill
-                  style={[styles.action, styles.actionPrimary]}
-                >
-                  <BrandGlyph name={copied ? 'checkmark' : 'copy-outline'} size={22} color={colors.onPrimary} />
-                  <View style={styles.actionLabels}>
-                    <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
-                      {copied ? other.copied : other.copy}
-                    </Text>
-                    <Text style={styles.actionTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{copied ? en.copied : en.copy}</Text>
-                  </View>
-                </PressableScale>
-                <PressableScale
-                  onPress={shareAll}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${other.share} — ${en.share}`}
-                  flexFill
-                  style={[styles.action, styles.actionSecondary]}
-                >
-                  <ShareIcon  size={22} color={colors.onPrimary} />
-                  <View style={styles.actionLabels}>
-                    <Text style={styles.actionText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
-                      {other.share}
-                    </Text>
-                    <Text style={styles.actionTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.share}</Text>
-                  </View>
-                </PressableScale>
-              </View>
-            </>
-          ) : null}
+      <View style={[s.meta, { borderBottomColor: colors.hairline }]}>
+        <View style={s.metaCol}>
+          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.appointmentLabel.toUpperCase()}
+          </Text>
+          <Text style={[s.metaValue, serifFor(otherLanguage.code), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {otherLanguage.nativeName}
+          </Text>
+        </View>
+        <View style={s.metaCol}>
+          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.timeLabel.toUpperCase()}
+          </Text>
+          <Text style={[s.metaMono, { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {timeRange}
+          </Text>
+        </View>
+        <View style={s.metaColNarrow}>
+          <Text style={[s.metaLabel, fontFor('en', 'semibold'), { color: colors.ink2 }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.turnsLabel.toUpperCase()}
+          </Text>
+          <Text style={[s.metaMono, { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {turns.length}
+          </Text>
         </View>
       </View>
-    </Modal>
+
+      {ready ? (
+        <View style={[s.timer, warn && { backgroundColor: colors.danger }]}>
+          <TimeIcon size={16} color={warn ? colors.bg : colors.ink} />
+          <Text style={[s.timerText, fontFor(otherLanguage.code), warn && { color: colors.bg }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.summaryEphemeral}
+          </Text>
+          <Text style={[s.timerClock, warn && { color: colors.bg }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {`${mm}:${ss}`}
+          </Text>
+        </View>
+      ) : null}
+
+      <ScrollView style={s.body} contentContainerStyle={s.bodyContent}>
+        {state?.status === 'loading' ? (
+          <Text style={[s.loadingText, fontFor(otherLanguage.code, 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.generatingSummary}
+          </Text>
+        ) : null}
+        {state?.status === 'error' ? (
+          <Text style={[s.loadingText, fontFor(otherLanguage.code, 'semibold'), { color: colors.danger }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.connectionError}
+          </Text>
+        ) : null}
+        {parsed ? (
+          <>
+            <View style={[s.section, { borderBottomColor: colors.rule }]}>
+              <View style={s.sectionHead}>
+                <Text style={[s.numeral, { color: colors.ink2 }]}>01</Text>
+                <Text style={[s.sectionTitle, serifFor(otherLanguage.code), { color: colors.ink }]}>{other.reasonLabel}</Text>
+                <Text style={[s.sectionEn, fontFor('en', 'semibold'), { color: colors.ink2 }]}>{en.reasonLabel.toUpperCase()}</Text>
+              </View>
+              <Text style={[s.lede, serifFor(otherLanguage.code), { color: colors.ink }]}>{parsed.lede}</Text>
+            </View>
+            <View style={[s.section, { borderBottomColor: colors.rule }]}>
+              <View style={s.sectionHead}>
+                <Text style={[s.numeral, { color: colors.ink2 }]}>02</Text>
+                <Text style={[s.sectionTitle, serifFor(otherLanguage.code), { color: colors.ink }]}>{other.symptomsLabel}</Text>
+                <Text style={[s.sectionEn, fontFor('en', 'semibold'), { color: colors.ink2 }]}>{en.symptomsLabel.toUpperCase()}</Text>
+              </View>
+              <View style={s.bullets}>
+                {parsed.patientBullets.map((line, i) => (
+                  <View key={i} style={s.bullet}>
+                    <View style={[s.dot, { backgroundColor: colors.ctaFill }]} />
+                    <View style={s.bulletText}>
+                      <Text style={[s.bulletPrimary, fontFor(otherLanguage.code), { color: colors.ink }]}>{line}</Text>
+                      {parsed.englishBullets[i] ? (
+                        <Text style={[s.bulletSecondary, fontFor('en'), { color: colors.ink2 }]}>{parsed.englishBullets[i]}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+            {parsed.extraBullets.length > 0 ? (
+              <View style={[s.section, { borderBottomColor: colors.rule }]}>
+                <View style={s.sectionHead}>
+                  <Text style={[s.numeral, { color: colors.ink2 }]}>03</Text>
+                  <Text style={[s.sectionTitle, serifFor(otherLanguage.code), { color: colors.ink }]}>{other.nextStepsLabel}</Text>
+                  <Text style={[s.sectionEn, fontFor('en', 'semibold'), { color: colors.ink2 }]}>{en.nextStepsLabel.toUpperCase()}</Text>
+                </View>
+                <View style={s.bullets}>
+                  {parsed.extraBullets.map((line, i) => (
+                    <View key={i} style={s.bullet}>
+                      <View style={[s.dot, { backgroundColor: colors.ctaFill }]} />
+                      <View style={s.bulletText}>
+                        <Text style={[s.bulletPrimary, fontFor(otherLanguage.code), { color: colors.ink }]}>{line}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            <Text style={[s.disclaimer, fontFor(otherLanguage.code), { color: colors.ink2 }]}>{`${other.summaryDisclaimer} · ${en.summaryDisclaimer}`}</Text>
+          </>
+        ) : null}
+      </ScrollView>
+
+      <View style={[s.footer, { borderTopColor: colors.hairline }]}>
+        <Pressable
+          onPress={onTranscript}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.transcriptTitle}. ${en.transcriptTitle}`}
+          style={({ pressed }) => [s.outlineButton, { borderColor: colors.border }, pressed && s.pressed]}
+        >
+          <Text style={[s.footerLabel, fontFor('en', 'semibold'), { color: colors.ink }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.transcriptTitle.toUpperCase()}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={shareAll}
+          accessibilityRole="button"
+          accessibilityLabel={`${other.share}. ${en.share}`}
+          style={({ pressed }) => [s.filledButton, { backgroundColor: colors.ctaFill, borderColor: colors.ctaFill }, pressed && s.pressedFill]}
+        >
+          <Text style={[s.footerLabel, fontFor('en', 'semibold'), { color: colors.onCta }]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>
+            {other.share.toUpperCase()}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-  },
-  dismiss: {
-    flex: 1,
-  },
-  sheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    maxHeight: '88%',
-    paddingBottom: spacing.xl,
-    ...shadows.floating,
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    borderRadius: radius.pill,
-    backgroundColor: colors.borderStrong,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flexShrink: 1,
-  },
-  titleWrap: {
-    flexShrink: 1,
-  },
-  title: {
-    fontFamily: fonts.display,
-    fontSize: type.button,
-    color: colors.text,
-  },
-  titleEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
-  },
-  close: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-  },
-  closeText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  pressedDim: {
-    opacity: 0.6,
-  },
-  loading: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  loadingText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-    marginTop: spacing.xs,
-  },
-  loadingTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
-  },
-  errorText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.dangerText,
-    textAlign: 'center',
-    lineHeight: type.body * 1.4,
-  },
-  timerBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surfaceTintSecondary,
-    marginHorizontal: spacing.md,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-  },
-  timerBannerWarn: {
-    backgroundColor: colors.listening,
-  },
-  timerTextWrap: {
-    flex: 1,
-    gap: spacing.hairline,
-  },
-  timerText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.text,
-    lineHeight: type.caption * 1.35,
-  },
-  timerTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    lineHeight: type.micro * 1.35,
-  },
-  timerTextWarn: {
-    color: colors.onPrimary,
-  },
-  timerClock: {
-    fontFamily: fonts.display,
-    fontSize: type.title,
-    color: colors.secondary,
-    // A countdown must not reflow as digits change — 2:00 → 1:59 was
-    // shifting the banner text every second.
-    fontVariant: ['tabular-nums'],
-  },
-  timerTrack: {
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.xs,
-    overflow: 'hidden',
-  },
-  timerFill: {
-    height: '100%',
-    borderRadius: radius.pill,
-    backgroundColor: colors.secondary,
-  },
-  timerFillWarn: {
-    backgroundColor: colors.listening,
-  },
-  body: {
-    flexGrow: 0,
-  },
-  bodyContent: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  summaryText: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.text,
-    lineHeight: type.small * 1.55,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.xs,
-  },
-  action: {
-    minHeight: MIN_TARGET,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.lg,
-  },
-  actionPrimary: {
-    backgroundColor: colors.primary,
-  },
-  actionSecondary: {
-    backgroundColor: colors.secondary,
-  },
-  actionLabels: {
-    alignItems: 'center',
-  },
-  actionText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.onPrimary,
-  },
-  actionTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.onPrimary,
-    opacity: 0.9,
-  },
-});
+/**
+ * The service returns bilingual freeform text (patient half, then English
+ * half) with "• " bullets. Map it onto the paper sections without dropping
+ * anything: first paragraph → 01 lede, patient bullets paired with English
+ * bullets → 02 rows, anything unpaired → 03.
+ */
+function parseSummary(text: string): { lede: string; patientBullets: string[]; englishBullets: string[]; extraBullets: string[] } {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  const bullets = lines
+    .filter((l) => l.startsWith('•'))
+    .map((l) => l.replace(/^•\s*/, '').trim())
+    .filter((l) => l && l !== '—' && l !== '-');
+  const paras = lines.filter((l) => !l.startsWith('•'));
+  const mid = Math.ceil(bullets.length / 2);
+  const patientPool = bullets.slice(0, mid);
+  const englishPool = bullets.slice(mid);
+  const rows = Math.min(patientPool.length, englishPool.length);
+  const patientBullets = rows > 0 ? patientPool.slice(0, rows) : patientPool;
+  const englishBullets = englishPool.slice(0, patientBullets.length);
+  const extraBullets = patientPool.slice(patientBullets.length).concat(englishPool.slice(patientBullets.length));
+  const first = paras.length > 0 ? paras[0] : '';
+  const lede = first.replace(/^(Motivo|Reason)\s*[:–-]\s*/i, '').trim() || first;
+  return { lede, patientBullets, englishBullets, extraBullets };
+}
+
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    screen: { flex: 1 },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+    },
+    back: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 48 },
+    backChevron: { transform: [{ rotate: '180deg' }] },
+    backLabel: { fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 },
+    title: { flex: 1, fontSize: 17, lineHeight: 22, textAlign: 'center' },
+    side: { flex: 1, fontSize: 9.5, lineHeight: 13, letterSpacing: 1.1, textAlign: 'right' },
+    meta: { flexDirection: 'row', paddingHorizontal: 24, paddingVertical: 12, borderBottomWidth: 1 },
+    metaCol: { flex: 1.3, minWidth: 0 },
+    metaColNarrow: { flex: 0.5, minWidth: 0 },
+    metaLabel: { fontSize: 9, lineHeight: 12, letterSpacing: 1.3 },
+    metaValue: { fontSize: 14, lineHeight: 19, marginTop: 3 },
+    metaMono: { fontFamily: mono, fontWeight: '500', fontSize: 11, lineHeight: 15, marginTop: 5 },
+    timer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 24, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.rule },
+    timerText: { flex: 1, fontSize: 12, lineHeight: 17 },
+    timerClock: { fontFamily: mono, fontWeight: '500', fontSize: 12, color: c.ink },
+    body: { flex: 1, minHeight: 0 },
+    bodyContent: { paddingHorizontal: 24, paddingBottom: 20 },
+    loadingText: { fontSize: 13, lineHeight: 19, marginTop: 16 },
+    section: { paddingVertical: 16, borderBottomWidth: 1 },
+    sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
+    numeral: { fontFamily: mono, fontWeight: '500', fontSize: 10 },
+    sectionTitle: { flex: 1, fontSize: 18, lineHeight: 24 },
+    sectionEn: { fontSize: 9.5, lineHeight: 13, letterSpacing: 1.1 },
+    lede: { fontSize: 18, lineHeight: 25.2, marginTop: 10 },
+    bullets: { marginTop: 10, gap: 10 },
+    bullet: { flexDirection: 'row', gap: 10 },
+    dot: { width: 4, height: 4, borderRadius: 2, marginTop: 7 },
+    bulletText: { flex: 1, minWidth: 0 },
+    bulletPrimary: { fontSize: 13, lineHeight: 18.2 },
+    bulletSecondary: { fontSize: 11.5, lineHeight: 16.7, marginTop: 2 },
+    disclaimer: { fontSize: 10.5, lineHeight: 15.8, marginTop: 14, marginBottom: 4 },
+    footer: { flexDirection: 'row', gap: 9, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 16, borderTopWidth: 1 },
+    outlineButton: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 4, padding: 12, minHeight: 48 },
+    filledButton: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 4, padding: 12, minHeight: 48 },
+    footerLabel: { fontSize: 9.5, lineHeight: 13, letterSpacing: 1.3 },
+    pressed: { backgroundColor: 'rgba(29, 28, 26, 0.04)' },
+    pressedFill: { opacity: 0.9 },
+  });

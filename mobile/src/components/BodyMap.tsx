@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CloseIcon, PinIcon, SpeakIcon } from './icons';
@@ -7,10 +7,11 @@ import Svg, { Circle, Ellipse, G, Rect } from 'react-native-svg';
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import type { Language } from '../config/languages';
 import { t } from '../i18n/strings';
-import { colors, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
+import { bilingual, fontFor, radius, serifFor, spacing, tapTarget, typeCap, useTheme, type ColorTokens } from '../theme';
 import { Appear } from './Appear';
 import { PressableScale } from './PressableScale';
 import { Pulse } from './Pulse';
+import { Label } from './ui/Label';
 
 type BodyView = 'front' | 'back';
 
@@ -105,11 +106,13 @@ interface Props {
 
 /** The tappable figure itself. */
 function Figure({
+  colors,
   view,
   selected,
   onSelect,
   labelFor,
 }: {
+  colors: ColorTokens;
   view: BodyView;
   selected: BodyRegionId | null;
   onSelect: (id: BodyRegionId) => void;
@@ -123,8 +126,8 @@ function Figure({
       <Svg width={RENDER_W} height={RENDER_H} viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}>
         {FIGURE[view].map((region) => {
           const isSelected = region.id === selected;
-          const fill = isSelected ? colors.primaryTint : colors.surface;
-          const stroke = colors.primary;
+          const fill = isSelected ? colors.surface : colors.surface;
+          const stroke = colors.ink;
           const strokeWidth = isSelected ? 4 : 2.5;
           // Native: each region is a focusable element with a bilingual label
           // (the region-name live region below announces the selection).
@@ -180,6 +183,9 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
   const en = t('en');
   const other = t(otherLanguage.code);
 
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [view, setView] = useState<BodyView>('front');
   const [selected, setSelected] = useState<BodyRegionId | null>(null);
   const [intensity, setIntensity] = useState<number | null>(null);
@@ -219,21 +225,21 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
       <View style={styles.screen}>
         <View style={styles.header}>
           <View style={styles.titleWrap}>
-            <Text style={styles.title} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={[styles.title, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={typeCap.chrome} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
               {other.whereHurts}
             </Text>
-            <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.whereHurts}</Text>
+            <Text style={styles.titleEn} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>{en.whereHurts}</Text>
           </View>
+          {/* Chrome: the label rule forbids the inline join, and a close is
+             the one control whose glyph beats either language. Both names
+             live in the accessibility label. */}
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel={`${other.close} — ${en.close}`}
-            style={({ pressed }) => [styles.close, pressed && styles.pressedDim]}
+            accessibilityLabel={`${other.close}. ${en.close}`}
+            style={({ pressed }) => [styles.close, pressed && styles.pressedFill]}
           >
-            <CloseIcon  size={24} color={colors.primary} />
-            <Text style={styles.closeText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {other.close} · {en.close}
-            </Text>
+            <CloseIcon size={24} color={colors.ink} />
           </Pressable>
         </View>
 
@@ -242,34 +248,44 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
           <View style={styles.segment}>
             {(['front', 'back'] as const).map((v) => {
               const active = view === v;
-              const label = v === 'front' ? other.frontLabel : other.backLabel;
-              const labelEn = v === 'front' ? en.frontLabel : en.backLabel;
+              const label = bilingual(
+                v === 'front' ? other.frontLabel : other.backLabel,
+                v === 'front' ? en.frontLabel : en.backLabel,
+              );
               return (
                 <PressableScale
                   key={v}
                   onPress={() => pickView(v)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${label} — ${labelEn}`}
+                  accessibilityLabel={label.secondary ? `${label.primary}. ${label.secondary}` : label.primary}
                   flexFill
                   style={[styles.segmentButton, active && styles.segmentButtonActive]}
                 >
-                  <Text style={[styles.segmentText, active && styles.segmentTextActive]} allowFontScaling maxFontSizeMultiplier={2}>
-                    {label === labelEn ? labelEn : `${label} · ${labelEn}`}
-                  </Text>
+                  <Label
+                    primary={label.primary}
+                    secondary={label.secondary}
+                    lang={otherLanguage.code}
+                    speechTag={otherLanguage.speechTag}
+                    size="caption"
+                    weight="semibold"
+                    align="center"
+                    tone={active ? 'onInk' : 'ink2'}
+                  />
                 </PressableScale>
               );
             })}
           </View>
 
           {selected == null ? (
-            <Text style={styles.hint} allowFontScaling maxFontSizeMultiplier={2} accessibilityLiveRegion="polite" accessibilityLanguage={otherLanguage.speechTag}>
+            <Text style={styles.hint} allowFontScaling maxFontSizeMultiplier={typeCap.content} accessibilityLiveRegion="polite" accessibilityLanguage={otherLanguage.speechTag}>
               {other.bodyMapHint}
             </Text>
           ) : null}
 
           <View style={styles.figureWrap}>
             <Figure
+              colors={colors}
               view={view}
               selected={selected}
               onSelect={pickRegion}
@@ -282,17 +298,17 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
               <View style={styles.regionRow}>
                 <PinIcon  size={22} color={colors.accent} importantForAccessibility="no" />
                 <View style={styles.regionLabels}>
-                  <Text style={styles.regionName} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
+                  <Text style={[styles.regionName, serifFor(otherLanguage.code)]} allowFontScaling maxFontSizeMultiplier={typeCap.content} accessibilityLanguage={otherLanguage.speechTag} accessibilityLiveRegion="polite">
                     {region.name[otherLanguage.code]}
                   </Text>
-                  <Text style={styles.regionNameEn} allowFontScaling maxFontSizeMultiplier={2}>{region.name.en}</Text>
+                  <Text style={styles.regionNameEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>{region.name.en}</Text>
                 </View>
               </View>
 
-              <Text style={styles.panelQuestion} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
+              <Text style={styles.panelQuestion} allowFontScaling maxFontSizeMultiplier={typeCap.content} accessibilityLanguage={otherLanguage.speechTag}>
                 {other.howMuchHurt}
               </Text>
-              <Text style={styles.panelQuestionEn} allowFontScaling maxFontSizeMultiplier={2}>{en.howMuchHurt}</Text>
+              <Text style={styles.panelQuestionEn} allowFontScaling maxFontSizeMultiplier={typeCap.content}>{en.howMuchHurt}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.painRow}>
                 {Array.from({ length: 11 }, (_, n) => {
                   const active = intensity === n;
@@ -312,7 +328,7 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
                       <Text
                         style={[styles.painChipText, n >= 7 && styles.painChipTextHigh, active && styles.painChipTextActive]}
                         allowFontScaling
-                        maxFontSizeMultiplier={1.4}
+                        maxFontSizeMultiplier={typeCap.chrome}
                       >
                         {n}
                       </Text>
@@ -328,12 +344,12 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
                 accessibilityLabel={`${other.sayIt} — ${en.sayIt}`}
                 style={[styles.sayButton, intensity == null && styles.dimmed]}
               >
-                <SpeakIcon  size={26} color={colors.onPrimary} />
+                <SpeakIcon  size={26} color={colors.bg} />
                 <View style={styles.sayLabels}>
-                  <Text style={styles.sayText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
+                  <Text style={styles.sayText} allowFontScaling maxFontSizeMultiplier={typeCap.chrome} accessibilityLanguage={otherLanguage.speechTag}>
                     {other.sayIt}
                   </Text>
-                  {other.sayIt !== en.sayIt ? <Text style={styles.sayTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.sayIt}</Text> : null}
+                  {other.sayIt !== en.sayIt ? <Text style={styles.sayTextEn} allowFontScaling maxFontSizeMultiplier={typeCap.chrome}>{en.sayIt}</Text> : null}
                 </View>
               </PressableScale>
             </Appear>
@@ -344,10 +360,11 @@ export function BodyMapModal({ visible, otherLanguage, onClose, onConfirm }: Pro
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.bg,
     paddingTop: spacing.xl,
   },
   header: {
@@ -361,30 +378,24 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   title: {
-    fontFamily: fonts.display,
-    fontSize: type.button,
-    color: colors.text,
+    ...serifFor('en'),
+    fontSize: 22,
+    color: c.ink,
   },
   titleEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
+    ...fontFor('en'),
+    fontSize: 15,
+    color: c.ink2,
   },
   close: {
-    minHeight: 48,
-    flexDirection: 'row',
+    width: tapTarget.min,
+    height: tapTarget.min,
     alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
     borderRadius: radius.pill,
   },
-  closeText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  pressedDim: {
-    opacity: 0.6,
+  pressedFill: {
+    backgroundColor: c.surfacePressed,
   },
   dimmed: {
     opacity: 0.4,
@@ -398,10 +409,10 @@ const styles = StyleSheet.create({
   segment: {
     flexDirection: 'row',
     alignSelf: 'stretch',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.rule,
     padding: spacing.xxs,
     gap: spacing.xxs,
   },
@@ -413,21 +424,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   segmentButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  segmentText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  segmentTextActive: {
-    color: colors.onPrimary,
+    backgroundColor: c.ink,
   },
   hint: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.textMuted,
+    ...fontFor('en', 'semibold'),
+    fontSize: 17,
+    color: c.ink2,
     textAlign: 'center',
   },
   figureWrap: {
@@ -435,11 +437,11 @@ const styles = StyleSheet.create({
   },
   panel: {
     alignSelf: 'stretch',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    backgroundColor: c.surface,
+    borderRadius: radius.sheet,
     padding: spacing.md,
     gap: spacing.xs,
-    ...shadows.raised,
+    
   },
   regionRow: {
     flexDirection: 'row',
@@ -450,25 +452,25 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   regionName: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.title,
-    color: colors.text,
+    ...fontFor('en', 'bold'),
+    fontSize: 26,
+    color: c.ink,
   },
   regionNameEn: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
+    ...fontFor('en'),
+    fontSize: 17,
+    color: c.ink2,
   },
   panelQuestion: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.text,
+    ...fontFor('en', 'semibold'),
+    fontSize: 17,
+    color: c.ink,
     marginTop: spacing.xxs,
   },
   panelQuestionEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
+    ...fontFor('en'),
+    fontSize: 15,
+    color: c.ink2,
   },
   painRow: {
     gap: spacing.xs,
@@ -479,52 +481,52 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: radius.pill,
     borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.rule,
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xs,
   },
   painChipHigh: {
-    borderColor: colors.listening,
+    borderColor: c.danger,
   },
   painChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: c.ink,
+    borderColor: c.ink,
   },
   painChipText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.body,
-    color: colors.text,
+    ...fontFor('en', 'bold'),
+    fontSize: 17,
+    color: c.ink,
   },
   painChipTextHigh: {
-    color: colors.listening,
+    color: c.danger,
   },
   painChipTextActive: {
-    color: colors.onPrimary,
+    color: c.bg,
   },
   sayButton: {
-    minHeight: MIN_TARGET + 8,
+    minHeight: tapTarget.primary + 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
+    borderRadius: radius.sheet,
+    backgroundColor: c.ink,
     marginTop: spacing.xs,
   },
   sayLabels: {
     alignItems: 'center',
   },
   sayText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.button,
-    color: colors.onPrimary,
+    ...fontFor('en', 'bold'),
+    fontSize: 22,
+    color: c.bg,
   },
   sayTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.onPrimary,
+    ...fontFor('en'),
+    fontSize: 15,
+    color: c.bg,
     opacity: 0.9,
   },
 });

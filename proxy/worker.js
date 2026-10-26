@@ -3,7 +3,7 @@
  * OpenAI so the API key never ships inside the app binary.
  *
  * What it enforces:
- *  - POST only, to exactly the three endpoints the app uses
+ *  - POST only, to exactly the endpoints the app uses
  *  - a GLOBAL daily request cap — the real bill protection. The per-device
  *    id is client-minted, so an attacker can mint a fresh one per request;
  *    the global cap is what actually bounds a leaked endpoint.
@@ -26,9 +26,17 @@ const ALLOWED_PATHS = new Set([
   '/v1/audio/transcriptions',
   '/v1/chat/completions',
   '/v1/audio/speech',
+  // Used only by the confidence gate's embeddings drift scorer, which is off
+  // by default (DRIFT_SCORER in mobile/src/config/safeguard.ts).
+  '/v1/embeddings',
 ]);
 
-const ALLOWED_MODELS = new Set(['whisper-1', 'gpt-4o', 'gpt-4o-mini-tts']);
+const ALLOWED_MODELS = new Set([
+  'whisper-1',
+  'gpt-4o',
+  'gpt-4o-mini-tts',
+  'text-embedding-3-small',
+]);
 
 const MAX_BODY_BYTES = 26_000_000;
 

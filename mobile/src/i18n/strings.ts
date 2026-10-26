@@ -93,6 +93,10 @@ export interface UIStrings {
   cameraPermission: string;
   // Polish pass — slow replay, interpreter rights, offline awareness, tagline
   slowLabel: string;
+  /** Turn option: restate this message with different, simpler wording. */
+  rephraseLabel: string;
+  /** Opens the live line's options sheet. */
+  moreOptions: string;
   rightsShow: string;
   rightsTitle: string;
   rightsBody: string;
@@ -100,6 +104,60 @@ export interface UIStrings {
   tagline: string;
   deleteLabel: string;
   deleteConfirm: string;
+  // Confidence gate (see config/safeguard.ts). Shown to whoever is reading the
+  // translation, so every one of these must exist in every language.
+  gateChecking: string;
+  gateCaution: string;
+  gateBlockTitle: string;
+  gateBlockBody: string;
+  gateEscalateTitle: string;
+  gateEscalateBody: string;
+  gateSayAgain: string;
+  // Editorial layer
+  oneLanguage: string;
+  detect: string;
+  privacyShort: string;
+  /** Tag on the language already chosen, shown in that language. */
+  chosen: string;
+  // Transcript
+  conversationLabel: string;
+  exchanges: string;
+  /** Singular for the "1 INTERCAMBIO" pill. */
+  exchangeSingular: string;
+  /** "You", for the conversation card speaker row. */
+  youLabel: string;
+  /** Audience rows: "for your doctor" / "for you". */
+  forDoctor: string;
+  forYou: string;
+  viewTranscript: string;
+  transcriptTitle: string;
+  clearAll: string;
+  clearAllConfirm: string;
+  /** Short speaker tags in the transcript margin. */
+  patientTag: string;
+  clinicianTag: string;
+  /** Full words for the transcript speaker pills. */
+  patientWord: string;
+  doctorWord: string;
+  // Masthead + mode + meta (reference paper chrome; uppercase lives here)
+  idiomaLabel: string;
+  changeShort: string;
+  settingsLabel: string;
+  inputModeLabel: string;
+  appointmentLabel: string;
+  timeLabel: string;
+  turnsLabel: string;
+  reasonLabel: string;
+  symptomsLabel: string;
+  nextStepsLabel: string;
+  summaryDisclaimer: string;
+  // Settings — two independent switches over how the visit is spoken and heard.
+  settingsTitle: string;
+  speakAloudLabel: string;
+  speakAloudHint: string;
+  voiceInputLabel: string;
+  voiceInputHint: string;
+  voiceInputOff: string;
 }
 
 export const STRINGS: Record<string, UIStrings> = {
@@ -183,6 +241,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Read aloud',
     cameraPermission: 'MedLingua needs the camera to read the label. Please allow camera access in Settings.',
     slowLabel: 'Slowly',
+    rephraseLabel: 'Say differently',
+    moreOptions: 'More options',
     rightsShow: 'Interpreter rights',
     rightsTitle: 'You have the right to a free medical interpreter.',
     rightsBody:
@@ -191,6 +251,49 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Speak with your doctor — in your language.',
     deleteLabel: 'Delete',
     deleteConfirm: 'Delete this message?',
+    gateChecking: 'Checking accuracy…',
+    gateCaution: 'May not be exact',
+    gateBlockTitle: 'Let us try that again',
+    gateBlockBody: 'That did not come through clearly. Please say it a different way.',
+    gateEscalateTitle: 'Ask for an interpreter',
+    gateEscalateBody: 'This is not translating reliably. Please ask the staff for a medical interpreter.',
+    gateSayAgain: 'Say it again',
+    oneLanguage: 'One language',
+    detect: 'Detect',
+    privacyShort: 'Nothing is saved',
+    chosen: 'Chosen',
+    conversationLabel: 'Conversation',
+    exchanges: 'exchanges',
+    exchangeSingular: 'exchange',
+    youLabel: 'You',
+    forDoctor: 'For your doctor',
+    forYou: 'For you',
+    viewTranscript: 'View full transcript',
+    transcriptTitle: 'Transcript',
+    clearAll: 'Clear',
+    clearAllConfirm: 'Delete the whole conversation?',
+    patientTag: 'PT',
+    clinicianTag: 'DR',
+    patientWord: 'Patient',
+    doctorWord: 'Doctor',
+    settingsTitle: 'Settings',
+    speakAloudLabel: 'Read aloud',
+    speakAloudHint: 'Speak each translation out loud.',
+    voiceInputLabel: 'Voice input',
+    voiceInputHint: 'Use the microphone to talk.',
+    voiceInputOff: 'Voice input is off — use Type or Phrases.',
+    idiomaLabel: 'LANGUAGE',
+    changeShort: 'change',
+    settingsLabel: 'SETTINGS',
+    inputModeLabel: 'INPUT MODE',
+    appointmentLabel: 'VISIT',
+    timeLabel: 'TIME',
+    turnsLabel: 'TURNS',
+    reasonLabel: 'Reason',
+    symptomsLabel: 'Symptoms',
+    nextStepsLabel: 'Next steps',
+    summaryDisclaimer:
+      "Generated from this visit's transcript. Review it with your clinician.",
   },
   es: {
     listening: 'Escuchando…',
@@ -272,6 +375,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Leer en voz alta',
     cameraPermission: 'MedLingua necesita la cámara para leer la etiqueta. Permita el acceso a la cámara en Ajustes.',
     slowLabel: 'Despacio',
+    rephraseLabel: 'Dilo de otra forma',
+    moreOptions: 'Más opciones',
     rightsShow: 'Derecho a intérprete',
     rightsTitle: 'Usted tiene derecho a un intérprete médico gratuito.',
     rightsBody:
@@ -280,6 +385,49 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Hable con su médico — en su idioma.',
     deleteLabel: 'Borrar',
     deleteConfirm: '¿Borrar este mensaje?',
+    gateChecking: 'Comprobando la exactitud…',
+    gateCaution: 'Puede no ser exacto',
+    gateBlockTitle: 'Vamos a intentarlo otra vez',
+    gateBlockBody: 'Eso no se entendió bien. Dígalo de otra manera, por favor.',
+    gateEscalateTitle: 'Pida un intérprete',
+    gateEscalateBody: 'La traducción no está saliendo confiable. Pida al personal un intérprete médico.',
+    gateSayAgain: 'Dígalo otra vez',
+    oneLanguage: 'Un idioma',
+    detect: 'Detectar',
+    privacyShort: 'Nada se guarda',
+    chosen: 'Elegido',
+    conversationLabel: 'Conversación',
+    exchanges: 'intercambios',
+    exchangeSingular: 'intercambio',
+    youLabel: 'Usted',
+    forDoctor: 'Para su médico',
+    forYou: 'Para usted',
+    viewTranscript: 'Ver transcripción completa',
+    transcriptTitle: 'Transcripción',
+    clearAll: 'Borrar',
+    clearAllConfirm: '¿Borrar toda la conversación?',
+    patientTag: 'PAC',
+    clinicianTag: 'DR',
+    patientWord: 'Paciente',
+    doctorWord: 'Doctor',
+    settingsTitle: 'Ajustes',
+    speakAloudLabel: 'Leer en voz alta',
+    speakAloudHint: 'Decir cada traducción en voz alta.',
+    voiceInputLabel: 'Entrada por voz',
+    voiceInputHint: 'Usar el micrófono para hablar.',
+    voiceInputOff: 'La entrada por voz está desactivada — use Escribir o Frases.',
+    idiomaLabel: 'IDIOMA',
+    changeShort: 'cambiar',
+    settingsLabel: 'AJUSTES',
+    inputModeLabel: 'MODO DE ENTRADA',
+    appointmentLabel: 'CITA',
+    timeLabel: 'HORA',
+    turnsLabel: 'TURNOS',
+    reasonLabel: 'Motivo',
+    symptomsLabel: 'Síntomas',
+    nextStepsLabel: 'Próximos pasos',
+    summaryDisclaimer:
+      'Generado a partir de la transcripción de esta visita. Revíselo con su médico.',
   },
   zh: {
     listening: '正在聆听…',
@@ -361,6 +509,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: '朗读',
     cameraPermission: 'MedLingua 需要使用相机来读取标签。请在“设置”中允许使用相机。',
     slowLabel: '慢一点',
+    rephraseLabel: '换种说法',
+    moreOptions: '更多选项',
     rightsShow: '口译员权利',
     rightsTitle: '您有权获得免费的医疗口译员。',
     rightsBody:
@@ -369,6 +519,48 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: '用您的语言，与医生交流。',
     deleteLabel: '删除',
     deleteConfirm: '删除这条消息？',
+    gateChecking: '正在核对准确性…',
+    gateCaution: '可能不够准确',
+    gateBlockTitle: '请再说一次',
+    gateBlockBody: '刚才那句没有听清楚。请换一种说法再说一次。',
+    gateEscalateTitle: '请求口译员',
+    gateEscalateBody: '翻译不够可靠。请向工作人员要一位医疗口译员。',
+    gateSayAgain: '再说一次',
+    oneLanguage: '单一语言',
+    detect: '自动识别',
+    privacyShort: '不保存任何内容',
+    chosen: '已选择',
+    conversationLabel: '对话',
+    exchanges: '次交流',
+    exchangeSingular: '次交流',
+    youLabel: '您',
+    forDoctor: '给您的医生看',
+    forYou: '给您',
+    viewTranscript: '查看完整记录',
+    transcriptTitle: '完整记录',
+    clearAll: '清除',
+    clearAllConfirm: '要删除整段对话吗？',
+    patientTag: '患者',
+    clinicianTag: '医生',
+    patientWord: '患者',
+    doctorWord: '医生',
+    settingsTitle: '设置',
+    speakAloudLabel: '朗读',
+    speakAloudHint: '把每条翻译读出来。',
+    voiceInputLabel: '语音输入',
+    voiceInputHint: '用麦克风说话。',
+    voiceInputOff: '语音输入已关闭——请使用“书写”或“常用语”。',
+    idiomaLabel: '语言',
+    changeShort: '更换',
+    settingsLabel: '设置',
+    inputModeLabel: '输入模式',
+    appointmentLabel: '就诊',
+    timeLabel: '时间',
+    turnsLabel: '轮次',
+    reasonLabel: '原因',
+    symptomsLabel: '症状',
+    nextStepsLabel: '后续步骤',
+    summaryDisclaimer: '根据本次就诊记录生成。请与您的医生一起查看。',
   },
   vi: {
     listening: 'Đang nghe…',
@@ -450,6 +642,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Đọc to',
     cameraPermission: 'MedLingua cần máy ảnh để đọc nhãn. Vui lòng cho phép truy cập máy ảnh trong Cài đặt.',
     slowLabel: 'Chậm lại',
+    rephraseLabel: 'Nói cách khác',
+    moreOptions: 'Thêm tùy chọn',
     rightsShow: 'Quyền thông dịch viên',
     rightsTitle: 'Bạn có quyền được thông dịch viên y tế miễn phí.',
     rightsBody:
@@ -458,6 +652,48 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Trò chuyện với bác sĩ — bằng ngôn ngữ của bạn.',
     deleteLabel: 'Xóa',
     deleteConfirm: 'Xóa tin nhắn này?',
+    gateChecking: 'Đang kiểm tra độ chính xác…',
+    gateCaution: 'Có thể chưa chính xác',
+    gateBlockTitle: 'Xin thử lại một lần nữa',
+    gateBlockBody: 'Câu đó chưa được rõ. Xin nói lại theo cách khác.',
+    gateEscalateTitle: 'Xin một thông dịch viên',
+    gateEscalateBody: 'Bản dịch chưa đáng tin cậy. Xin hỏi nhân viên về thông dịch viên y tế.',
+    gateSayAgain: 'Nói lại',
+    oneLanguage: 'Một ngôn ngữ',
+    detect: 'Tự động',
+    privacyShort: 'Không lưu gì cả',
+    chosen: 'Đã chọn',
+    conversationLabel: 'Cuộc trò chuyện',
+    exchanges: 'lượt trao đổi',
+    exchangeSingular: 'lượt trao đổi',
+    youLabel: 'Bạn',
+    forDoctor: 'Cho bác sĩ của bạn',
+    forYou: 'Cho bạn',
+    viewTranscript: 'Xem toàn bộ bản ghi',
+    transcriptTitle: 'Bản ghi',
+    clearAll: 'Xóa',
+    clearAllConfirm: 'Xóa toàn bộ cuộc trò chuyện?',
+    patientTag: 'BN',
+    clinicianTag: 'BS',
+    patientWord: 'Bệnh nhân',
+    doctorWord: 'Bác sĩ',
+    settingsTitle: 'Cài đặt',
+    speakAloudLabel: 'Đọc to',
+    speakAloudHint: 'Đọc to từng bản dịch.',
+    voiceInputLabel: 'Nhập bằng giọng nói',
+    voiceInputHint: 'Dùng micrô để nói.',
+    voiceInputOff: 'Nhập bằng giọng nói đã tắt — hãy dùng Gõ hoặc Câu thường dùng.',
+    idiomaLabel: 'NGÔN NGỮ',
+    changeShort: 'đổi',
+    settingsLabel: 'CÀI ĐẶT',
+    inputModeLabel: 'CHẾ ĐỘ NHẬP',
+    appointmentLabel: 'CUỘC HẸN',
+    timeLabel: 'GIỜ',
+    turnsLabel: 'LƯỢT',
+    reasonLabel: 'Lý do',
+    symptomsLabel: 'Triệu chứng',
+    nextStepsLabel: 'Bước tiếp theo',
+    summaryDisclaimer: 'Được tạo từ bản ghi của buổi khám này. Hãy xem lại với bác sĩ của bạn.',
   },
   ru: {
     listening: 'Слушаю…',
@@ -539,6 +775,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'Прочитать вслух',
     cameraPermission: 'MedLingua нужна камера, чтобы прочитать этикетку. Разрешите доступ к камере в Настройках.',
     slowLabel: 'Медленно',
+    rephraseLabel: 'Сказать иначе',
+    moreOptions: 'Ещё',
     rightsShow: 'Право на переводчика',
     rightsTitle: 'Вы имеете право на бесплатного медицинского переводчика.',
     rightsBody:
@@ -547,6 +785,48 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'Говорите с врачом — на вашем языке.',
     deleteLabel: 'Удалить',
     deleteConfirm: 'Удалить это сообщение?',
+    gateChecking: 'Проверяем точность…',
+    gateCaution: 'Может быть неточно',
+    gateBlockTitle: 'Давайте попробуем ещё раз',
+    gateBlockBody: 'Это прозвучало неясно. Скажите, пожалуйста, другими словами.',
+    gateEscalateTitle: 'Попросите переводчика',
+    gateEscalateBody: 'Перевод получается ненадёжным. Попросите у персонала медицинского переводчика.',
+    gateSayAgain: 'Скажите ещё раз',
+    oneLanguage: 'Один язык',
+    detect: 'Определять',
+    privacyShort: 'Ничего не сохраняется',
+    chosen: 'Выбрано',
+    conversationLabel: 'Разговор',
+    exchanges: 'реплик',
+    exchangeSingular: 'реплика',
+    youLabel: 'Вы',
+    forDoctor: 'Для вашего врача',
+    forYou: 'Для вас',
+    viewTranscript: 'Посмотреть всю расшифровку',
+    transcriptTitle: 'Расшифровка',
+    clearAll: 'Очистить',
+    clearAllConfirm: 'Удалить весь разговор?',
+    patientTag: 'ПАЦ',
+    clinicianTag: 'ВРАЧ',
+    patientWord: 'Пациент',
+    doctorWord: 'Врач',
+    settingsTitle: 'Настройки',
+    speakAloudLabel: 'Читать вслух',
+    speakAloudHint: 'Произносить каждый перевод вслух.',
+    voiceInputLabel: 'Голосовой ввод',
+    voiceInputHint: 'Использовать микрофон для речи.',
+    voiceInputOff: 'Голосовой ввод выключен — используйте «Печатать» или «Фразы».',
+    idiomaLabel: 'ЯЗЫК',
+    changeShort: 'сменить',
+    settingsLabel: 'НАСТРОЙКИ',
+    inputModeLabel: 'РЕЖИМ ВВОДА',
+    appointmentLabel: 'ВИЗИТ',
+    timeLabel: 'ВРЕМЯ',
+    turnsLabel: 'РЕПЛИКИ',
+    reasonLabel: 'Причина',
+    symptomsLabel: 'Симптомы',
+    nextStepsLabel: 'Дальнейшие шаги',
+    summaryDisclaimer: 'Составлено на основе записи этого визита. Проверьте с вашим врачом.',
   },
   hi: {
     listening: 'सुन रहा है…',
@@ -629,6 +909,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'पढ़कर सुनाएँ',
     cameraPermission: 'लेबल पढ़ने के लिए MedLingua को कैमरा चाहिए। कृपया सेटिंग्स में कैमरे की अनुमति दें।',
     slowLabel: 'धीरे-धीरे',
+    rephraseLabel: 'दूसरे शब्दों में कहें',
+    moreOptions: 'और विकल्प',
     rightsShow: 'दुभाषिया अधिकार',
     rightsTitle: 'आपको मुफ़्त चिकित्सा दुभाषिया पाने का अधिकार है।',
     rightsBody:
@@ -637,6 +919,48 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'अपने डॉक्टर से बात करें — अपनी भाषा में।',
     deleteLabel: 'हटाएँ',
     deleteConfirm: 'यह संदेश हटाएँ?',
+    gateChecking: 'सटीकता जाँची जा रही है…',
+    gateCaution: 'शायद पूरी तरह सही न हो',
+    gateBlockTitle: 'एक बार फिर कोशिश करें',
+    gateBlockBody: 'यह साफ़ समझ नहीं आया। कृपया इसे दूसरे शब्दों में कहें।',
+    gateEscalateTitle: 'दुभाषिया माँगें',
+    gateEscalateBody: 'अनुवाद भरोसेमंद नहीं हो रहा। कृपया स्टाफ़ से मेडिकल दुभाषिया माँगें।',
+    gateSayAgain: 'फिर से कहें',
+    oneLanguage: 'एक भाषा',
+    detect: 'पहचानें',
+    privacyShort: 'कुछ भी सेव नहीं होता',
+    chosen: 'चुना गया',
+    conversationLabel: 'बातचीत',
+    exchanges: 'बार बातचीत',
+    exchangeSingular: 'बार बातचीत',
+    youLabel: 'आप',
+    forDoctor: 'अपने डॉक्टर के लिए',
+    forYou: 'आपके लिए',
+    viewTranscript: 'पूरा रिकॉर्ड देखें',
+    transcriptTitle: 'पूरा रिकॉर्ड',
+    clearAll: 'हटाएँ',
+    clearAllConfirm: 'पूरी बातचीत हटाएँ?',
+    patientTag: 'रोगी',
+    clinicianTag: 'डॉ',
+    patientWord: 'रोगी',
+    doctorWord: 'डॉक्टर',
+    settingsTitle: 'सेटिंग्ज़',
+    speakAloudLabel: 'ज़ोर से पढ़ें',
+    speakAloudHint: 'हर अनुवाद को ज़ोर से बोलें।',
+    voiceInputLabel: 'आवाज़ से इनपुट',
+    voiceInputHint: 'बोलने के लिए माइक्रोफ़ोन का उपयोग करें।',
+    voiceInputOff: 'आवाज़ से इनपुट बंद है — लिखें या वाक्य का उपयोग करें।',
+    idiomaLabel: 'भाषा',
+    changeShort: 'बदलें',
+    settingsLabel: 'सेटिंग',
+    inputModeLabel: 'इनपुट मोड',
+    appointmentLabel: 'अपॉइंटमेंट',
+    timeLabel: 'समय',
+    turnsLabel: 'बारी',
+    reasonLabel: 'कारण',
+    symptomsLabel: 'लक्षण',
+    nextStepsLabel: 'अगले कदम',
+    summaryDisclaimer: 'इस मुलाकात के रिकॉर्ड से तैयार किया गया। अपने डॉक्टर के साथ इसकी समीक्षा करें।',
   },
   pa: {
     listening: 'ਸੁਣ ਰਿਹਾ ਹੈ…',
@@ -719,6 +1043,8 @@ export const STRINGS: Record<string, UIStrings> = {
     speakAloud: 'ਪੜ੍ਹ ਕੇ ਸੁਣਾਓ',
     cameraPermission: 'ਲੇਬਲ ਪੜ੍ਹਨ ਲਈ MedLingua ਨੂੰ ਕੈਮਰਾ ਚਾਹੀਦਾ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਕੈਮਰੇ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ।',
     slowLabel: 'ਹੌਲੀ-ਹੌਲੀ',
+    rephraseLabel: 'ਹੋਰ ਸ਼ਬਦਾਂ ਵਿੱਚ ਕਹੋ',
+    moreOptions: 'ਹੋਰ ਵਿਕਲਪ',
     rightsShow: 'ਦੁਭਾਸ਼ੀਆ ਹੱਕ',
     rightsTitle: 'ਤੁਹਾਨੂੰ ਮੁਫ਼ਤ ਡਾਕਟਰੀ ਦੁਭਾਸ਼ੀਏ ਦਾ ਹੱਕ ਹੈ।',
     rightsBody:
@@ -727,6 +1053,48 @@ export const STRINGS: Record<string, UIStrings> = {
     tagline: 'ਆਪਣੇ ਡਾਕਟਰ ਨਾਲ ਗੱਲ ਕਰੋ — ਆਪਣੀ ਭਾਸ਼ਾ ਵਿੱਚ।',
     deleteLabel: 'ਮਿਟਾਓ',
     deleteConfirm: 'ਇਹ ਸੁਨੇਹਾ ਮਿਟਾਉਣਾ ਹੈ?',
+    gateChecking: 'ਸਹੀਪਣ ਦੀ ਜਾਂਚ ਹੋ ਰਹੀ ਹੈ…',
+    gateCaution: 'ਸ਼ਾਇਦ ਪੂਰੀ ਤਰ੍ਹਾਂ ਸਹੀ ਨਾ ਹੋਵੇ',
+    gateBlockTitle: 'ਇੱਕ ਵਾਰ ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ',
+    gateBlockBody: 'ਇਹ ਸਾਫ਼ ਸਮਝ ਨਹੀਂ ਆਇਆ। ਕਿਰਪਾ ਕਰਕੇ ਇਸਨੂੰ ਹੋਰ ਸ਼ਬਦਾਂ ਵਿੱਚ ਕਹੋ।',
+    gateEscalateTitle: 'ਦੁਭਾਸ਼ੀਆ ਮੰਗੋ',
+    gateEscalateBody: 'ਅਨੁਵਾਦ ਭਰੋਸੇਯੋਗ ਨਹੀਂ ਹੋ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਸਟਾਫ਼ ਤੋਂ ਮੈਡੀਕਲ ਦੁਭਾਸ਼ੀਆ ਮੰਗੋ।',
+    gateSayAgain: 'ਫਿਰ ਕਹੋ',
+    oneLanguage: 'ਇੱਕ ਭਾਸ਼ਾ',
+    detect: 'ਪਛਾਣੋ',
+    privacyShort: 'ਕੁਝ ਵੀ ਸੇਵ ਨਹੀਂ ਹੁੰਦਾ',
+    chosen: 'ਚੁਣਿਆ',
+    conversationLabel: 'ਗੱਲਬਾਤ',
+    exchanges: 'ਵਾਰ ਗੱਲਬਾਤ',
+    exchangeSingular: 'ਵਾਰ ਗੱਲਬਾਤ',
+    youLabel: 'ਤੁਸੀਂ',
+    forDoctor: 'ਆਪਣੇ ਡਾਕਟਰ ਲਈ',
+    forYou: 'ਤੁਹਾਡੇ ਲਈ',
+    viewTranscript: 'ਪੂਰਾ ਰਿਕਾਰਡ ਵੇਖੋ',
+    transcriptTitle: 'ਪੂਰਾ ਰਿਕਾਰਡ',
+    clearAll: 'ਮਿਟਾਓ',
+    clearAllConfirm: 'ਪੂਰੀ ਗੱਲਬਾਤ ਮਿਟਾਉਣੀ ਹੈ?',
+    patientTag: 'ਮਰੀਜ਼',
+    clinicianTag: 'ਡਾ',
+    patientWord: 'ਮਰੀਜ਼',
+    doctorWord: 'ਡਾਕਟਰ',
+    settingsTitle: 'ਸੈਟਿੰਗਾਂ',
+    speakAloudLabel: 'ਉੱਚੀ ਪੜ੍ਹੋ',
+    speakAloudHint: 'ਹਰ ਅਨੁਵਾਦ ਉੱਚੀ ਬੋਲੋ।',
+    voiceInputLabel: 'ਆਵਾਜ਼ ਨਾਲ ਇਨਪੁੱਟ',
+    voiceInputHint: 'ਬੋਲਣ ਲਈ ਮਾਈਕ੍ਰੋਫ਼ੋਨ ਵਰਤੋ।',
+    voiceInputOff: 'ਆਵਾਜ਼ ਇਨਪੁੱਟ ਬੰਦ ਹੈ — ਲਿਖੋ ਜਾਂ ਵਾਕ ਵਰਤੋ।',
+    idiomaLabel: 'ਭਾਸ਼ਾ',
+    changeShort: 'ਬਦਲੋ',
+    settingsLabel: 'ਸੈਟਿੰਗ',
+    inputModeLabel: 'ਇਨਪੁੱਟ ਮੋਡ',
+    appointmentLabel: 'ਮੁਲਾਕਾਤ',
+    timeLabel: 'ਸਮਾਂ',
+    turnsLabel: 'ਵਾਰੀ',
+    reasonLabel: 'ਕਾਰਨ',
+    symptomsLabel: 'ਲੱਛਣ',
+    nextStepsLabel: 'ਅਗਲੇ ਕਦਮ',
+    summaryDisclaimer: 'ਇਸ ਮੁਲਾਕਾਤ ਦੇ ਰਿਕਾਰਡ ਤੋਂ ਤਿਆਰ ਕੀਤਾ ਗਿਆ। ਆਪਣੇ ਡਾਕਟਰ ਨਾਲ ਇਸ ਦੀ ਸਮੀਖਿਆ ਕਰੋ।',
   },
 };
 

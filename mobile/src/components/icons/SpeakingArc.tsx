@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -18,8 +18,10 @@ import { motion, strokes } from '../../theme';
  */
 export function SpeakingArc({ size = 14, color, active }: { size?: number; color: string; active: boolean }) {
   const reducedMotion = useReducedMotion();
-  const arc1 = useRef(new Animated.Value(1)).current;
-  const arc2 = useRef(new Animated.Value(1)).current;
+  // Lazy state, not a ref: an Animated.Value read during render is exactly
+  // what react-hooks/refs forbids, and useState's initialiser runs once.
+  const [arc1] = useState(() => new Animated.Value(1));
+  const [arc2] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     if (!active || reducedMotion) {

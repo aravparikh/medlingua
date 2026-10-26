@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import {
   AudioModule,
   createAudioPlayer,
@@ -8,45 +9,92 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
   type AudioPlayer,
+  type AudioStatus,
 } from 'expo-audio';
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
 import * as Speech from 'expo-speech';
-import { AlertCircleIcon, ArrowDownIcon, ArrowForwardIcon, BodyIcon, BrandGlyph, CameraIcon, ChatIcon, CheckIcon, ChevronForwardIcon, CloseIcon, CloudOffIcon, DocumentIcon, ExpandIcon, EyeIcon, InfoIcon, LanguageIcon, LockIcon, MedkitIcon, MegaphoneIcon, PencilIcon, PeopleIcon, PersonIcon, RefreshIcon, ShieldIcon, SlowIcon, SparkleIcon, SpeakIcon, SpeakingArc, TrashIcon, TwoVoicesScene, UnderstandIcon } from '../components/icons';
+import { ChevronForwardIcon, CloudOffIcon, EyeIcon, GaugeIcon, InfoIcon, SpeakIcon, SparkleIcon, TrashIcon, UnderstandIcon } from '../components/icons';
 
 import { BODY_REGIONS, type BodyRegionId } from '../config/bodyRegions';
 import { ENGLISH, type Language } from '../config/languages';
-import { CLINICIAN_PHRASES, EMERGENCY_PHRASES, PATIENT_PHRASES, type Phrase } from '../config/phrases';
+import type { Phrase } from '../config/phrases';
 import { t } from '../i18n/strings';
 import {
-  clearSpokenAudio,
-  MissingKeyError,
-  readMedicationLabel,
-  simplify,
+    clearSpokenAudio,
+    MissingKeyError,
+    readMedicationLabel,
+    rephrase,
+    simplify,
   summarizeVisit,
   synthesize,
   transcribe,
   translate,
   TranslationError,
+  type FlaggedTerm,
   type MedLabelResult,
 } from '../services/openai';
+import { SAFEGUARD_ENABLED } from '../config/safeguard';
+import { gatedTranslate } from '../services/safeguard';
+import { isDisplayable, type GateVerdict } from '../services/safeguardDecision';
 import { playStopChime, releaseChimes } from '../services/chimes';
 import { loadPrefs, savePrefs } from '../services/storage';
-import { colors, displayFontFor, fonts, MIN_TARGET, radius, shadows, spacing, type } from '../theme';
+import { bilingual, fontFor, radius, spacing, tapTarget, typeCap, useTheme, type ColorTokens } from '../theme';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Appear } from '../components/Appear';
 import { BodyMapModal } from '../components/BodyMap';
 import { FullscreenTranslation } from '../components/FullscreenTranslation';
-import { LevelMeter } from '../components/LevelMeter';
-import { PressableScale } from '../components/PressableScale';
-import { Pulse } from '../components/Pulse';
 import { RightsCard } from '../components/RightsCard';
 import { SummaryModal, type SummaryState } from '../components/SummaryModal';
-import { TurnSkeleton } from '../components/Skeleton';
-import { AutoSpeakButton, SpeakButton } from '../components/SpeakButton';
+import { ActionIndex, Hero, Masthead, ModeControl, PrivacyLine, SpeakBar } from '../components/editorial/Editorial';
+import { Button } from '../components/ui/Button';
+import { Label } from '../components/ui/Label';
+import { ErrorNotice, HeldNotice, Translating } from '../components/conversation/Notices';
+import { PhraseSheet } from '../components/conversation/PhraseSheet';
+import { Sheet } from '../components/conversation/Sheet';
+import { RecordingPanel } from '../components/conversation/RecordingPanel';
+import { SpeakingBloom } from '../components/conversation/SpeakingBloom';
+import { ScanSheet } from '../components/conversation/ScanSheet';
+import { TeachBackDialog } from '../components/conversation/TeachBackDialog';
+import { ConversationBlock, TranscriptScreen } from '../components/conversation/Transcript';
+import { SageBackground } from '../components/sage/Sage';
+import { TypeSheet } from '../components/conversation/TypeSheet';
 
-type Phase = 'idle' | 'listening' | 'translating' | 'speaking';
+export type Phase = 'idle' | 'listening' | 'translating' | 'speaking';
+
+/**
+ * The AudioPlayer surface we use, typed from the SDK's own shapes. Declared
+ * here because TypeScript 6 drops the members AudioPlayer inherits from
+ * SharedObject (see the note at the listener call site).
+ */
+interface PlaybackSubscriber {
+  addListener(
+    event: 'playbackStatusUpdate',
+    listener: (status: AudioStatus) => void,
+  ): { remove(): void };
+  addListener(
+    event: 'audioSampleUpdate',
+    listener: (sample: { channels?: { frames?: number[] }[] }) => void,
+  ): { remove(): void };
+  isAudioSamplingSupported: boolean;
+  setAudioSamplingEnabled(enabled: boolean): void;
+}
+
+/**
+ * Root-mean-square of one sample buffer, scaled into the 0..1 the bloom wants.
+ * Speech rarely fills the range, so the gain lifts it into a band you can
+ * actually see; the bloom clamps anything over 1.
+ */
+function sampleLevel(frames: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < frames.length; i += 1) sum += frames[i] * frames[i];
+  return Math.min(1, Math.sqrt(sum / frames.length) * 3.4);
+}
+
+/** Sample callbacks arrive far faster than the screen can paint. */
+const SAMPLE_INTERVAL_MS = 60;
 
 export interface Turn {
   id: number;
@@ -56,6 +104,21 @@ export interface Turn {
   listener: Language;
   /** A verbatim name entry (no translation): renders as a single-name card. */
   isName?: boolean;
+  /** Confidence-gate verdict. Absent on turns the gate never saw (quick
+   * phrases, the body map, names) and when the safeguard is switched off. */
+  verdict?: GateVerdict;
+  /** Spans the model considered risky; highlighted inline on a CAUTION turn. */
+  flaggedTerms?: FlaggedTerm[];
+  confidence?: number | null;
+}
+
+/** An utterance the gate gave up on — recorded so the visit summary can say so. */
+export interface Escalation {
+  /** ISO-8601 UTC. */
+  at: string;
+  original: string;
+  reason: string;
+  attempts: number;
 }
 
 interface Props {
@@ -64,6 +127,10 @@ interface Props {
    * but memory-only: cleared on language change and gone when the app closes. */
   turns: Turn[];
   onTurnsChange: (turns: Turn[]) => void;
+  /** Utterances the confidence gate escalated, held alongside the transcript
+   * so they can be appended verbatim to the visit summary. */
+  escalations: Escalation[];
+  onEscalation: (escalation: Escalation) => void;
   onChangeLanguage: () => void;
   onShowAbout: () => void;
 }
@@ -95,10 +162,91 @@ function normalizeMetering(db: number): number {
   return Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
 }
 
-const formatElapsed = (ms: number) => {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-};
+/**
+ * One sage option row for the more-options sheet: mint icon circle, semibold
+ * title over a muted English echo, trailing chevron — or the destructive
+ * rose treatment with no chevron.
+ */
+function OptionRow({
+  icon,
+  title,
+  sub,
+  lang,
+  speechTag,
+  destructive = false,
+  disabled = false,
+  onPress,
+}: {
+  icon: ReactNode;
+  title: string;
+  sub?: string;
+  lang: string;
+  speechTag?: string;
+  destructive?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={sub ? `${title}. ${sub}` : title}
+      accessibilityLanguage={speechTag}
+      style={({ pressed }) => [
+        optionStyles.row,
+        destructive
+          ? { backgroundColor: colors.dangerBg, borderColor: colors.dangerBorder }
+          : { backgroundColor: colors.white },
+        pressed && optionStyles.pressed,
+        disabled && optionStyles.disabled,
+      ]}
+    >
+      <View style={[optionStyles.icon, { backgroundColor: destructive ? colors.white : colors.mintLight }]}>
+        {icon}
+      </View>
+      <View style={optionStyles.text}>
+        <Text
+          style={[{ fontSize: 16, lineHeight: 22 }, fontFor(lang, 'semibold'), { color: destructive ? colors.danger : colors.ink }]}
+          allowFontScaling
+          maxFontSizeMultiplier={typeCap.chrome}
+        >
+          {title}
+        </Text>
+        {sub ? (
+          <Text
+            style={[{ fontSize: 12, lineHeight: 17 }, fontFor('en'), { color: destructive ? colors.danger : colors.muted, opacity: destructive ? 0.8 : 1 }]}
+            allowFontScaling
+            maxFontSizeMultiplier={typeCap.chrome}
+          >
+            {sub}
+          </Text>
+        ) : null}
+      </View>
+      {destructive ? null : <ChevronForwardIcon size={14} color={colors.inkSoft} />}
+    </Pressable>
+  );
+}
+
+const optionStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 60,
+    borderRadius: radius.tile,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  icon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  text: { flex: 1, minWidth: 0 },
+  pressed: { opacity: 0.94 },
+  disabled: { opacity: 0.4 },
+});
+
 
 /**
  * The conversation screen — where 95% of usage happens. Two big buttons, one
@@ -108,7 +256,15 @@ const formatElapsed = (ms: number) => {
  * needs precision. The running thread makes the back-and-forth visible;
  * nothing is ever written to disk.
  */
-export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChangeLanguage, onShowAbout }: Props) {
+export function ConversationScreen({
+  otherLanguage,
+  turns,
+  onTurnsChange,
+  escalations,
+  onEscalation,
+  onChangeLanguage,
+  onShowAbout,
+}: Props) {
   // Metering powers the live level meter — real "I can hear you" feedback,
   // not a decorative pulse.
   const recorder = useAudioRecorder(RECORDING_OPTIONS);
@@ -123,11 +279,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [retryCtx, setRetryCtx] = useState<{ uri: string; who: Language | null } | null>(null);
   /** True after ~2s of near-silence while recording — shows "speak louder". */
   const [tooQuiet, setTooQuiet] = useState(false);
-  /** Dev-only: last recording's actual audio length (Whisper-measured), to
-   * confirm the recording is not being cut short. */
-  const [devAudioLen, setDevAudioLen] = useState<number | null>(null);
   const [autoMode, setAutoMode] = useState(() => loadPrefs().autoMode ?? false);
-  const [flipped, setFlipped] = useState(false);
+  // Both default on; About writes them and this screen remounts on the way back.
+  const [speakAloud] = useState(() => loadPrefs().speakAloud ?? true);
+  const [voiceInput] = useState(() => loadPrefs().voiceInput ?? true);
   const [phrasesOpen, setPhrasesOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [typedDraft, setTypedDraft] = useState('');
@@ -135,6 +290,8 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const [nameMode, setNameMode] = useState(false);
   /** Turn whose translation is blown up fullscreen; null when closed. */
   const [fullscreenTurn, setFullscreenTurn] = useState<Turn | null>(null);
+  // Replay, slow replay, show and check moved off the live line into a sheet.
+  const [optionsTurn, setOptionsTurn] = useState<Turn | null>(null);
   /** Teach-back flow. ask → (no) → loading2 → ask2 → (no) → failed. */
   const [teach, setTeach] = useState<{
     stage: 'loading' | 'ask' | 'loading2' | 'ask2' | 'failed' | 'error';
@@ -156,6 +313,60 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     | null
   >(null);
   const [showDisclaimer, setShowDisclaimer] = useState(() => !(loadPrefs().disclaimerSeen ?? false));
+  /** Confidence gate: which stage of the two-step check is running, if any. */
+  const [gateStage, setGateStage] = useState<'translating' | 'checking' | null>(null);
+  /** A withheld translation. The text is deliberately NOT carried here — a
+   * blocked translation is never put on screen, not even greyed out. */
+  const [gateHeld, setGateHeld] = useState<{ stage: 'block' | 'escalate'; speaker: Language } | null>(null);
+  /**
+   * Consecutive blocked attempts at getting the CURRENT thing across. Reset the
+   * moment anything gets through, so a difficult sentence never escalates the
+   * next one — this is a per-utterance count, never a running total for the visit.
+   */
+  const blockStreakRef = useRef(0);
+  /** Live amplitude of the voice the app is playing, 0..1; null when silent. */
+  const [playbackLevel, setPlaybackLevel] = useState<number | null>(null);
+  /** The pushed transcript screen. */
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptEver, setTranscriptEver] = useState(false);
+  /** Where the summary was opened from, so ATRÁS returns there. */
+  const [summaryFrom, setSummaryFrom] = useState<'home' | 'transcript'>('home');
+  const reduceMotion = useReducedMotion();
+  const { width: winWidth } = useWindowDimensions();
+  /**
+   * Push position: 0 home, 1 transcript, 2 summary. The incoming screen
+   * slides from translateX 100% to 0 over 320ms with Easing.bezier(.32,.72,0,1)
+   * while the outgoing screen moves to −16% and fades to 0. Nothing unmounts:
+   * the transcript stays mounted once opened and the summary stays mounted
+   * once it has content.
+   */
+  const [pushAnim] = useState(() => new Animated.Value(0));
+  const route: 'home' | 'transcript' | 'summary' =
+    summary !== null ? 'summary' : transcriptOpen ? 'transcript' : 'home';
+  const routeIndex = route === 'home' ? 0 : route === 'transcript' ? 1 : 2;
+
+  useEffect(() => {
+    Animated.timing(pushAnim, {
+      toValue: routeIndex,
+      duration: reduceMotion ? 0 : 320,
+      easing: Easing.bezier(0.32, 0.72, 0, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [routeIndex, reduceMotion, pushAnim]);
+
+  const goHome = () => {
+    setTranscriptOpen(false);
+    setConfirmingClear(false);
+    setSummary(null);
+  };
+  const goTranscript = () => {
+    setSummary(null);
+    setTranscriptEver(true);
+    setTranscriptOpen(true);
+    setConfirmingClear(false);
+  };
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const lastSampleAtRef = useRef(0);
   /** Interpreter-rights card — reachable from the teach-back dead end. */
   const [rightsOpen, setRightsOpen] = useState(false);
   /** Turn awaiting delete confirmation; null when nothing is pending. */
@@ -181,7 +392,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   const speakSessionRef = useRef(0);
   const lastPhraseAtRef = useRef(0);
   /** Rapid double-taps on API-firing buttons must not fire twice (same 600ms
-   * window usePhrase uses). */
+   * window speakPhrase uses). */
   const lastActionAtRef = useRef(0);
   /** Pending sheet→modal handoff (see the body-map hero card). */
   const modalSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,7 +400,6 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const en = t('en');
   const other = t(otherLanguage.code);
-  const latestTurn = turns.length > 0 ? turns[turns.length - 1] : null;
 
   /** Recorder metering is in dB (≈ -160 silent … 0 loudest); normal speech at
    * arm's length sits around -30 to -15. Normalized to 0..1 for the meter;
@@ -249,7 +459,6 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const addTurn = (turn: Turn) => {
     onTurnsChange([...turns, turn]);
-    setFlipped(false);
   };
 
   /**
@@ -356,15 +565,71 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     }
   };
 
+  /**
+   * Translates one utterance through the confidence gate.
+   *
+   * Returns the turn to display, or null when the gate withheld it — in which
+   * case the held-state UI is already showing and NOTHING is spoken. Speaking a
+   * translation the gate rejected would be the worst failure this app has, so
+   * TTS only ever happens on a turn this function actually returned.
+   *
+   * With SAFEGUARD_ENABLED false this is the original single-call path.
+   */
+  const translateThroughGate = async (
+    text: string,
+    from: Language,
+    to: Language,
+  ): Promise<Turn | null> => {
+    if (!SAFEGUARD_ENABLED) {
+      const translation = await translate(text, from, to);
+      return { id: Date.now(), original: text, translation, speaker: from, listener: to };
+    }
+
+    setGateHeld(null);
+    setGateStage('translating');
+    try {
+      const result = await gatedTranslate(text, from, to, blockStreakRef.current, () =>
+        setGateStage('checking'),
+      );
+
+      if (!isDisplayable(result.verdict)) {
+        blockStreakRef.current += 1;
+        if (result.verdict === 'escalate') {
+          onEscalation({
+            at: new Date().toISOString(),
+            original: text,
+            reason: result.reason ?? 'repeated-blocks',
+            attempts: blockStreakRef.current,
+          });
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        setGateHeld({ stage: result.verdict === 'escalate' ? 'escalate' : 'block', speaker: from });
+        return null;
+      }
+
+      // Something got through: this utterance is no longer in trouble.
+      blockStreakRef.current = 0;
+      return {
+        id: Date.now(),
+        original: text,
+        translation: result.translation,
+        speaker: from,
+        listener: to,
+        verdict: result.verdict,
+        flaggedTerms: result.flaggedTerms,
+        confidence: result.confidence,
+      };
+    } finally {
+      setGateStage(null);
+    }
+  };
+
   /** Transcribe → translate → speak. Shared by the normal flow and "Try again". */
   const processRecording = async (uri: string, who: Language | null) => {
     setPhase('translating');
     setError(null);
     try {
-      const { text, detectedCode, lowConfidence, durationSec } = await transcribe(uri, who);
-      // Dev diagnostic: the actual captured audio length. If this is ~1s while
-      // you spoke for several, the recording is being cut short (not Whisper).
-      if (__DEV__) setDevAudioLen(durationSec);
+      const { text, detectedCode, lowConfidence } = await transcribe(uri, who);
       if (lowConfidence) {
         // Whisper wasn't sure what it heard. Asking to repeat beats
         // confidently speaking a possibly-wrong translation.
@@ -375,17 +640,38 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       }
       // In auto mode the speaker is whoever Whisper heard: English, or if not
       // English (or unrecognized), the other language of the pair.
+      if (!text.trim()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError('didntCatch');
+        setPhase('idle');
+        return;
+      }
       const speakerLang = who ?? (detectedCode === 'en' ? ENGLISH : otherLanguage);
       const listener = speakerLang.code === 'en' ? otherLanguage : ENGLISH;
-      const translation = await translate(text, speakerLang, listener);
-
-      const turn: Turn = { id: Date.now(), original: text, translation, speaker: speakerLang, listener };
-      addTurn(turn);
+      const turn = await translateThroughGate(text, speakerLang, listener);
+      // A turn with nothing in it renders as a bare timestamp and tells the
+      // reader nothing, so it is treated as a miss rather than added. Reaching
+      // here means transcription or translation returned blank despite not
+      // throwing; dev builds say which.
+      if (turn && !turn.translation.trim()) {
+        if (__DEV__) setSetupError(`empty translation for "${text}"`);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError('didntCatch');
+        setPhase('idle');
+        return;
+      }
       setRetryCtx(null);
-      // The turn is safely in memory — the audio file has served its purpose.
+      // The audio has served its purpose either way: a withheld translation is
+      // re-attempted by speaking again, never by re-running the same recording.
       discardRecordingFile(uri);
+      if (!turn) {
+        // The gate withheld it. Nothing is shown and nothing is spoken.
+        setPhase('idle');
+        return;
+      }
+      addTurn(turn);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await speak(translation, listener, turn.id);
+      await speak(turn.translation, listener, turn.id);
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setPhase('idle');
@@ -424,6 +710,10 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
    * the on-device voice answers immediately instead of waiting on a dead fetch.
    */
   const speak = async (text: string, language: Language, turnId: number, slow = false) => {
+    if (!speakAloud) {
+      setPhase('idle');
+      return;
+    }
     const session = speakSessionRef.current;
     setPhase('speaking');
     // Re-assert playback mode: a recording may have routed audio to the quiet
@@ -442,11 +732,38 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
       // Slow audio is never registered for instant replay — "Play again"
       // must always mean the normal pace.
       playerTurnIdRef.current = slow ? null : turnId;
-      player.addListener('playbackStatusUpdate', (status) => {
-        if (status.didJustFinish) setPhase('idle');
+      // AudioPlayer inherits addListener from SharedObject -> EventEmitter, but
+      // under TypeScript 6 that generic chain (SharedObject<Record<never, never>>
+      // feeding EventEmitter<EventsMap>) fails to resolve, so the inherited
+      // members are missing from the published type. The API itself is correct
+      // and unchanged: the SDK 57 docs still document
+      // addListener('playbackStatusUpdate') as the way to observe an
+      // imperatively created player. Asserted narrowly, not to `any`, so the
+      // status argument stays typed.
+      const subscriber = player as unknown as PlaybackSubscriber;
+      subscriber.addListener('playbackStatusUpdate', (status) => {
+        if (status.didJustFinish) {
+          setPhase('idle');
+          setPlaybackLevel(null);
+        }
       });
+      // Drive the bloom from the voice actually coming out of the speaker, so
+      // the light moves with the words rather than on a timer. Not every
+      // platform can sample playback; where it cannot, the bloom keeps
+      // breathing and simply does not react to peaks.
+      if (subscriber.isAudioSamplingSupported) {
+        subscriber.setAudioSamplingEnabled(true);
+        subscriber.addListener('audioSampleUpdate', (sample) => {
+          const now = Date.now();
+          if (now - lastSampleAtRef.current < SAMPLE_INTERVAL_MS) return;
+          lastSampleAtRef.current = now;
+          const frames = sample.channels?.[0]?.frames;
+          if (frames?.length) setPlaybackLevel(sampleLevel(frames));
+        });
+      }
       player.play();
     } else {
+      setPlaybackLevel(null);
       Speech.speak(text, {
         language: language.speechTag,
         rate: slow ? 0.65 : 1,
@@ -468,6 +785,27 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     await speak(turn.translation, turn.listener, turn.id, true);
   };
 
+  /**
+   * "Say differently": restates a turn's translation with plainer wording and
+   * speaks it. Ephemeral like slow replay — spoken, never added as a turn.
+   * The negative id keeps the replay path from mistaking this audio for the
+   * turn's cached normal-pace audio.
+   */
+  const playTurnRephrased = async (turn: Turn) => {
+    if (phase !== 'idle' || offline) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    stopAllAudio();
+    setPhase('translating');
+    try {
+      const restatement = await rephrase(turn.translation, turn.listener);
+      await speak(restatement, turn.listener, -turn.id);
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setPhase('idle');
+      setError('connectionError');
+    }
+  };
+
   /** Replays any turn. The turn whose audio is loaded replays instantly; others re-synthesize. */
   const playTurn = async (turn: Turn) => {
     if (phase !== 'idle') return;
@@ -483,7 +821,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   };
 
   /** Speaks a pre-translated quick phrase — instant, no network required. */
-  const usePhrase = async (phrase: Phrase, who: Language) => {
+  const speakPhrase = async (phrase: Phrase, who: Language) => {
     if (phase === 'listening' || phase === 'translating') return;
     // Rapid double-taps while the sheet closes must not add duplicate turns.
     if (Date.now() - lastPhraseAtRef.current < 600) return;
@@ -506,7 +844,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   };
 
   /** Translate + speak typed text — the fallback for loud rooms or a failing mic. */
-  const useTypedText = async (who: Language) => {
+  const sendTypedText = async (who: Language) => {
     const text = typedDraft.trim();
     if (!text || phase === 'listening' || phase === 'translating' || doubleTapped()) return;
     setTypeOpen(false);
@@ -531,11 +869,15 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
     setPhase('translating');
     try {
       const listener = who.code === 'en' ? otherLanguage : ENGLISH;
-      const translation = await translate(text, who, listener);
-      const turn: Turn = { id: Date.now(), original: text, translation, speaker: who, listener };
+      const turn = await translateThroughGate(text, who, listener);
+      if (!turn) {
+        // Withheld by the gate: the held-state card is showing instead.
+        setPhase('idle');
+        return;
+      }
       addTurn(turn);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await speak(translation, listener, turn.id);
+      await speak(turn.translation, listener, turn.id);
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setPhase('idle');
@@ -553,7 +895,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
   };
 
   /** Speaks "My pain is n out of 10" for the tapped number — patient side. */
-  const usePainNumber = async (n: number) => {
+  const speakPainNumber = async (n: number) => {
     const phrase: Phrase = {
       id: `pain-${n}`,
       icon: 'speedometer-outline',
@@ -561,7 +903,7 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         ['en', otherLanguage.code].map((code) => [code, t(code).painIs.replace('{n}', String(n))]),
       ),
     };
-    await usePhrase(phrase, otherLanguage);
+    await speakPhrase(phrase, otherLanguage);
   };
 
   /** True when this tap follows another API-firing tap within 600ms. */
@@ -754,7 +1096,22 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
         otherLanguage,
       );
       // The disclaimer travels with the summary wherever it is copied/shared.
-      setSummary({ status: 'ready', text: `${text}\n\n${other.aiDisclaimer}\n${en.aiDisclaimer}` });
+      // Escalations are appended here, deterministically, rather than being
+      // fed to the model: summarizeVisit validates its own output against the
+      // transcript, and a note about something that never got translated has
+      // no transcript line to ground it. Assembling it in code also means the
+      // wording cannot be paraphrased away by a retry.
+      const escalationBlock =
+        escalations.length > 0
+          ? `\n\n${other.gateEscalateTitle}\n${en.gateEscalateTitle}\n` +
+            escalations
+              .map((e) => `• "${e.original}" — not translated reliably after ${e.attempts} attempts`)
+              .join('\n')
+          : '';
+      setSummary({
+        status: 'ready',
+        text: `${text}${escalationBlock}\n\n${other.aiDisclaimer}\n${en.aiDisclaimer}`,
+      });
     } catch {
       setSummary({ status: 'error' });
     }
@@ -803,2377 +1160,542 @@ export function ConversationScreen({ otherLanguage, turns, onTurnsChange, onChan
 
   const recordingPanelVisible = phase === 'listening';
 
-  /** Recording-panel strings: the speaker's own language, English secondary.
-   * Auto mode (speaker unknown) falls back to the bilingual pair. */
-  const rec = speaker ? t(speaker.code) : other;
+
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
+  const pendingRole = speaker == null || speaker.code === 'en' ? 'clinician' : 'patient';
+
+  // The warm light is on whenever the app has the floor: hearing someone, or
+  // speaking a translation aloud. Not while it is merely thinking.
+  const voiceActive = phase === 'listening' || phase === 'speaking';
+  // Listening shows the room; speaking shows the app's own voice.
+  const bloomLevel = phase === 'listening' ? meterLevel : phase === 'speaking' ? playbackLevel : null;
+
+  // Push interpolations: incoming slides from 100% to 0 while the outgoing
+  // screen retreats to −16% and fades. Parked screens sit at +100%.
+  const homeX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0, -0.16 * winWidth, -0.16 * winWidth] });
+  const homeOpacity = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0, 0] });
+  const transcriptX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [winWidth, 0, -0.16 * winWidth] });
+  const transcriptOpacity = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 1, 0] });
+  const summaryX = pushAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [winWidth, winWidth, 0] });
 
   return (
-    <View style={styles.screen}>
-      {/* Header: quiet utility chips — the speak buttons are the focal point. */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={onChangeLanguage}
-          disabled={busy}
-          accessibilityRole="button"
-          accessibilityLabel={`${other.changeLanguage} — ${en.changeLanguage}`}
-          style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
-        >
-          <LanguageIcon  size={20} color={colors.textMuted} />
-          <View>
-            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
-              {other.languageShort}
-            </Text>
-            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
-              {en.languageShort}
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable
-          onPress={onShowAbout}
-          disabled={busy}
-          accessibilityRole="button"
-          accessibilityLabel={`${other.about} — ${en.about}`}
-          style={({ pressed }) => [styles.headerChip, pressed && styles.pressedDim, busy && styles.dimmed]}
-        >
-          <InfoIcon  size={20} color={colors.textMuted} />
-          <View>
-            <Text style={styles.headerChipText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
-              {other.aboutShort}
-            </Text>
-            <Text style={styles.headerChipTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1}>
-              {en.aboutShort}
-            </Text>
-          </View>
-        </Pressable>
-      </View>
+    <SageBackground>
+      <Animated.ScrollView
+        style={[s.homeLayer, { transform: [{ translateX: homeX }], opacity: homeOpacity }]}
+        contentContainerStyle={s.homeContent}
+        showsVerticalScrollIndicator={false}
+      >
+      {recordingPanelVisible ? (
+        <Appear style={s.listening}>
+          <RecordingPanel
+            speaker={speaker}
+            otherLanguage={otherLanguage}
+            detecting={autoMode}
+            elapsedMs={recorderState.durationMillis}
+            level={meterLevel}
+            tooQuiet={tooQuiet}
+            onDone={() => void finishListening()}
+            onCancel={() => void cancelListening()}
+            onChangeLanguage={onChangeLanguage}
+            onSettings={onShowAbout}
+          />
+        </Appear>
+      ) : (
+      <>
+      <SpeakingBloom active={voiceActive} level={bloomLevel} />
 
-      {/* Offline: a calm heads-up, not an alarm — and a pointer to what still works. */}
+      {/* Header: the patient's language, the auto-detect toggle, about. */}
+      <Masthead
+        language={otherLanguage}
+        detecting={autoMode}
+        disabled={busy}
+        onChangeLanguage={onChangeLanguage}
+        onSettings={onShowAbout}
+      />
+
       {offline ? (
-        <Appear style={styles.offlineBanner} accessibilityLiveRegion="polite">
-          <CloudOffIcon  size={22} color={colors.textMuted} />
-          <View style={styles.offlineBody}>
-            <Text
-              style={styles.offlineText}
-              accessibilityLanguage={otherLanguage.speechTag}
-              allowFontScaling
-              maxFontSizeMultiplier={1.3}
-            >
-              {other.offlineLine}
-            </Text>
-            <Text style={styles.offlineTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {en.offlineLine}
-            </Text>
-          </View>
+        <Appear style={s.banner} accessibilityLiveRegion="polite">
+          <CloudOffIcon size={22} color={colors.ink2} />
+          <Label {...bilingual(other.offlineLine, en.offlineLine)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="caption" tone="ink2" style={s.bannerText} />
         </Appear>
       ) : null}
 
-      {/* First-session honesty banner: AI translation has limits. It yields
-         while recording — the tall banner would otherwise push the Done
-         button off a 375×812 screen on a first-run recording. */}
+      {/* First-session honesty: AI translation has limits. Yields while recording
+         so the tall banner never pushes Done off a small screen. */}
       {showDisclaimer && !recordingPanelVisible ? (
-        <View style={styles.disclaimer}>
-          <InfoIcon  size={22} color={colors.secondary} />
-          <View style={styles.disclaimerBody}>
-            <Text
-              style={styles.disclaimerText}
-              accessibilityLanguage={otherLanguage.speechTag}
-              allowFontScaling
-              maxFontSizeMultiplier={1.3}
-            >
-              {other.aiDisclaimer}
-            </Text>
-            <Text style={styles.disclaimerTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {en.aiDisclaimer}
-            </Text>
-            <Text
-              style={styles.disclaimerText}
-              accessibilityLanguage={otherLanguage.speechTag}
-              allowFontScaling
-              maxFontSizeMultiplier={1.3}
-            >
-              {other.dataConsent}
-            </Text>
-            <Text style={styles.disclaimerTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {en.dataConsent}
-            </Text>
+        <View style={s.disclaimer}>
+          <View style={s.banner}>
+            <InfoIcon size={22} color={colors.ink2} />
+            <View style={s.bannerText}>
+              <Label {...bilingual(other.aiDisclaimer, en.aiDisclaimer)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="caption" />
+              <Label {...bilingual(other.dataConsent, en.dataConsent)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} size="caption" />
+            </View>
           </View>
-          <Pressable
-            onPress={dismissDisclaimer}
-            accessibilityRole="button"
-            accessibilityLabel={`${other.ok} — ${en.ok}`}
-            style={({ pressed }) => [styles.disclaimerOk, pressed && styles.pressedDim]}
-          >
-            <Text style={styles.disclaimerOkText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {other.ok === en.ok ? en.ok : `${other.ok} · ${en.ok}`}
-            </Text>
-          </Pressable>
+          <Button label={bilingual(other.ok, en.ok)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} variant="outline" onPress={dismissDisclaimer} style={s.disclaimerOk} />
         </View>
       ) : null}
 
-      {/* F3: the visit summary pill — appears once there is enough to summarize. */}
-      {turns.length >= 2 ? (
-        <View style={styles.summaryRow}>
-          <PressableScale
-            onPress={() => openSummary(turns)}
-            disabled={busy || offline}
-            accessibilityRole="button"
-            accessibilityLabel={`${other.summary} — ${en.summary}`}
-            style={[styles.summaryPill, (busy || offline) && styles.dimmed]}
-          >
-            <DocumentIcon  size={18} color={colors.primary} />
-            <Text style={styles.summaryPillText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {other.summary === en.summary ? en.summary : `${other.summary} · ${en.summary}`}
-            </Text>
-          </PressableScale>
-        </View>
-      ) : null}
+      {/* The visit so far once it exists; the hero headline before that.
+         The whole ledger is one tap behind the card. */}
+      {turns.length > 0 ? (
+        <ConversationBlock
+          turns={turns}
+          otherLanguage={otherLanguage}
+          onOpen={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setTranscriptEver(true);
+            setTranscriptOpen(true);
+          }}
+          onPlayTurn={(turn) => {
+            void playTurn(turn);
+          }}
+        />
+      ) : (
+        <Hero language={otherLanguage} />
+      )}
 
-      {/* The conversation thread. */}
+      {/* The live line and anything transient beneath it. */}
       <ScrollView
         ref={scrollRef}
-        style={styles.thread}
-        contentContainerStyle={[styles.threadContent, turns.length === 0 && styles.threadEmpty]}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        scrollEnabled={false}
+        // The block takes the screen's slack once it exists; before that there
+        // is no block, so the thread has to take it or the whole column
+        // collapses to the top and leaves dead space under the footer.
+        style={[s.thread, turns.length === 0 && s.threadFill]}
+        contentContainerStyle={[s.threadContent, turns.length === 0 && s.threadEmpty]}
+        // Jump, don't glide: the live line must be fully in view the moment it
+        // exists, and a smooth scroll can finish before a taller row has laid out.
+        onContentSizeChange={() => requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: false }))}
       >
-        {__DEV__ && devAudioLen != null ? (
-          <Text style={styles.meterDebug}>{`last recording: ${devAudioLen.toFixed(1)}s of audio`}</Text>
-        ) : null}
-        {turns.map((turn) => {
-          const isLatest = turn.id === latestTurn?.id;
-          const fromEnglish = turn.speaker.code === 'en';
-          // Latest clinician turns carry three actions — too many for one row
-          // at 375pt, so the play pill gets its own row and the other two share.
-          // Name cards get neither flip nor teach-back — just play again.
-          const hasCheck = isLatest && fromEnglish && !turn.isName;
-          const flipPill = isLatest && !turn.isName ? (
-            <PressableScale
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setFlipped(!flipped);
-              }}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: flipped }}
-              accessibilityLabel={`${t(turn.listener.code).flip} — ${en.flip}`}
-              flexFill
-              style={[styles.turnButton, flipped && styles.turnButtonActive]}
-            >
-              <EyeIcon  size={20} color={colors.primary} />
-              <View style={styles.turnButtonLabels}>
-                <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                  {t(turn.listener.code).flip}
-                </Text>
-                {turn.listener.code !== 'en' ? (
-                  <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                    {en.flip}
-                  </Text>
-                ) : null}
-              </View>
-            </PressableScale>
-          ) : null;
-          return (
-            <Appear
-              key={turn.id}
-              style={[
-                styles.turnCard,
-                fromEnglish ? styles.turnLeft : styles.turnRight,
-                isLatest && styles.turnLatest,
-                isLatest && (fromEnglish ? styles.turnLatestLeft : styles.turnLatestRight),
-              ]}
-            >
-              <View style={styles.speakerRow}>
-                <View
-                  style={[styles.monogramChip, !fromEnglish && styles.monogramChipSecondary]}
-                  importantForAccessibility="no"
-                >
-                  <Text style={[styles.monogramText, !fromEnglish && styles.monogramTextSecondary]} allowFontScaling maxFontSizeMultiplier={1.2}>
-                    {turn.speaker.monogram}
-                  </Text>
-                </View>
-                <Text style={styles.originalLabel} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.speaker.speechTag}>
-                  {turn.isName ? `${t(turn.speaker.code).nameLabel} · ${en.nameLabel}` : t(turn.speaker.code).youSaid}
-                </Text>
-                <View style={styles.speakerSpacer} />
-                {/* Quiet by design: faint, small, and behind a confirm — a
-                   stray tap must never wipe what someone just said. */}
-                <PressableScale
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setConfirmDeleteId(confirmDeleteId === turn.id ? null : turn.id);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${t(turn.speaker.code).deleteLabel} — ${en.deleteLabel}`}
-                  style={styles.turnDelete}
-                >
-                  <TrashIcon size={18} color={colors.textFaint} />
-                </PressableScale>
-              </View>
-              {turn.original ? (
-                <Text style={styles.originalText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.speaker.speechTag}>
-                  {turn.original}
-                </Text>
-              ) : null}
-
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setFullscreenTurn(turn);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${t(turn.listener.code).fullscreen} — ${en.fullscreen}`}
-                style={({ pressed }) => [
-                  styles.translationBlock,
-                  flipped && isLatest && styles.flippedBlock,
-                  pressed && styles.pressedDim,
-                ]}
-              >
-                <View style={styles.translationLabelRow}>
-                  {turn.isName ? (
-                    <View />
-                  ) : (
-                    <View style={styles.translationLabelWrap}>
-                      {/* The sound arc on the live turn — it ripples while
-                         this line is actually being spoken aloud. */}
-                      {isLatest ? (
-                        <SpeakingArc size={14} color={colors.accent} active={phase === 'speaking'} />
-                      ) : null}
-                      <Text style={styles.translationLabel} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={turn.listener.speechTag}>
-                        {t(turn.listener.code).translationLabel}
-                      </Text>
-                    </View>
-                  )}
-                  <ExpandIcon size={16} color={colors.textFaint} importantForAccessibility="no" />
-                </View>
-                <Text
-                  style={isLatest ? styles.translationText : styles.translationTextOld}
-                  accessibilityLanguage={turn.listener.speechTag}
-                  accessibilityLiveRegion={isLatest ? 'polite' : 'none'}
-                >
-                  {turn.translation}
-                </Text>
-              </Pressable>
-
-              <View style={styles.turnActionsWrap}>
-                {confirmDeleteId === turn.id ? (
-                  /* Confirm in place: no modal to dismiss, and the message
-                     stays on screen while the person decides. */
-                  <Appear style={styles.deleteConfirm} accessibilityLiveRegion="polite">
-                    <Text
-                      style={styles.deleteConfirmText}
-                      accessibilityLanguage={turn.speaker.speechTag}
-                      allowFontScaling
-                      maxFontSizeMultiplier={2}
-                    >
-                      {t(turn.speaker.code).deleteConfirm}
-                    </Text>
-                    {turn.speaker.code !== 'en' ? (
-                      <Text style={styles.deleteConfirmTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                        {en.deleteConfirm}
-                      </Text>
-                    ) : null}
-                    <View style={styles.turnActions}>
-                      <PressableScale
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setConfirmDeleteId(null);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t(turn.speaker.code).cancel} — ${en.cancel}`}
-                        flexFill
-                        style={styles.turnButton}
-                      >
-                        <View style={styles.turnButtonLabels}>
-                          <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                            {t(turn.speaker.code).cancel}
-                          </Text>
-                          {turn.speaker.code !== 'en' ? (
-                            <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                              {en.cancel}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </PressableScale>
-                      <PressableScale
-                        onPress={() => deleteTurn(turn)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t(turn.speaker.code).deleteLabel} — ${en.deleteLabel}`}
-                        flexFill
-                        style={[styles.turnButton, styles.turnButtonDanger]}
-                      >
-                        <TrashIcon size={20} color={colors.dangerText} />
-                        <View style={styles.turnButtonLabels}>
-                          <Text
-                            style={[styles.turnButtonText, styles.turnButtonTextDanger]}
-                            allowFontScaling
-                            maxFontSizeMultiplier={2}
-                          >
-                            {t(turn.speaker.code).deleteLabel}
-                          </Text>
-                          {turn.speaker.code !== 'en' ? (
-                            <Text
-                              style={[styles.turnButtonTextEn, styles.turnButtonTextDanger]}
-                              allowFontScaling
-                              maxFontSizeMultiplier={2}
-                            >
-                              {en.deleteLabel}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </PressableScale>
-                    </View>
-                  </Appear>
-                ) : (
-                  <>
-                <View style={styles.turnActions}>
-                  <PressableScale
-                    onPress={() => playTurn(turn)}
-                    disabled={phase !== 'idle'}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t(turn.listener.code).playAgain} — ${en.playAgain}`}
-                    flexFill
-                    style={[styles.turnButton, phase !== 'idle' && !(isLatest && phase === 'speaking') && styles.dimmed]}
-                  >
-                    <SpeakIcon  size={20} color={colors.primary} />
-                    <View style={styles.turnButtonLabels}>
-                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                        {isLatest && phase === 'speaking'
-                          ? t(turn.listener.code).playing
-                          : t(turn.listener.code).playAgain}
-                      </Text>
-                      {turn.listener.code !== 'en' ? (
-                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                          {isLatest && phase === 'speaking' ? en.playing : en.playAgain}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </PressableScale>
-                  <PressableScale
-                    onPress={() => playTurnSlow(turn)}
-                    disabled={phase !== 'idle'}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t(turn.listener.code).slowLabel} — ${en.slowLabel}`}
-                    flexFill
-                    style={[styles.turnButton, phase !== 'idle' && styles.dimmed]}
-                  >
-                    <SlowIcon  size={20} color={colors.primary} />
-                    <View style={styles.turnButtonLabels}>
-                      <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                        {t(turn.listener.code).slowLabel}
-                      </Text>
-                      {turn.listener.code !== 'en' ? (
-                        <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                          {en.slowLabel}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </PressableScale>
-                </View>
-                {isLatest && !turn.isName && (
-                  <View style={styles.turnActions}>
-                    {flipPill}
-                    {hasCheck ? (
-                      <PressableScale
-                        onPress={() => startTeachBack(turn)}
-                        disabled={phase !== 'idle' || offline}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${other.checkLabel} — ${en.checkLabel}`}
-                        flexFill
-                        style={[styles.turnButton, (phase !== 'idle' || offline) && styles.dimmed]}
-                      >
-                        <UnderstandIcon  size={20} color={colors.primary} />
-                        <View style={styles.turnButtonLabels}>
-                          <Text style={styles.turnButtonText} allowFontScaling maxFontSizeMultiplier={2}>
-                            {other.checkLabel}
-                          </Text>
-                          <Text style={styles.turnButtonTextEn} allowFontScaling maxFontSizeMultiplier={2}>
-                            {en.checkLabel}
-                          </Text>
-                        </View>
-                      </PressableScale>
-                    ) : null}
-                  </View>
-                )}
-                  </>
-                )}
-              </View>
-            </Appear>
-          );
-        })}
+        {/* No live line here. The home screen is the block, the mode
+           control, the index and the two bars — the newest turn shows as the
+           last exchange in the block, and its actions live on the transcript,
+           one tap behind VER TRANSCRIPCIÓN COMPLETA. */}
 
         {error ? (
-          <Appear style={styles.errorCard} accessibilityLiveRegion="assertive">
-            <AlertCircleIcon  size={26} color={colors.dangerText} />
-            <View style={styles.errorBody}>
-              <Text style={styles.errorText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                {other[error]}
-              </Text>
-              <Text style={styles.errorTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en[error]}</Text>
-              {__DEV__ && setupError ? <Text style={styles.errorDetail} allowFontScaling maxFontSizeMultiplier={2}>{setupError}</Text> : null}
-              {error === 'connectionError' && retryCtx ? (
-                <PressableScale
-                  onPress={retryLast}
-                  disabled={phase !== 'idle'}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${other.tryAgain} — ${en.tryAgain}`}
-                  style={[styles.retryButton, phase !== 'idle' && styles.dimmed]}
-                >
-                  <RefreshIcon  size={20} color={colors.dangerText} />
-                  <Text style={styles.retryText} allowFontScaling maxFontSizeMultiplier={2}>
-                    {other.tryAgain} · {en.tryAgain}
-                  </Text>
-                </PressableScale>
-              ) : null}
-            </View>
+          <Appear>
+            <ErrorNotice
+              primary={other[error]}
+              secondary={en[error]}
+              otherLanguage={otherLanguage}
+              detail={setupError}
+              onRetry={error === 'connectionError' && retryCtx ? retryLast : undefined}
+              retryDisabled={phase !== 'idle'}
+            />
           </Appear>
         ) : null}
 
         {phase === 'translating' ? (
-          <Appear style={styles.pendingWrap}>
-            <TurnSkeleton alignRight={speaker != null && speaker.code !== 'en'} />
-            <View style={styles.pendingCaption} accessibilityLiveRegion="polite">
-              <Text style={styles.pendingText} allowFontScaling maxFontSizeMultiplier={2}>{other.translating}</Text>
-              <Text style={styles.pendingTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.translating}</Text>
-            </View>
+          <Appear>
+            <Translating stage={gateStage === 'checking' ? 'checking' : 'translating'} role={pendingRole} otherLanguage={otherLanguage} />
+          </Appear>
+        ) : null}
+
+        {gateHeld ? (
+          <Appear>
+            <HeldNotice
+              stage={gateHeld.stage}
+              speaker={gateHeld.speaker}
+              otherLanguage={otherLanguage}
+              onSayAgain={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setGateHeld(null);
+                startTap(gateHeld.speaker);
+              }}
+              onShowRights={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setGateHeld(null);
+                blockStreakRef.current = 0;
+                setRightsOpen(true);
+              }}
+            />
           </Appear>
         ) : null}
 
         {turns.length === 0 && !error && !setupError && phase === 'idle' ? (
-          <Appear style={styles.hint}>
-            {/* The disclaimer banner already fills the top of a first-run
-               screen — drop the decorative mic circle so the instruction and
-               its arrow stay above the fold. */}
-            {!showDisclaimer ? (
-              /* Two capsule figures, the sound arc between them — the promise
-                 as a picture: two people, two languages, one conversation. */
-              <TwoVoicesScene width={272} style={styles.hintScene} />
-            ) : null}
-            {/* The promise first, in the patient's own language — then how. */}
-            <Text
-              style={[styles.hintTagline, { fontFamily: displayFontFor(otherLanguage.code) }]}
-              accessibilityLanguage={otherLanguage.speechTag}
-              allowFontScaling
-              maxFontSizeMultiplier={2}
-            >
-              {other.tagline}
-            </Text>
-            <Text style={styles.hintTaglineEn} allowFontScaling maxFontSizeMultiplier={2}>
-              {en.tagline}
-            </Text>
-            <Text
-              style={styles.hintText}
-              accessibilityLanguage={otherLanguage.speechTag}
-              allowFontScaling
-              maxFontSizeMultiplier={2}
-            >
-              {other.holdAndSpeak}
-            </Text>
-            <Text style={styles.hintTextSmall} allowFontScaling maxFontSizeMultiplier={2}>{en.holdAndSpeak}</Text>
-            <ArrowDownIcon  size={30} color={colors.accent} style={styles.hintArrow} />
+          <Appear style={s.empty}>
+            <Label {...bilingual(other.holdAndSpeak, en.holdAndSpeak)} lang={otherLanguage.code} speechTag={otherLanguage.speechTag} tone="ink2" align="center" />
           </Appear>
         ) : null}
       </ScrollView>
 
-      {recordingPanelVisible ? (
-        /* While recording, the bottom of the screen becomes one thing: the
-         * phone is visibly a microphone. Elapsed time, a live level meter,
-         * and a giant Done button — no tools, no clutter, no precision. */
-        <Appear style={styles.recordPanel}>
-          <View style={styles.recordStatus} accessibilityLiveRegion="polite">
-            <Pulse color={colors.listening} size={36} />
-            <Text style={styles.recordTimer} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {formatElapsed(recorderState.durationMillis)}
-            </Text>
-          </View>
-          <Text
-            style={styles.recordLabel}
-            accessibilityLanguage={speaker?.speechTag}
-            allowFontScaling
-            maxFontSizeMultiplier={1.3}
-            numberOfLines={1}
-          >
-            {speaker ? rec.listening : `${other.listening} · ${en.listening}`}
-          </Text>
-
-          <LevelMeter level={meterLevel} />
-
-          {__DEV__ ? (
-            <Text style={styles.meterDebug}>
-              {`raw metering: ${
-                typeof recorderState.metering === 'number' ? recorderState.metering.toFixed(1) : 'undefined'
-              }  →  level ${meterLevel == null ? 'null' : meterLevel.toFixed(2)}`}
-            </Text>
-          ) : null}
-
-          {/* Fixed-height slot so the nudge appearing never shifts the Done button. */}
-          <View style={styles.nudgeSlot} accessibilityLiveRegion="polite">
-            {tooQuiet ? (
-              <>
-                <Text style={styles.nudgeText} accessibilityLanguage={speaker?.speechTag}>
-                  {rec.speakLouder}
-                </Text>
-                {rec.speakLouder !== en.speakLouder ? (
-                  <Text style={styles.nudgeTextEn}>{en.speakLouder}</Text>
-                ) : null}
-              </>
-            ) : null}
-          </View>
-
-          <PressableScale
-            onPress={() => void finishListening()}
-            accessibilityRole="button"
-            accessibilityLabel={`${rec.doneLabel} — ${en.doneLabel}`}
-            accessibilityHint={`${rec.tapWhenDone} — ${en.tapWhenDone}`}
-            style={styles.doneOuter}
-          >
-            {({ pressed }) => (
-              <View style={[styles.doneInner, pressed && styles.doneInnerPressed]}>
-                <CheckIcon  size={44} color={colors.onPrimary} />
-                <View style={styles.doneLabels}>
-                  <Text
-                    style={styles.doneText}
-                    accessibilityLanguage={speaker?.speechTag}
-                    allowFontScaling
-                    maxFontSizeMultiplier={1.3}
-                  >
-                    {rec.doneLabel}
-                  </Text>
-                  {rec.doneLabel !== en.doneLabel ? (
-                    <Text style={styles.doneTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>
-                      {en.doneLabel}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-            )}
-          </PressableScale>
-
-          <Pressable
-            onPress={() => void cancelListening()}
-            accessibilityRole="button"
-            accessibilityLabel={`${rec.cancel} — ${en.cancel}`}
-            style={({ pressed }) => [styles.cancelLink, pressed && styles.pressedDim]}
-          >
-            <Text style={styles.cancelText} allowFontScaling maxFontSizeMultiplier={1.3}>
-              {rec.cancel === en.cancel ? en.cancel : `${rec.cancel} · ${en.cancel}`}
-            </Text>
-          </Pressable>
-        </Appear>
-      ) : (
-        <>
-      {/* Tools: quick phrases + auto-detect toggle. */}
-      <View style={styles.toolRow}>
-        <PressableScale
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setPhrasesOpen(true);
-          }}
-          disabled={busy}
-          accessibilityRole="button"
-          accessibilityLabel={`${other.quickPhrases} — ${en.quickPhrases}`}
-          flexFill
-          style={[styles.toolButton, busy && styles.dimmed]}
-        >
-          <ChatIcon  size={20} color={colors.text} />
-          <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {other.quickPhrasesShort}
-            </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {en.quickPhrasesShort}
-            </Text>
-          </View>
-        </PressableScale>
-        <PressableScale
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setNameMode(false);
-            setTypeOpen(true);
-          }}
-          disabled={busy || offline}
-          accessibilityRole="button"
-          accessibilityLabel={`${other.typeLabel} — ${en.typeLabel}`}
-          flexFill
-          style={[styles.toolButton, (busy || offline) && styles.dimmed]}
-        >
-          <PencilIcon  size={20} color={colors.text} />
-          <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {other.typeLabel}
-            </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {en.typeLabel}
-            </Text>
-          </View>
-        </PressableScale>
-        <PressableScale
-          onPress={openScanner}
-          disabled={busy || offline}
-          accessibilityRole="button"
-          accessibilityLabel={`${other.scanTitle} — ${en.scanTitle}`}
-          flexFill
-          style={[styles.toolButton, (busy || offline) && styles.dimmed]}
-        >
-          <CameraIcon  size={20} color={colors.text} />
-          <View style={styles.toolButtonLabels}>
-            <Text style={styles.toolButtonText} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {other.scanLabel}
-            </Text>
-            <Text style={styles.toolButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-              {en.scanLabel}
-            </Text>
-          </View>
-        </PressableScale>
-        <PressableScale
-          onPress={toggleAutoMode}
-          disabled={busy}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: autoMode }}
-          accessibilityLabel={`${other.auto} — ${en.auto}`}
-          flexFill
-          style={[styles.toolButton, autoMode && styles.toolButtonOn, busy && styles.dimmed]}
-        >
-          <SparkleIcon  size={18} color={autoMode ? colors.primary : colors.text} />
-          <View style={styles.toolButtonLabels}>
-            <Text
-              style={[styles.toolButtonText, autoMode && styles.toolButtonTextOn]}
-              allowFontScaling
-              maxFontSizeMultiplier={1.3}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.65}
-            >
-              {other.auto}
-            </Text>
-            {other.auto !== en.auto ? (
-              <Text
-                style={[styles.toolButtonTextEn, autoMode && styles.toolButtonTextOn]}
-                allowFontScaling
-                maxFontSizeMultiplier={1.3}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.65}
-              >
-                {en.auto}
-              </Text>
-            ) : null}
-          </View>
-        </PressableScale>
-      </View>
-
-      {/* The speak buttons: two per-language buttons, or one auto-detect button. */}
-      <View style={styles.buttons}>
-        {autoMode ? (
-          <AutoSpeakButton
-            otherLanguage={otherLanguage}
-            disabled={phase === 'translating' || offline}
-            onStart={() => startTap(null)}
+          <ModeControl
+            language={otherLanguage}
+            auto={autoMode}
+            disabled={busy}
+            compact={turns.length > 0}
+            onSelect={(next) => {
+              if (next !== autoMode) toggleAutoMode();
+            }}
           />
-        ) : (
-          <>
-            <SpeakButton
-              language={ENGLISH}
-              disabled={phase === 'translating' || offline}
-              fill={colors.primary}
-              fillPressed={colors.primaryPressed}
-              onStart={() => startTap(ENGLISH)}
-            />
-            <SpeakButton
-              language={otherLanguage}
-              disabled={phase === 'translating' || offline}
-              fill={colors.secondary}
-              fillPressed={colors.secondaryPressed}
-              onStart={() => startTap(otherLanguage)}
-            />
-          </>
-        )}
-      </View>
 
-      {/* Trust cue, in both active languages. */}
-      <View style={styles.privacy}>
-        <View style={styles.privacyRow}>
-          <LockIcon  size={13} color={colors.textFaint} />
-          <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={1.2}>
-            {other.privacyLine}
-          </Text>
-        </View>
-        <Text style={styles.privacyText} allowFontScaling maxFontSizeMultiplier={1.2}>
-          {en.privacyLine}
-        </Text>
-      </View>
+          <ActionIndex
+            lang={otherLanguage.code}
+            speechTag={otherLanguage.speechTag}
+            tiles={turns.length > 0}
+            rows={[
+              // The summary leads the index once there is a visit to summarise.
+              // It used to be an outlined button above the ledger, which made
+              // it the one action living outside the index it belongs to.
+              ...(turns.length >= 2
+                ? [
+                    {
+                      key: 'summary',
+                      name: other.summary,
+                      english: en.summary,
+                      disabled: busy || offline,
+                      onPress: () => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSummaryFrom('home');
+                        openSummary(turns);
+                      },
+                    },
+                  ]
+                : []),
+              {
+                key: 'phrases',
+                name: other.quickPhrasesShort,
+                english: en.quickPhrasesShort,
+                disabled: busy,
+                onPress: () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPhrasesOpen(true);
+                },
+              },
+              {
+                key: 'type',
+                name: other.typeLabel,
+                english: en.typeLabel,
+                disabled: busy || offline,
+                onPress: () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setNameMode(false);
+                  setTypeOpen(true);
+                },
+              },
+              {
+                key: 'scan',
+                name: other.scanLabel,
+                english: en.scanLabel,
+                disabled: busy || offline,
+                onPress: openScanner,
+              },
+            ]}
+          />
+
+          {/* Auto-detect is one bar, as drawn. Two-language mode keeps a bar
+             each: either person has to be able to speak. */}
+          {/* Conversation state pins the speak card to the bottom: the slack
+             lives here, above it, so the screen fits without scrolling. */}
+          {turns.length > 0 ? <View style={s.slack} /> : null}
+          <View style={autoMode ? s.barsSingle : s.bars}>
+            {!voiceInput ? (
+              // Voice input switched off in settings: the bars go, and the
+              // screen says where to type instead of leaving a silent gap.
+              <Label
+                {...bilingual(other.voiceInputOff, en.voiceInputOff)}
+                lang={otherLanguage.code}
+                speechTag={otherLanguage.speechTag}
+                size="caption"
+                tone="ink2"
+                align="center"
+              />
+            ) : autoMode ? (
+              <SpeakBar
+                name={other.speakAuto}
+                lang={otherLanguage.code}
+                speechTag={otherLanguage.speechTag}
+                sub={other.auto.toUpperCase()}
+                disabled={phase === 'translating' || offline}
+                condensed={turns.length > 0}
+                onPress={() => startTap(null)}
+              />
+            ) : (
+              <>
+                <SpeakBar
+                  compact
+                  name={other.speakAuto}
+                  lang={otherLanguage.code}
+                  speechTag={otherLanguage.speechTag}
+                  sub={`${otherLanguage.nativeName.toUpperCase()} → EN`}
+                  disabled={phase === 'translating' || offline}
+                  onPress={() => startTap(otherLanguage)}
+                />
+                <SpeakBar
+                  compact
+                  name={en.speakAuto}
+                  lang="en"
+                  sub={`EN → ${otherLanguage.nativeName.toUpperCase()}`}
+                  disabled={phase === 'translating' || offline}
+                  onPress={() => startTap(ENGLISH)}
+                />
+              </>
+            )}
+          </View>
+
+          <View style={s.privacy}>
+            <PrivacyLine language={otherLanguage} />
+          </View>
         </>
       )}
 
-      {/* Quick phrases sheet. */}
-      <Modal
+      <PhraseSheet
         visible={phrasesOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setPhrasesOpen(false)}
-      >
-        <View style={styles.sheetBackdrop}>
-          <Pressable
-            style={styles.sheetDismiss}
-            onPress={() => setPhrasesOpen(false)}
-            accessibilityRole="button"
-            accessibilityLabel={`${other.close} — ${en.close}`}
-          />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} importantForAccessibility="no" />
-            <View style={styles.sheetHeader}>
-              <View style={styles.sheetTitleRow}>
-                <ChatIcon  size={24} color={colors.primary} />
-                <View style={styles.sheetTitleWrap}>
-                  <Text style={styles.sheetTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.quickPhrases}
-                  </Text>
-                  <Text style={styles.sheetTitleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.quickPhrases}</Text>
-                </View>
-              </View>
-              <Pressable
-                onPress={() => setPhrasesOpen(false)}
-                accessibilityRole="button"
-                accessibilityLabel={`${other.close} — ${en.close}`}
-                style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
-              >
-                <CloseIcon  size={22} color={colors.primary} />
-                <Text style={styles.sheetCloseText} allowFontScaling maxFontSizeMultiplier={1.3}>
-                  {other.close} · {en.close}
-                </Text>
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.sheetContent}>
-              {/* F4 entry: the body-map hero card. */}
-              <PressableScale
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  // Never dismiss one modal and present another in the same
-                  // frame — iOS drops the second present while the first is
-                  // still animating out. Close, let the dismissal settle, open.
-                  setPhrasesOpen(false);
-                  if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
-                  modalSwapTimer.current = setTimeout(() => setBodyMapOpen(true), 350);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${other.whereHurts} — ${en.whereHurts}`}
-                style={styles.bodyMapCard}
-              >
-                <View style={styles.bodyMapIcon} importantForAccessibility="no">
-                  <BodyIcon  size={30} color={colors.onPrimary} />
-                </View>
-                <View style={styles.bodyMapTextWrap}>
-                  <Text style={styles.bodyMapTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.whereHurts}
-                  </Text>
-                  <Text style={styles.bodyMapSub} allowFontScaling maxFontSizeMultiplier={1.3}>{en.whereHurts}</Text>
-                </View>
-                <ChevronForwardIcon  size={26} color={colors.onPrimary} importantForAccessibility="no" />
-              </PressableScale>
-
-              <Text style={[styles.sheetSection, styles.sheetSectionUrgent]} allowFontScaling maxFontSizeMultiplier={2} importantForAccessibility="no">
-                {other.emergency} · {en.emergency}
-              </Text>
-              {EMERGENCY_PHRASES.map((phrase) => (
-                <PressableScale
-                  key={phrase.id}
-                  onPress={() => usePhrase(phrase, otherLanguage)}
-                  accessibilityRole="button"
-                  accessibilityLabel={phrase.text[otherLanguage.code]}
-                  accessibilityLanguage={otherLanguage.speechTag}
-                  style={styles.phraseRow}
-                >
-                  <View style={[styles.phraseIconCircle, styles.phraseIconCircleUrgent]} importantForAccessibility="no">
-                    <BrandGlyph name={phrase.icon} size={24} color={colors.dangerText} />
-                  </View>
-                  <View style={styles.phraseTextWrap}>
-                    <Text style={styles.phrasePrimary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                      {phrase.text[otherLanguage.code]}
-                    </Text>
-                    <Text style={styles.phraseSecondary} allowFontScaling maxFontSizeMultiplier={2}>{phrase.text.en}</Text>
-                  </View>
-                  <SpeakIcon  size={22} color={colors.textFaint} />
-                </PressableScale>
-              ))}
-
-              <Text style={styles.sheetSection} allowFontScaling maxFontSizeMultiplier={2} importantForAccessibility="no">
-                {other.painScaleLabel} · {en.painScaleLabel}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.painRow}
-              >
-                {Array.from({ length: 11 }, (_, n) => (
-                  <PressableScale
-                    key={n}
-                    onPress={() => usePainNumber(n)}
-                    accessibilityRole="button"
-                    accessibilityLabel={other.painIs.replace('{n}', String(n))}
-                    accessibilityLanguage={otherLanguage.speechTag}
-                    style={[styles.painChip, n >= 7 && styles.painChipHigh]}
-                  >
-                    <Text style={[styles.painChipText, n >= 7 && styles.painChipTextHigh]} allowFontScaling maxFontSizeMultiplier={1.4}>{n}</Text>
-                  </PressableScale>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.sheetSection} allowFontScaling maxFontSizeMultiplier={2} importantForAccessibility="no">
-                {ENGLISH.nativeName} → {otherLanguage.nativeName}
-              </Text>
-              {CLINICIAN_PHRASES.map((phrase) => (
-                <PressableScale
-                  key={phrase.id}
-                  onPress={() => usePhrase(phrase, ENGLISH)}
-                  accessibilityRole="button"
-                  accessibilityLabel={phrase.text.en}
-                  style={styles.phraseRow}
-                >
-                  <View style={styles.phraseIconCircle} importantForAccessibility="no">
-                    <BrandGlyph name={phrase.icon} size={24} color={colors.primary} />
-                  </View>
-                  <View style={styles.phraseTextWrap}>
-                    <Text style={styles.phrasePrimary} allowFontScaling maxFontSizeMultiplier={2}>{phrase.text.en}</Text>
-                    <Text style={styles.phraseSecondary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                      {phrase.text[otherLanguage.code]}
-                    </Text>
-                  </View>
-                  <SpeakIcon  size={22} color={colors.textFaint} />
-                </PressableScale>
-              ))}
-
-              <Text style={styles.sheetSection} allowFontScaling maxFontSizeMultiplier={2} importantForAccessibility="no">
-                {otherLanguage.nativeName} → {ENGLISH.nativeName}
-              </Text>
-              {PATIENT_PHRASES.map((phrase) => (
-                <PressableScale
-                  key={phrase.id}
-                  onPress={() => usePhrase(phrase, otherLanguage)}
-                  accessibilityRole="button"
-                  accessibilityLabel={phrase.text[otherLanguage.code]}
-                  accessibilityLanguage={otherLanguage.speechTag}
-                  style={styles.phraseRow}
-                >
-                  <View style={[styles.phraseIconCircle, styles.phraseIconCircleSecondary]} importantForAccessibility="no">
-                    <BrandGlyph name={phrase.icon} size={24} color={colors.secondary} />
-                  </View>
-                  <View style={styles.phraseTextWrap}>
-                    <Text style={styles.phrasePrimary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                      {phrase.text[otherLanguage.code]}
-                    </Text>
-                    <Text style={styles.phraseSecondary} allowFontScaling maxFontSizeMultiplier={2}>{phrase.text.en}</Text>
-                  </View>
-                  <SpeakIcon  size={22} color={colors.textFaint} />
-                </PressableScale>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Typed-text fallback: for loud rooms or when the mic fails. */}
-      <Modal visible={typeOpen} animationType="slide" transparent onRequestClose={() => setTypeOpen(false)}>
-        <KeyboardAvoidingView
-          style={styles.sheetBackdrop}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <Pressable
-            style={styles.sheetDismiss}
-            onPress={() => setTypeOpen(false)}
-            accessibilityRole="button"
-            accessibilityLabel={`${other.close} — ${en.close}`}
-          />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} importantForAccessibility="no" />
-            <View style={styles.sheetHeader}>
-              <View style={styles.sheetTitleRow}>
-                <PencilIcon  size={24} color={colors.primary} />
-                <View style={styles.sheetTitleWrap}>
-                  <Text style={styles.sheetTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.typeLabel}
-                  </Text>
-                  <Text style={styles.sheetTitleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.typeLabel}</Text>
-                </View>
-              </View>
-              <Pressable
-                onPress={() => setTypeOpen(false)}
-                accessibilityRole="button"
-                accessibilityLabel={`${other.close} — ${en.close}`}
-                style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
-              >
-                <CloseIcon  size={22} color={colors.primary} />
-                <Text style={styles.sheetCloseText} allowFontScaling maxFontSizeMultiplier={1.3}>
-                  {other.close} · {en.close}
-                </Text>
-              </Pressable>
-            </View>
-            <View style={styles.typeContent}>
-              {/* Name mode: enter a person's name verbatim (never translated) —
-                 the reliable path for names the mic can't capture. */}
-              <PressableScale
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setNameMode((v) => !v);
-                }}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: nameMode }}
-                accessibilityLabel={`${other.nameLabel} — ${en.nameLabel}. ${other.nameHint}`}
-                style={[styles.nameToggle, nameMode && styles.nameToggleOn]}
-              >
-                <PersonIcon
-                  size={20}
-                  color={nameMode ? colors.primary : colors.textMuted}
-                />
-                <View style={styles.nameToggleLabels}>
-                  <Text style={[styles.nameToggleText, nameMode && styles.nameToggleTextOn]} allowFontScaling maxFontSizeMultiplier={1.3}>
-                    {other.nameLabel} · {en.nameLabel}
-                  </Text>
-                  <Text style={styles.nameToggleHint} allowFontScaling maxFontSizeMultiplier={1.3}>
-                    {nameMode ? `${other.nameHint} · ${en.nameHint}` : `${other.typeLabel} · ${en.typeLabel}`}
-                  </Text>
-                </View>
-                <View style={[styles.nameCheck, nameMode && styles.nameCheckOn]}>
-                  {nameMode ? <CheckIcon  size={16} color={colors.onPrimary} /> : null}
-                </View>
-              </PressableScale>
-              <TextInput
-                value={typedDraft}
-                onChangeText={setTypedDraft}
-                placeholder={
-                  nameMode
-                    ? `${other.namePlaceholder} · ${en.namePlaceholder}`
-                    : `${other.typePlaceholder} · ${en.typePlaceholder}`
-                }
-                placeholderTextColor={colors.textFaint}
-                multiline={!nameMode}
-                autoFocus
-                autoCapitalize={nameMode ? 'words' : 'sentences'}
-                autoCorrect={!nameMode}
-                accessibilityLabel={
-                  nameMode ? `${other.nameLabel} — ${en.nameLabel}` : `${other.typeLabel} — ${en.typeLabel}`
-                }
-                style={styles.typeInput}
-              />
-              <View style={styles.typeSendRow}>
-                <PressableScale
-                  onPress={() => useTypedText(ENGLISH)}
-                  disabled={!typedDraft.trim()}
-                  accessibilityRole="button"
-                  accessibilityLabel="English"
-                  flexFill
-                  style={[styles.typeSend, { backgroundColor: colors.primary }, !typedDraft.trim() && styles.dimmed]}
-                >
-                  <Text style={styles.typeSendText} allowFontScaling maxFontSizeMultiplier={1.3}>{ENGLISH.nativeName}</Text>
-                  <ArrowForwardIcon  size={20} color={colors.onPrimary} />
-                </PressableScale>
-                <PressableScale
-                  onPress={() => useTypedText(otherLanguage)}
-                  disabled={!typedDraft.trim()}
-                  accessibilityRole="button"
-                  accessibilityLabel={otherLanguage.nativeName}
-                  accessibilityLanguage={otherLanguage.speechTag}
-                  flexFill
-                  style={[styles.typeSend, { backgroundColor: colors.secondary }, !typedDraft.trim() && styles.dimmed]}
-                >
-                  <Text style={styles.typeSendText} allowFontScaling maxFontSizeMultiplier={1.3}>{otherLanguage.nativeName}</Text>
-                  <ArrowForwardIcon  size={20} color={colors.onPrimary} />
-                </PressableScale>
-              </View>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* F2: teach-back — did the patient really understand? */}
-      {teach ? (
-        <Modal visible transparent animationType="fade" onRequestClose={closeTeach}>
-          <View style={styles.centerBackdrop}>
-            <View style={styles.teachCard}>
-              <Pressable
-                onPress={closeTeach}
-                accessibilityRole="button"
-                accessibilityLabel={`${other.close} — ${en.close}`}
-                style={({ pressed }) => [styles.teachClose, pressed && styles.pressedDim]}
-              >
-                <CloseIcon  size={24} color={colors.textMuted} />
-              </Pressable>
-
-              {teach.stage === 'loading' || teach.stage === 'loading2' ? (
-                <View style={styles.teachCenter} accessibilityLiveRegion="polite">
-                  <UnderstandIcon  size={34} color={colors.primary} />
-                  <Text style={styles.teachQuestion} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.simplifying}
-                  </Text>
-                  <Text style={styles.teachSub} allowFontScaling maxFontSizeMultiplier={2}>{en.simplifying}</Text>
-                </View>
-              ) : null}
-
-              {teach.stage === 'ask' || teach.stage === 'ask2' ? (
-                <>
-                  {teach.stage === 'ask2' ? (
-                    <View style={styles.teachBanner}>
-                      <MegaphoneIcon  size={20} color={colors.secondary} />
-                      <Text style={styles.teachBannerText} allowFontScaling maxFontSizeMultiplier={2}>{en.explainAgain}</Text>
-                    </View>
-                  ) : null}
-                  <Text
-                    style={styles.teachExplanation} allowFontScaling maxFontSizeMultiplier={2}
-                    accessibilityLanguage={otherLanguage.speechTag}
-                    accessibilityLiveRegion="polite"
-                  >
-                    {teach.text}
-                  </Text>
-                  <PressableScale
-                    onPress={replayTeach}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${other.playAgain} — ${en.playAgain}`}
-                    style={styles.teachReplay}
-                  >
-                    <SpeakIcon  size={18} color={colors.primary} />
-                    <Text style={styles.teachReplayText} allowFontScaling maxFontSizeMultiplier={2}>
-                      {other.playAgain} · {en.playAgain}
-                    </Text>
-                  </PressableScale>
-                  <Text style={styles.teachQuestion} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.didYouUnderstand}
-                  </Text>
-                  <Text style={styles.teachSub} allowFontScaling maxFontSizeMultiplier={2}>{en.didYouUnderstand}</Text>
-                  <View style={styles.teachChoices}>
-                    <PressableScale
-                      onPress={() => answerTeach(true)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${other.yes} — ${en.yes}`}
-                      flexFill
-                      style={[styles.teachChoice, styles.teachYes]}
-                    >
-                      <CheckIcon  size={36} color={colors.onPrimary} />
-                      <Text style={styles.teachChoiceText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                        {other.yes}
-                      </Text>
-                      {other.yes !== en.yes ? <Text style={styles.teachChoiceTextEn} allowFontScaling maxFontSizeMultiplier={2}>{en.yes}</Text> : null}
-                    </PressableScale>
-                    <PressableScale
-                      onPress={() => answerTeach(false)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${other.no} — ${en.no}`}
-                      flexFill
-                      style={[styles.teachChoice, styles.teachNo]}
-                    >
-                      <CloseIcon  size={36} color={colors.onPrimary} />
-                      <Text style={styles.teachChoiceText} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                        {other.no}
-                      </Text>
-                      {other.no !== en.no ? <Text style={styles.teachChoiceTextEn} allowFontScaling maxFontSizeMultiplier={2}>{en.no}</Text> : null}
-                    </PressableScale>
-                  </View>
-                </>
-              ) : null}
-
-              {teach.stage === 'failed' ? (
-                <View style={styles.teachCenter}>
-                  <PeopleIcon  size={34} color={colors.secondary} />
-                  <Text
-                    style={styles.teachExplanation} allowFontScaling maxFontSizeMultiplier={2}
-                    accessibilityLanguage={otherLanguage.speechTag}
-                    accessibilityLiveRegion="assertive"
-                  >
-                    {other.askInterpreter}
-                  </Text>
-                  <Text style={styles.teachSub} allowFontScaling maxFontSizeMultiplier={2}>{en.askInterpreter}</Text>
-                  <PressableScale
-                    onPress={showRightsFromTeach}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${other.rightsShow} — ${en.rightsShow}`}
-                    style={styles.rightsButton}
-                  >
-                    <ShieldIcon  size={22} color={colors.onPrimary} />
-                    <View style={styles.rightsButtonLabels}>
-                      <Text style={styles.rightsButtonText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
-                        {other.rightsShow}
-                      </Text>
-                      <Text style={styles.rightsButtonTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.rightsShow}</Text>
-                    </View>
-                  </PressableScale>
-                </View>
-              ) : null}
-
-              {teach.stage === 'error' ? (
-                <View style={styles.teachCenter} accessibilityLiveRegion="assertive">
-                  <AlertCircleIcon  size={34} color={colors.dangerText} />
-                  <Text style={styles.teachExplanation} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.connectionError}
-                  </Text>
-                  <Text style={styles.teachSub} allowFontScaling maxFontSizeMultiplier={2}>{en.connectionError}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-
-      {/* F5: medication label scan result. */}
-      {scan ? (
-        <Modal visible transparent animationType="slide" onRequestClose={closeScan}>
-          <View style={styles.sheetBackdrop}>
-            <Pressable
-              style={styles.sheetDismiss}
-              onPress={closeScan}
-              accessibilityRole="button"
-              accessibilityLabel={`${other.close} — ${en.close}`}
-            />
-            <View style={styles.sheet}>
-              <View style={styles.sheetHandle} importantForAccessibility="no" />
-              <View style={styles.sheetHeader}>
-                <View style={styles.sheetTitleRow}>
-                  <MedkitIcon  size={24} color={colors.primary} />
-                  <View style={styles.sheetTitleWrap}>
-                    <Text style={styles.sheetTitle} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityRole="header" accessibilityLanguage={otherLanguage.speechTag}>
-                      {other.scanTitle}
-                    </Text>
-                    <Text style={styles.sheetTitleEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.scanTitle}</Text>
-                  </View>
-                </View>
-                <Pressable
-                  onPress={closeScan}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${other.close} — ${en.close}`}
-                  style={({ pressed }) => [styles.sheetClose, pressed && styles.pressedDim]}
-                >
-                  <CloseIcon  size={22} color={colors.primary} />
-                  <Text style={styles.sheetCloseText} allowFontScaling maxFontSizeMultiplier={1.3}>
-                    {other.close} · {en.close}
-                  </Text>
-                </Pressable>
-              </View>
-
-              {scan.status === 'loading' ? (
-                <View style={styles.scanCenter} accessibilityLiveRegion="polite">
-                  <TurnSkeleton />
-                  <Text style={styles.scanStatus} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                    {other.scanReading}
-                  </Text>
-                  <Text style={styles.scanStatusEn} allowFontScaling maxFontSizeMultiplier={2}>{en.scanReading}</Text>
-                </View>
-              ) : null}
-
-              {scan.status === 'unreadable' || scan.status === 'permission' || scan.status === 'error' ? (
-                <View style={styles.scanCenter} accessibilityLiveRegion="assertive">
-                  <BrandGlyph
-                    name={scan.status === 'permission' ? 'camera-outline' : 'alert-circle'}
-                    size={34}
-                    color={colors.dangerText}
-                  />
-                  <Text style={styles.scanError} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                    {scan.status === 'unreadable'
-                      ? other.scanUnreadable
-                      : scan.status === 'permission'
-                        ? other.cameraPermission
-                        : other.connectionError}
-                  </Text>
-                  <Text style={styles.scanStatusEn} allowFontScaling maxFontSizeMultiplier={2}>
-                    {scan.status === 'unreadable'
-                      ? en.scanUnreadable
-                      : scan.status === 'permission'
-                        ? en.cameraPermission
-                        : en.connectionError}
-                  </Text>
-                  {scan.status !== 'permission' ? (
-                    <PressableScale
-                      onPress={() => {
-                        setScan(null);
-                        void openScanner();
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${other.tryAgain} — ${en.tryAgain}`}
-                      style={styles.scanRetry}
-                    >
-                      <RefreshIcon  size={20} color={colors.dangerText} />
-                      <Text style={styles.scanRetryText} allowFontScaling maxFontSizeMultiplier={2}>
-                        {other.tryAgain} · {en.tryAgain}
-                      </Text>
-                    </PressableScale>
-                  ) : null}
-                </View>
-              ) : null}
-
-              {scan.status === 'ready' ? (
-                <ScrollView contentContainerStyle={styles.scanContent}>
-                  <Text style={styles.scanName} allowFontScaling maxFontSizeMultiplier={2}>{scan.result.name}</Text>
-                  {(
-                    [
-                      { label: other.scanDose, labelEn: en.scanDose, pair: scan.result.howMuch, icon: 'water-outline' },
-                      { label: other.scanWhen, labelEn: en.scanWhen, pair: scan.result.when, icon: 'time-outline' },
-                      { label: other.scanWarnings, labelEn: en.scanWarnings, pair: scan.result.warnings, icon: 'warning-outline' },
-                    ] as const
-                  )
-                    .filter((section) => section.pair.other || section.pair.en)
-                    .map((section) => (
-                      <View key={section.labelEn} style={styles.scanSection}>
-                        <View style={styles.scanSectionHead}>
-                          <BrandGlyph name={section.icon} size={18} color={colors.primary} importantForAccessibility="no" />
-                          <Text style={styles.scanSectionLabel} allowFontScaling maxFontSizeMultiplier={2}>
-                            {section.label === section.labelEn ? section.labelEn : `${section.label} · ${section.labelEn}`}
-                          </Text>
-                        </View>
-                        <Text style={styles.scanPrimary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                          {section.pair.other}
-                        </Text>
-                        <Text style={styles.scanSecondary} allowFontScaling maxFontSizeMultiplier={2}>{section.pair.en}</Text>
-                      </View>
-                    ))}
-
-                  <PressableScale
-                    onPress={speakScan}
-                    disabled={phase !== 'idle'}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${other.speakAloud} — ${en.speakAloud}`}
-                    style={[styles.scanSpeak, phase !== 'idle' && styles.dimmed]}
-                  >
-                    <SpeakIcon  size={24} color={colors.onPrimary} />
-                    <View style={styles.sayLabelsInline}>
-                      <Text style={styles.scanSpeakText} allowFontScaling maxFontSizeMultiplier={1.3} accessibilityLanguage={otherLanguage.speechTag}>
-                        {other.speakAloud}
-                      </Text>
-                      {other.speakAloud !== en.speakAloud ? (
-                        <Text style={styles.scanSpeakTextEn} allowFontScaling maxFontSizeMultiplier={1.3}>{en.speakAloud}</Text>
-                      ) : null}
-                    </View>
-                  </PressableScale>
-
-                  <View style={styles.scanPharmacist}>
-                    <InfoIcon  size={18} color={colors.textMuted} />
-                    <View style={styles.scanPharmacistText}>
-                      <Text style={styles.scanSecondary} allowFontScaling maxFontSizeMultiplier={2} accessibilityLanguage={otherLanguage.speechTag}>
-                        {other.pharmacistLine}
-                      </Text>
-                      <Text style={styles.scanSecondary} allowFontScaling maxFontSizeMultiplier={2}>{en.pharmacistLine}</Text>
-                    </View>
-                  </View>
-                </ScrollView>
-              ) : null}
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-
-      {/* F4: where does it hurt — tap the body, pick 0–10, it speaks English. */}
-      <BodyMapModal
-        visible={bodyMapOpen}
         otherLanguage={otherLanguage}
-        onClose={() => setBodyMapOpen(false)}
-        onConfirm={confirmBodyPain}
+        onClose={() => setPhrasesOpen(false)}
+        onBodyMap={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          // Never dismiss one modal and present another in the same frame —
+          // iOS drops the second present while the first animates out.
+          setPhrasesOpen(false);
+          if (modalSwapTimer.current) clearTimeout(modalSwapTimer.current);
+          modalSwapTimer.current = setTimeout(() => setBodyMapOpen(true), 350);
+        }}
+        onPhrase={speakPhrase}
+        onPain={speakPainNumber}
       />
 
-      {/* Interpreter rights — static, offline, made to be handed to staff. */}
+      <TypeSheet
+        visible={typeOpen}
+        otherLanguage={otherLanguage}
+        draft={typedDraft}
+        onChangeDraft={setTypedDraft}
+        nameMode={nameMode}
+        onToggleNameMode={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setNameMode((v) => !v);
+        }}
+        onClose={() => setTypeOpen(false)}
+        onSend={sendTypedText}
+      />
+
+      <TeachBackDialog
+        teach={teach}
+        otherLanguage={otherLanguage}
+        onClose={closeTeach}
+        onReplay={replayTeach}
+        onAnswer={answerTeach}
+        onShowRights={showRightsFromTeach}
+      />
+
+      <ScanSheet
+        scan={scan}
+        otherLanguage={otherLanguage}
+        speakDisabled={phase !== 'idle'}
+        onClose={closeScan}
+        onRetry={() => {
+          setScan(null);
+          void openScanner();
+        }}
+        onSpeak={speakScan}
+      />
+
+      <BodyMapModal visible={bodyMapOpen} otherLanguage={otherLanguage} onClose={() => setBodyMapOpen(false)} onConfirm={confirmBodyPain} />
       <RightsCard visible={rightsOpen} otherLanguage={otherLanguage} onClose={() => setRightsOpen(false)} />
+      </Animated.ScrollView>
+      {transcriptEver ? (
+        <Animated.View
+          style={[s.pushed, { transform: [{ translateX: transcriptX }], opacity: transcriptOpacity }]}
+          pointerEvents={route === 'transcript' ? 'auto' : 'none'}
+        >
+          <TranscriptScreen
+            turns={turns}
+            otherLanguage={otherLanguage}
+            summaryDisabled={busy || offline || turns.length < 2}
+            confirmingClear={confirmingClear}
+            onBack={goHome}            onSummary={() => {
+              setSummaryFrom('transcript');
+              setConfirmingClear(false);
+              void openSummary(turns);
+            }}
+            onTurnOptions={(turn) => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setOptionsTurn(turn);
+            }}
+            onPlayTurn={(turn) => {
+              void playTurn(turn);
+            }}
+            onRequestClear={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setConfirmingClear(true);
+            }}
+            onConfirmClear={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              stopAllAudio();
+              onTurnsChange([]);
+              setConfirmingClear(false);
+              goHome();
+            }}
+          />
+        </Animated.View>
+      ) : null}
+      {summary !== null ? (
+        <Animated.View
+          style={[s.pushed, { transform: [{ translateX: summaryX }] }]}
+          pointerEvents={route === 'summary' ? 'auto' : 'none'}
+        >
+          <SummaryModal
+            state={summary}
+            otherLanguage={otherLanguage}
+            turns={turns}
+            onBack={() => {
+              if (summaryFrom === 'transcript') {
+                setSummary(null);
+                setTranscriptOpen(true);
+              } else {
+                goHome();
+              }
+            }}
+            onTranscript={goTranscript}
+            onClose={() => setSummary(null)}
+          />
+        </Animated.View>
+      ) : null}
 
-      {/* F3: ephemeral visit summary — closing it wipes the text from memory. */}
-      <SummaryModal state={summary} otherLanguage={otherLanguage} onClose={() => setSummary(null)} />
+      {/* A turn's options, opened by tapping its transcript row: replay, slow
+         replay, show big, say differently, check understanding (clinician
+         turns), and delete. Off the home screen itself, because the home
+         screen is meant to be the sentence and has no room for a control
+         panel under it. */}
+      <Sheet
+        visible={optionsTurn != null}
+        onClose={() => setOptionsTurn(null)}
+        title={bilingual(other.moreOptions, en.moreOptions)}
+        otherLanguage={otherLanguage}
+      >
+        {optionsTurn ? (
+          <View style={s.options}>
+            <OptionRow
+              icon={<SpeakIcon size={15} color={colors.accent} />}
+              title={t(optionsTurn.listener.code).playAgain}
+              sub={en.playAgain}
+              lang={optionsTurn.listener.code}
+              speechTag={optionsTurn.listener.speechTag}
+              disabled={busy}
+              onPress={() => {
+                setOptionsTurn(null);
+                void playTurn(optionsTurn);
+              }}
+            />
+            <OptionRow
+              icon={<GaugeIcon size={15} color={colors.accent} />}
+              title={t(optionsTurn.listener.code).slowLabel}
+              sub={en.slowLabel}
+              lang={optionsTurn.listener.code}
+              speechTag={optionsTurn.listener.speechTag}
+              disabled={busy}
+              onPress={() => {
+                setOptionsTurn(null);
+                void playTurnSlow(optionsTurn);
+              }}
+            />
+            {!optionsTurn.isName ? (
+              <OptionRow
+                icon={<EyeIcon size={15} color={colors.accent} />}
+                title={t(optionsTurn.listener.code).flip}
+                sub={en.flip}
+                lang={optionsTurn.listener.code}
+                speechTag={optionsTurn.listener.speechTag}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const turn = optionsTurn;
+                  setOptionsTurn(null);
+                  setFullscreenTurn(turn);
+                }}
+              />
+            ) : null}
+            {!optionsTurn.isName ? (
+              <OptionRow
+                icon={<SparkleIcon size={15} color={colors.accent} />}
+                title={t(optionsTurn.listener.code).rephraseLabel}
+                sub={en.rephraseLabel}
+                lang={optionsTurn.listener.code}
+                speechTag={optionsTurn.listener.speechTag}
+                disabled={busy || offline}
+                onPress={() => {
+                  const turn = optionsTurn;
+                  setOptionsTurn(null);
+                  void playTurnRephrased(turn);
+                }}
+              />
+            ) : null}
+            {!optionsTurn.isName && optionsTurn.speaker.code === 'en' ? (
+              <OptionRow
+                icon={<UnderstandIcon size={15} color={colors.accent} />}
+                title={other.checkLabel}
+                sub={en.checkLabel}
+                lang={otherLanguage.code}
+                speechTag={otherLanguage.speechTag}
+                disabled={busy || offline}
+                onPress={() => {
+                  setOptionsTurn(null);
+                  startTeachBack(optionsTurn);
+                }}
+              />
+            ) : null}
+            <OptionRow
+              icon={<TrashIcon size={15} color={colors.danger} />}
+              title={other.deleteLabel}
+              sub={en.deleteLabel}
+              lang={otherLanguage.code}
+              speechTag={otherLanguage.speechTag}
+              destructive
+              onPress={() => {
+                const turn = optionsTurn;
+                setOptionsTurn(null);
+                deleteTurn(turn);
+              }}
+            />
+          </View>
+        ) : null}
+      </Sheet>
 
-      {/* F1: a translation blown up to fill the screen. */}
       <FullscreenTranslation
         text={fullscreenTurn?.translation ?? null}
         language={fullscreenTurn?.listener ?? null}
         otherLanguage={otherLanguage}
         onClose={() => setFullscreenTurn(null)}
       />
-    </View>
+    </SageBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  headerChip: {
-    minHeight: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    flexShrink: 1,
-  },
-  headerChipText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.textMuted,
-    flexShrink: 1,
-  },
-  headerChipTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    flexShrink: 1,
-  },
-  pressedDim: {
-    opacity: 0.6,
-  },
-  dimmed: {
-    opacity: 0.4,
-  },
-  thread: {
-    flex: 1,
-  },
-  threadContent: {
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
-  },
-  threadEmpty: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.sm,
-  },
-  hint: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  hintScene: {
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  hintTagline: {
-    fontSize: type.title,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: type.title * 1.25,
-    paddingHorizontal: spacing.md,
-  },
-  hintTaglineEn: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  hintText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  hintTextSmall: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  hintArrow: {
-    marginTop: spacing.md,
-  },
-  recordPanel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-    ...shadows.floating,
-  },
-  recordStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  recordTimer: {
-    fontFamily: fonts.display,
-    fontSize: type.hero,
-    color: colors.listening,
-    fontVariant: ['tabular-nums'],
-  },
-  recordLabel: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.textMuted,
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  nudgeSlot: {
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.hairline,
-  },
-  meterDebug: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textFaint,
-    textAlign: 'center',
-  },
-  nudgeText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.small,
-    color: colors.listening,
-    textAlign: 'center',
-  },
-  nudgeTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.listening,
-    textAlign: 'center',
-    opacity: 0.85,
-  },
-  doneOuter: {
-    borderRadius: radius.xl,
-    ...shadows.raised,
-  },
-  doneInner: {
-    minHeight: 120,
-    borderRadius: radius.xl,
-    backgroundColor: colors.listening,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  doneInnerPressed: {
-    backgroundColor: colors.listeningPressed,
-  },
-  doneLabels: {
-    alignItems: 'center',
-  },
-  doneText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.title,
-    color: colors.onPrimary,
-    textAlign: 'center',
-  },
-  doneTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.onPrimary,
-    opacity: 0.9,
-    textAlign: 'center',
-  },
-  cancelLink: {
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.textMuted,
-  },
-  pendingWrap: {
-    gap: spacing.xs,
-  },
-  pendingCaption: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-    paddingLeft: spacing.xs,
-  },
-  pendingText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  pendingTextSmall: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
-  },
-  turnCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.xxs,
-    width: '88%',
-    ...shadows.card,
-  },
-  turnLeft: {
-    alignSelf: 'flex-start',
-    borderTopLeftRadius: radius.sm,
-  },
-  turnRight: {
-    alignSelf: 'flex-end',
-    borderTopRightRadius: radius.sm,
-  },
-  turnLatest: {
-    ...shadows.raised,
-  },
-  // The accent bar sits on the card's "tail" side, so emphasis and alignment
-  // read as one gesture.
-  turnLatestLeft: {
-    borderLeftWidth: 4,
-    borderLeftColor: colors.accent,
-  },
-  turnLatestRight: {
-    borderRightWidth: 4,
-    borderRightColor: colors.accent,
-  },
-  speakerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  monogramChip: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.surfaceTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monogramChipSecondary: {
-    backgroundColor: colors.surfaceTintSecondary,
-  },
-  monogramText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.micro,
-    color: colors.primary,
-  },
-  monogramTextSecondary: {
-    color: colors.secondary,
-  },
-  originalLabel: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.textFaint,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  originalText: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
-    lineHeight: type.small * 1.45,
-  },
-  translationBlock: {
-    marginTop: spacing.sm,
-    gap: spacing.xxs,
-  },
-  translationLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  translationLabelWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    flexShrink: 1,
-  },
-  flippedBlock: {
-    transform: [{ rotate: '180deg' }],
-    backgroundColor: colors.surfaceTint,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-  },
-  translationLabel: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  translationText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.translation,
-    color: colors.text,
-    lineHeight: type.translation * 1.3,
-  },
-  translationTextOld: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.text,
-    lineHeight: type.body * 1.4,
-  },
-  turnActionsWrap: {
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  turnActions: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  turnButton: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xxs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceTint,
-    paddingHorizontal: spacing.xs,
-  },
-  turnButtonActive: {
-    backgroundColor: colors.primaryTint,
-  },
-  turnButtonLabels: {
-    flexShrink: 1,
-    alignItems: 'center',
-  },
-  turnButtonText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  turnButtonTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.primary,
-    opacity: 0.85,
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  turnButtonDanger: {
-    backgroundColor: colors.dangerBg,
-  },
-  turnButtonTextDanger: {
-    color: colors.dangerText,
-  },
-  speakerSpacer: {
-    flex: 1,
-  },
-  turnDelete: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteConfirm: {
-    gap: spacing.hairline,
-  },
-  deleteConfirmText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.dangerText,
-    lineHeight: type.small * 1.35,
-  },
-  deleteConfirmTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.dangerText,
-    opacity: 0.85,
-    marginBottom: spacing.xxs,
-  },
-  errorCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.dangerBg,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    width: '94%',
-    alignSelf: 'center',
-    ...shadows.card,
-  },
-  errorBody: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  errorText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.dangerText,
-    lineHeight: type.body * 1.4,
-  },
-  errorTextSmall: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.dangerText,
-    lineHeight: type.small * 1.4,
-  },
-  errorDetail: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.dangerText,
-    opacity: 0.8,
-    lineHeight: type.caption * 1.4,
-  },
-  retryButton: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.pill,
-    borderWidth: 2,
-    borderColor: colors.dangerText,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.xs,
-    alignSelf: 'flex-start',
-  },
-  retryText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.dangerText,
-  },
-  toolRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  toolButton: {
-    minHeight: MIN_TARGET,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xxs,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.xxs,
-    paddingVertical: spacing.xs,
-  },
-  toolButtonOn: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-    backgroundColor: colors.surfaceTint,
-  },
-  toolButtonLabels: {
-    flexShrink: 1,
-    alignSelf: 'stretch',
-  },
-  toolButtonText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.text,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  toolButtonTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  toolButtonTextOn: {
-    color: colors.primary,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  privacy: {
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-    gap: spacing.hairline,
-  },
-  privacyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-  },
-  privacyText: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textFaint,
-    textAlign: 'center',
-  },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  offlineBody: {
-    flex: 1,
-    gap: spacing.hairline,
-  },
-  offlineText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.text,
-    lineHeight: type.caption * 1.4,
-  },
-  offlineTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    lineHeight: type.micro * 1.4,
-  },
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-  },
-  sheetDismiss: {
-    flex: 1,
-  },
-  sheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    maxHeight: '78%',
-    paddingBottom: spacing.xl,
-    ...shadows.floating,
-  },
-  sheetHandle: {
-    width: 44,
-    height: 5,
-    borderRadius: radius.pill,
-    backgroundColor: colors.borderStrong,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  sheetTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flexShrink: 1,
-  },
-  sheetTitleWrap: {
-    flexShrink: 1,
-  },
-  sheetTitle: {
-    fontFamily: fonts.display,
-    fontSize: type.button,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  sheetTitleEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
-  },
-  sheetClose: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-  },
-  sheetCloseText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  sheetContent: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  disclaimer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceTintSecondary,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  disclaimerBody: {
-    flex: 1,
-    gap: spacing.hairline,
-  },
-  disclaimerText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.text,
-    lineHeight: type.caption * 1.4,
-  },
-  disclaimerTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.textMuted,
-    lineHeight: type.micro * 1.4,
-  },
-  disclaimerOk: {
-    minHeight: 48,
-    minWidth: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-    borderRadius: radius.sm,
-  },
-  disclaimerOkText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.secondary,
-  },
-  scanCenter: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  scanStatus: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.primary,
-  },
-  scanStatusEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: type.caption * 1.4,
-  },
-  scanError: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.dangerText,
-    textAlign: 'center',
-    lineHeight: type.body * 1.4,
-  },
-  scanRetry: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.pill,
-    borderWidth: 2,
-    borderColor: colors.dangerText,
-    paddingHorizontal: spacing.md,
-  },
-  scanRetryText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.dangerText,
-  },
-  scanContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  scanName: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.title,
-    color: colors.text,
-    lineHeight: type.title * 1.25,
-  },
-  scanSection: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    gap: spacing.xxs,
-    ...shadows.card,
-  },
-  scanSectionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-  },
-  scanSectionLabel: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  scanPrimary: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.text,
-    lineHeight: type.body * 1.4,
-  },
-  scanSecondary: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
-    lineHeight: type.small * 1.4,
-  },
-  scanSpeak: {
-    minHeight: MIN_TARGET,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-  },
-  sayLabelsInline: {
-    alignItems: 'center',
-  },
-  scanSpeakText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.onPrimary,
-  },
-  scanSpeakTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.onPrimary,
-    opacity: 0.9,
-  },
-  scanPharmacist: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  scanPharmacistText: {
-    flex: 1,
-    gap: spacing.hairline,
-  },
-  bodyMapCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    minHeight: MIN_TARGET + 8,
-    ...shadows.raised,
-  },
-  bodyMapIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.onPrimaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bodyMapTextWrap: {
-    flex: 1,
-    gap: spacing.hairline,
-  },
-  bodyMapTitle: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.body,
-    color: colors.onPrimary,
-  },
-  bodyMapSub: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.onPrimary,
-    opacity: 0.9,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: spacing.xs,
-  },
-  summaryPill: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceTint,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  summaryPillText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.primary,
-  },
-  centerBackdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  teachCard: {
-    backgroundColor: colors.background,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-    gap: spacing.sm,
-    ...shadows.floating,
-  },
-  teachClose: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    minWidth: 48,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  teachCenter: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  teachExplanation: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.text,
-    lineHeight: type.body * 1.45,
-  },
-  teachQuestion: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.button,
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  teachSub: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: type.small * 1.4,
-  },
-  teachReplay: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xxs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceTint,
-    paddingHorizontal: spacing.sm,
-    alignSelf: 'center',
-  },
-  teachReplayText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.primary,
-  },
-  rightsButton: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.lg,
-    backgroundColor: colors.secondary,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.xs,
-    alignSelf: 'stretch',
-  },
-  rightsButtonLabels: {
-    alignItems: 'center',
-  },
-  rightsButtonText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.onPrimary,
-  },
-  rightsButtonTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.micro,
-    color: colors.onPrimary,
-    opacity: 0.9,
-  },
-  teachBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surfaceTintSecondary,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-  },
-  teachBannerText: {
-    flex: 1,
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.secondary,
-    lineHeight: type.small * 1.35,
-  },
-  teachChoices: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  teachChoice: {
-    minHeight: 92,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.hairline,
-    paddingVertical: spacing.sm,
-  },
-  teachYes: {
-    backgroundColor: colors.primary,
-  },
-  teachNo: {
-    backgroundColor: colors.listening,
-  },
-  teachChoiceText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.button,
-    color: colors.onPrimary,
-  },
-  teachChoiceTextEn: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.onPrimary,
-    opacity: 0.9,
-  },
-  typeContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  typeInput: {
-    minHeight: 104,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
-    fontFamily: fonts.body,
-    fontSize: type.body,
-    color: colors.text,
-    textAlignVertical: 'top',
-  },
-  nameToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: MIN_TARGET,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  nameToggleOn: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-    backgroundColor: colors.surfaceTint,
-  },
-  nameToggleLabels: {
-    flex: 1,
-  },
-  nameToggleText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.textMuted,
-  },
-  nameToggleTextOn: {
-    color: colors.primary,
-  },
-  nameToggleHint: {
-    fontFamily: fonts.body,
-    fontSize: type.caption,
-    color: colors.textFaint,
-  },
-  nameCheck: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nameCheckOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  typeSendRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  typeSend: {
-    minHeight: MIN_TARGET,
-    borderRadius: radius.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  typeSendText: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.small,
-    color: colors.onPrimary,
-  },
-  sheetSection: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.caption,
-    color: colors.textFaint,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginTop: spacing.sm,
-  },
-  phraseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    minHeight: MIN_TARGET + 8,
-    ...shadows.card,
-  },
-  phraseIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.surfaceTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phraseIconCircleSecondary: {
-    backgroundColor: colors.surfaceTintSecondary,
-  },
-  phraseIconCircleUrgent: {
-    backgroundColor: colors.dangerBg,
-  },
-  sheetSectionUrgent: {
-    color: colors.dangerText,
-  },
-  painRow: {
-    gap: spacing.xs,
-    paddingVertical: spacing.xxs,
-    paddingRight: spacing.md,
-  },
-  painChip: {
-    minWidth: 56,
-    minHeight: 56,
-    paddingHorizontal: spacing.xxs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.card,
-  },
-  painChipHigh: {
-    borderColor: colors.listening,
-    borderWidth: 2,
-  },
-  painChipText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: type.button,
-    color: colors.text,
-  },
-  painChipTextHigh: {
-    color: colors.dangerText,
-  },
-  phraseTextWrap: {
-    flex: 1,
-    gap: spacing.hairline,
-  },
-  phrasePrimary: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: type.body,
-    color: colors.text,
-    lineHeight: type.body * 1.35,
-  },
-  phraseSecondary: {
-    fontFamily: fonts.body,
-    fontSize: type.small,
-    color: colors.textMuted,
-    lineHeight: type.small * 1.35,
-  },
-});
+const makeStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    homeLayer: { flex: 1 },
+    homeContent: { flexGrow: 1 },
+    pushed: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
+    headerLanguage: { flex: 1, justifyContent: 'flex-start', paddingHorizontal: spacing.xs },
+    iconButton: { width: tapTarget.min, height: tapTarget.min, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
+    disabled: { opacity: 0.4 },
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      backgroundColor: c.surface,
+      borderRadius: 4,
+      padding: spacing.sm,
+      marginHorizontal: 16,
+      marginTop: 12,
+    },
+    bannerText: { flex: 1, gap: spacing.xs },
+    disclaimer: { gap: spacing.xs, marginTop: spacing.xs, paddingHorizontal: 16 },
+    disclaimerOk: { alignSelf: 'stretch' },
+    summary: { marginTop: spacing.sm, alignSelf: 'stretch' },
+    // Transient only now (errors, the translating line, the empty tagline).
+    // It no longer competes with the block for the screen's slack.
+    thread: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
+    threadFill: { flexGrow: 1 },
+    listening: { flex: 1 },
+    slack: { flex: 1, minHeight: 0 },    threadContent: { paddingHorizontal: 16, paddingVertical: spacing.md, gap: spacing.md },
+    threadEmpty: { flexGrow: 1, justifyContent: 'flex-end' },
+    live: { marginTop: spacing.sm },
+    empty: { alignItems: 'center', gap: spacing.md, paddingHorizontal: 16, paddingBottom: spacing.lg },
+    bars: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
+    barsSingle: { flexDirection: 'column', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
+    options: { gap: 8 },
+
+    privacy: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  });

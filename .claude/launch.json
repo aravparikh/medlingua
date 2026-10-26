@@ -11,11 +11,20 @@
       "port": 8095
     },
     {
+      "name": "medlingua-site",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "npm run dev -- --port 3140"
+      ],
+      "port": 3140
+    },
+    {
       "name": "suvidha-hackathon",
       "runtimeExecutable": "sh",
       "runtimeArgs": [
         "-c",
-        "cd ../suvidha-hackathon && npm run dev -- --port 3111"
+        "cd ../suvidha_hackathon_website && npm run dev -- --port 3111"
       ],
       "port": 3111
     }

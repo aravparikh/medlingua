@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, type ViewProps } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -12,12 +12,14 @@ import { motion } from '../theme';
  */
 export function Appear({ children, style, ...rest }: ViewProps) {
   const reducedMotion = useReducedMotion();
-  const progress = useRef(new Animated.Value(0)).current;
+  // Lazy state, not a ref: an Animated.Value read during render is exactly
+  // what react-hooks/refs forbids, and useState's initialiser runs once.
+  const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(progress, {
       toValue: 1,
-      duration: motion.base,
+      duration: motion.reveal,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
